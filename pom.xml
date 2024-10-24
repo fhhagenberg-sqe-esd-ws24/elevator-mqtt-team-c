@@ -47,6 +47,15 @@
     <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
     <version>1.2.5</version>
 </dependency>
+
+<!-- https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>5.14.2</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Uncomment to use Eclipse Paho Mqttv5 Client -->
         <!-- <dependency>
             <groupId>org.eclipse.paho</groupId>

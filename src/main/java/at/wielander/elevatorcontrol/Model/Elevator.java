@@ -1,7 +1,8 @@
-package at.fhhagenberg.sqelevator;
+package at.wielander.elevatorcontrol.Model;
 
-import java.util.Dictionary;
-import java.util.List;
+import at.fhhagenberg.sqelevator.IElevator;
+
+import java.util.HashMap;
 import java.util.Map;
 
 public class Elevator {
@@ -18,12 +19,17 @@ public class Elevator {
     private int targetedFloor;
     public Elevator(Map<Integer, Boolean> serviceableFloors, final int capacity)
     {
+        if(serviceableFloors == null || capacity <= 0){
+            throw new IllegalArgumentException("Invalid Arguments");
+        }
+
         this.commitedDirection = IElevator.ELEVATOR_DIRECTION_UNCOMMITTED;
         this.doorState = IElevator.ELEVATOR_DOORS_CLOSED;
         this.accelleration = 0;
         this.speed = 0;
         this.weight = 0;
         this.targetedFloor = 0;
+        this.buttons = new HashMap<>();
 
         this.serviceableFloors = serviceableFloors;
         this.capacity = capacity;

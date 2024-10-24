@@ -1,4 +1,6 @@
-package at.fhhagenberg.sqelevator;
+package at.wielander.elevatorcontrol.Model;
+
+import at.fhhagenberg.sqelevator.IElevator;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -6,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ElevatorSystem implements IElevator{
+public class ElevatorSystem implements IElevator {
 
     private final int lowestFloor;
     private final int highestFloor;
