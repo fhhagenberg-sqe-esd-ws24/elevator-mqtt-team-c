@@ -45,6 +45,7 @@ public class ElevatorSystem implements IElevator {
         }
     }
 
+    /*
     public void addElevator(Map<Integer, Boolean> serviceableFloors, int capacity)
     {
         elevators.add(new Elevator(serviceableFloors, capacity));
@@ -72,6 +73,7 @@ public class ElevatorSystem implements IElevator {
 
         elevators.add(new Elevator(serviceableFloors, elevators.get(0).getCapacity()));
     }
+    */
 
     @Override
     public int getCommittedDirection(int elevatorNumber) throws RemoteException {
@@ -80,7 +82,7 @@ public class ElevatorSystem implements IElevator {
 
     @Override
     public int getElevatorAccel(int elevatorNumber) throws RemoteException {
-        return elevators.get(elevatorNumber).getAccelleration();
+        return elevators.get(elevatorNumber).getAcceleration();
     }
 
     @Override
@@ -184,9 +186,9 @@ public class ElevatorSystem implements IElevator {
     // also update clock
     private void updateAll()
     {
-        for(int i = 0; i < elevators.size(); i++)
+        for(Elevator elevator : elevators)
         {
-            elevators.get(i).update();
+            elevator.update();
         }
     }
 }

@@ -3,7 +3,6 @@ package at.wielander.elevator.Model;
 import at.fhhagenberg.sqelevator.IElevator;
 import org.junit.jupiter.api.*;
 import java.util.HashMap;
-import java.util.Map;
 
 import static at.fhhagenberg.sqelevator.IElevator.*;
 
@@ -74,7 +73,7 @@ class ElevatorTest {
     @Test
     void testGetAcceleration(){
         /* Assert if the acceleration of the elevator is ZERO by default */
-        Assertions.assertEquals(INITIAL_VALUE, elevator.getAccelleration(),
+        Assertions.assertEquals(INITIAL_VALUE, elevator.getAcceleration(),
                 "Test Passed: Elevator acceleration should be initialized to 0 ft/s²");
     }
 
