@@ -1,4 +1,4 @@
-package at.wielander.elevatorcontrol;
+package at.wielander.elevator.controller;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;

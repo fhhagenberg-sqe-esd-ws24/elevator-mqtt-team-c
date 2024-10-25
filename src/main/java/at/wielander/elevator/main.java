@@ -1,4 +1,7 @@
-package at.wielander.elevatorcontrol;
+package at.wielander.elevator;
+
+import at.wielander.elevator.View.Dashboard;
+import at.wielander.elevator.controller.ElevatorMQTTAdapter;
 
 public class main {
     public static void main(String[] args) {

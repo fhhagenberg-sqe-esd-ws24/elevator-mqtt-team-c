@@ -1,4 +1,4 @@
-package at.wielander.elevatorcontrol;
+package at.wielander.elevator.View;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
