@@ -6,16 +6,31 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Internal Data Model for the elevators.
+ * Internal Data Model for the individual elevators.
  *
- * <p> The fields for the various attributes for the elevator data model
- * are listed below. The various methods are inherited from the interface
- * IElevator provided in the assignment.
- * </p>
+ * This class represents the physical elevator and its attributes. The behaviors are inherited
+ * from the provided interface {@link IElevator} as follows:
+ *
+ * <ul>
+ *     <li><i>Elevator capacity:</i> The maximum number of passengers that can fit in an elevator.</li>
+ *     <li><i>Elevator speed:</i> The maximum speed an elevator can travel at in feet/sec. It is assumed to be the same for
+ *     all elevators.</li>
+ *     <li><i>Elevator acceleration:</i> The rate at which the elevator can increase or decrease
+ *     speed in ft/sec². It is assumed to be the same for all elevators. The higher the acceleration,
+ *     the faster the elevator can accelerate and decelerate, allowing its average speed to be faster.</li>
+ *     <li><i>Number of floors:</i> The number of floors in the building, including the ground floor. It is
+ *     assumed there are no floors below ground level. All elevators service the
+ *     ground floor but may, as described below, not necessarily service all other floors. Each floor has
+ *     an up and a down button for the purposes of passengers calling the elevator. Floor numbering starts
+ *     at 0 for floor 1.</li>
+ *     <li><i>Floor height:</i> The height of the floors in feet. It is assumed that each floor is
+ *     the same height.</li>
+ *     <li><i>Number of elevators:</i> The number of elevators in the building. Elevator numbering starts
+ *     at zero for elevator 1.</li>
+ * </ul>
  *
  * @version 0.1
  */
-
 public class Elevator {
 
 
@@ -46,7 +61,7 @@ public class Elevator {
     /** Variable for the current position of the elevator in ft */
     private int position;
 
-    /** Variable for the buttons with the floors mapped to a truth state */
+    /** Variable for the buttons with the floors mapped to a logical state */
     protected Map<Integer, Boolean> buttons;
 
     /** Variable for the current weight of the passengers in the elevator in lbs */
@@ -55,7 +70,7 @@ public class Elevator {
     /** Variable for the current capacity of the elevator in lbs */
     protected int capacity;
 
-    /** Variable for the current serviceable floors mapped to a truth state */
+    /** Variable for the current serviceable floors mapped to a logical state */
     protected Map<Integer, Boolean> serviceableFloors;
 
     /** Variable for the targeted floor */
@@ -96,6 +111,7 @@ public class Elevator {
 
     /**
      * Returns the direction in which the elevator in currently moving towards (UP/ DOWN /UNCOMMITTED)
+     * @return Direction of current elevator
      */
     public int getCommitedDirection() {
         return this.commitedDirection;
@@ -141,7 +157,7 @@ public class Elevator {
      * Return the truth value fo the buttons mapped to a logical state
      * representing the buttons either as pressed or depressed.
      *
-     * @return List of the buttons representing each floor and their state (TRUE / FALSE)
+     * @return Map of the buttons representing each floor and their state (TRUE / FALSE)
      */
     public Map<Integer, Boolean> getButtons() {
         return buttons;
@@ -150,14 +166,14 @@ public class Elevator {
     /**
      * Returns the current position of the elevator with respect to the ground floor
      *
-     * @return position of the elevator identified by the current floor being serviued
+     * @return position of the elevator identified by the current floor being serviced
      */
     public int getLocation() {
         return position;
     }
 
     /**
-     * Method to obtain the current weight of the paasengers in lbs
+     * Method to obtain the current weight of the passengers in lbs
      *
      * @return The current weight of the passengers in lbs
      */
@@ -210,7 +226,9 @@ public class Elevator {
         this.targetedFloor = targetedFloor;
     }
 
-    // get data from mqtt and calculate new speed, acceleration etc
+    /**
+     *  Update the fields usings via MQTT
+     */
     public void update()
     {
 
