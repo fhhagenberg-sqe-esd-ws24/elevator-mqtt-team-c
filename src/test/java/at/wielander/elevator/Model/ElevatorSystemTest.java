@@ -7,18 +7,6 @@ import java.rmi.RemoteException;
 
 class ElevatorSystemTest {
 
-    private static final int GROUND_FLOOR = 0;
-
-    private static final int ZERO_ELEVATORS = 0;
-
-    private static final int TOTAL_ELEVATORS = 5;
-
-    private static final int HIGHEST_FLOOR = 4;
-
-    private static final int CAPACITY_ELEVATOR = 1000;
-
-    private static final int FLOOR_HEIGHT = 7;
-
     private ElevatorSystem elevatorSystem;
 
 
@@ -38,11 +26,11 @@ class ElevatorSystemTest {
         System.out.println("Setup called. Creating Elevator");
 
         /* Initialise a new elevator system */
-        elevatorSystem = new ElevatorSystem(TOTAL_ELEVATORS,
-                GROUND_FLOOR,
-                HIGHEST_FLOOR,
-                CAPACITY_ELEVATOR,
-                FLOOR_HEIGHT);
+        elevatorSystem = new ElevatorSystem(10,
+                0,
+                4,
+                1000,
+                7);
     }
 
 
@@ -55,12 +43,12 @@ class ElevatorSystemTest {
     void testZeroNumberOfElevators() throws RemoteException {
         /* Assert if zero elevators were initialised */
         ElevatorSystem zeroElevatorsSystem = new ElevatorSystem(
-                ZERO_ELEVATORS,
-                GROUND_FLOOR,
-                HIGHEST_FLOOR,
-                CAPACITY_ELEVATOR,
-                FLOOR_HEIGHT);
-        Assertions.assertEquals(zeroElevatorsSystem.getElevatorNum(), ZERO_ELEVATORS,
+                0,
+                0,
+                4,
+                1000,
+                7);
+        Assertions.assertEquals(0,zeroElevatorsSystem.getElevatorNum(),
                 " Test FAILED: Zero elevators should be initialised.");
 
     }
@@ -68,18 +56,18 @@ class ElevatorSystemTest {
     @Test
     void testMultipleElevatorSetup() throws RemoteException {
         /* Assert if five elevators were initialised */
-        Assertions.assertEquals(TOTAL_ELEVATORS, elevatorSystem.getElevatorNum(),
+        Assertions.assertEquals(10, elevatorSystem.getElevatorNum(),
                 " Test FAILED: Five elevators should be initialised.");
     }
 
     @Test
     void testGetElevatorCapacity() throws RemoteException {
         /* Assert if the capacity of the elevator set to 1000 */
-        Assertions.assertEquals(CAPACITY_ELEVATOR,elevatorSystem.getElevatorCapacity(2),
+        Assertions.assertEquals(1000,elevatorSystem.getElevatorCapacity(2),
                 "Test FAILED: Elevator #2 elevators should have capacity of 1000 lbs.");
 
         /* Assert if the capacity of the elevator set to 1000 */
-        Assertions.assertEquals(CAPACITY_ELEVATOR,elevatorSystem.getElevatorCapacity(3),
+        Assertions.assertEquals(1000,elevatorSystem.getElevatorCapacity(3),
                 "Test FAILED: Elevator #3 elevators should have capacity of 1000 lbs.");
 
     }
@@ -87,15 +75,14 @@ class ElevatorSystemTest {
     @Test
     void testGetFloorHeight() throws RemoteException {
         /* Assert if floor height is initially set to 7 ft */
-        Assertions.assertEquals(FLOOR_HEIGHT,elevatorSystem.getFloorHeight(),
+        Assertions.assertEquals(7,elevatorSystem.getFloorHeight(),
                 "Test FAILED: Floor Height is initially set at 7 feet.");
 
     }
 
     @Test
     void testGetFloorNum() throws RemoteException {
-        /* Assert if floor height is initially set to 5 floors */
-        Assertions.assertEquals(HIGHEST_FLOOR ,elevatorSystem.getFloorNum(),
+        Assertions.assertEquals(4 ,elevatorSystem.getFloorNum(),
                 "Test FAILED: The elevators services 5 elevators at start.");
     }
 
@@ -119,15 +106,11 @@ class ElevatorSystemTest {
             elevatorSystem.setServicesFloors(5, 0, true);
         }, "Test FAILED: 5th Floor is INVALID and should NOT exist on building mapping .");
 
-        /* Assert if only first floors are serviceable */
+        /* Assert if floors are serviceable */
         Assertions.assertTrue(elevatorSystem.getServicesFloors(0, 0),
                 "Test FAILED: This elevator should be serving the ground floor");
-
-        /* Assert if only three floors are serviceable */
         Assertions.assertTrue(elevatorSystem.getServicesFloors(1, 4),
                 "Test FAILED: This elevator should be serving the fourth floor");
-
-        /* Assert if only first floors are serviceable */
         Assertions.assertFalse(elevatorSystem.getServicesFloors(2, 2),
                 "Test FAILED: This elevator should be NOT serving the second floor");
 
@@ -135,7 +118,6 @@ class ElevatorSystemTest {
 
     @Test
     void testSetCommittedDirection()throws RemoteException {
-
 
         /* Assert if elevator 1 moves up */
         elevatorSystem.setCommittedDirection(1, IElevator.ELEVATOR_DIRECTION_UP);
@@ -162,11 +144,11 @@ class ElevatorSystemTest {
 
         /* Initialise */
         ElevatorSystem testElevatorTargets = new ElevatorSystem(
-                ZERO_ELEVATORS,
-                GROUND_FLOOR,
-                HIGHEST_FLOOR,
-                CAPACITY_ELEVATOR,
-                FLOOR_HEIGHT);
+                10,
+                0,
+                4,
+                1000,
+                7);
 
         /* Assert if an invalid floor on building map can be set */
         Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
@@ -175,7 +157,7 @@ class ElevatorSystemTest {
 
         /* Assert if INVALID elevator's target can be set */
         Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
-            testElevatorTargets.setTarget(TOTAL_ELEVATORS, 5);
+            testElevatorTargets.setTarget(5, 5);
         }, "Test FAILED: Elevator DOES not exist");
     }
 }

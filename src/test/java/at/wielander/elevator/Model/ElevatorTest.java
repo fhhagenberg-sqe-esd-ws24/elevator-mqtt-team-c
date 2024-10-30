@@ -8,15 +8,6 @@ import static at.fhhagenberg.sqelevator.IElevator.*;
 
 class ElevatorTest {
 
-
-    private static final int INITIAL_VALUE = 0;
-
-    private static final int ELEVATOR_CAPACITY = 4000;
-
-    private static final int TARGETED_FLOOR_ONE = 1;
-
-    private static final int TARGETED_FLOOR_FOUR = 4;
-
     private Elevator elevator;
 
     @BeforeAll
@@ -38,7 +29,7 @@ class ElevatorTest {
         HashMap<Integer, Boolean> serviceFloors = new HashMap<>();
 
         /* Initialise an elevator with a capacity of 4000 lbs */
-        elevator = new Elevator(serviceFloors, ELEVATOR_CAPACITY);
+        elevator = new Elevator(serviceFloors, 1000);
     }
 
     @AfterEach
@@ -57,21 +48,21 @@ class ElevatorTest {
     @Test
     void testGetLocation(){
         /* Assert if the acceleration of the elevator is ZERO by default */
-        Assertions.assertEquals(INITIAL_VALUE, elevator.getLocation(),
+        Assertions.assertEquals(0, elevator.getLocation(),
                 "Test Failed: The location of the elevator is NOT at ground floor");
     }
 
     @Test
     void testGetSpeed(){
         /* Assert if the speed of the elevator is ZERO by default */
-        Assertions.assertEquals(INITIAL_VALUE, elevator.getSpeed(),
+        Assertions.assertEquals(0, elevator.getSpeed(),
                 "Test Failed: Elevator speed is NOT initialised 0 ft/s");
     }
 
     @Test
     void testGetAcceleration(){
         /* Assert if the acceleration of the elevator is ZERO by default */
-        Assertions.assertEquals(INITIAL_VALUE, elevator.getAcceleration(),
+        Assertions.assertEquals(0, elevator.getAcceleration(),
                 "Test Failed: Elevator acceleration is NOT initialized to 0 ft/s²");
     }
 
@@ -85,7 +76,7 @@ class ElevatorTest {
     @Test
     void testGetElevatorCapacity(){
         /* Assert if the elevator doors are initially closed */
-        Assertions.assertEquals(INITIAL_VALUE, elevator.getWeight(),
+        Assertions.assertEquals(0, elevator.getWeight(),
                 "Test Failed: Elevator weight should be unloaded by default");
     }
 
@@ -157,13 +148,13 @@ class ElevatorTest {
     void testSetTargetedFloor() {
 
     /* Set the 1st floor as the targeted floor and assert */
-    elevator.setTargetedFloor(TARGETED_FLOOR_ONE);
-    Assertions.assertEquals(TARGETED_FLOOR_ONE, elevator.getTargetedFloor(),
+    elevator.setTargetedFloor(1);
+    Assertions.assertEquals(1, elevator.getTargetedFloor(),
             "Test Failed: First Floor should be the targeted floor");
 
     /* Set the 4th floor as the targeted floor and assert */
-    elevator.setTargetedFloor(TARGETED_FLOOR_FOUR);
-    Assertions.assertEquals(TARGETED_FLOOR_FOUR, elevator.getTargetedFloor(),
+    elevator.setTargetedFloor(4);
+    Assertions.assertEquals(4, elevator.getTargetedFloor(),
             "Test Failed: Fourth Floor should be the targeted floor");
     }
 
