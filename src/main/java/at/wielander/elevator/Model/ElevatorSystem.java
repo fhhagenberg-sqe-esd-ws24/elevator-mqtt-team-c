@@ -70,45 +70,6 @@ public class ElevatorSystem implements IElevator {
     }
 
     /**
-     * Adds a new elevator with a variable capacity with variable servicable floors
-     * in the building.
-     * 
-     * @param serviceableFloors Floors that can be accessed by the elevator in the
-     *                          building
-     * @param capacity          Max Load of elevator in lbs
-     */
-    /*
-     * public void addElevator(Map<Integer, Boolean> serviceableFloors, int
-     * capacity) {
-     * elevators.add(new Elevator(serviceableFloors, capacity));
-     * }
-     */
-
-    /**
-     * Adds a new elevator with a variable capacity for all servicable floors in the
-     * building.
-     * 
-     * @param capacity Max Load of elevator in lbs
-     */
-    /*
-     * public void addElevator(int capacity) {
-     * Map<Integer, Boolean> serviceableFloors = new HashMap<>();
-     * 
-     * for (int i = lowestFloor; i <= highestFloor; i++) {
-     * serviceableFloors.put(i, true);
-     * }
-     * 
-     * elevators.add(new Elevator(serviceableFloors, capacity));
-     * }
-     */
-
-    /**
-     * Adds a new elevator with a default capacity for all servicable floors in the
-     * building.
-     *
-     */
-
-    /**
      * Adds a new elevator with a default capacity for all servicable floors.
      * Forwards the elevatorAPI for RMI access to PLC
      * and provides a number for the elevator.
