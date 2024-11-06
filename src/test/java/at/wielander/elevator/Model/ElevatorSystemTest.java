@@ -1,7 +1,6 @@
 package at.wielander.elevator.Model;
 
 import at.fhhagenberg.sqelevator.IElevator;
-
 import org.junit.jupiter.api.*;
 
 import java.rmi.RemoteException;
