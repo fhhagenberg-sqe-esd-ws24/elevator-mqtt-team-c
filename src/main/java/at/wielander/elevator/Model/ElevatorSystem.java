@@ -11,12 +11,16 @@ package at.wielander.elevator.Model;
  */
 
 import at.fhhagenberg.sqelevator.IElevator;
+import at.wielander.elevator.controller.ElevatorMQTTAdapter;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Constructor for multiple configurations of the elevator system.
@@ -31,17 +35,25 @@ public class ElevatorSystem implements IElevator {
     private boolean upButtonPress;
     private long clockTick;
 
+    // mqtt
+    private ElevatorMQTTAdapter mqttAdapter;
+    private IElevator elevatorAPI;
+    private ScheduledExecutorService scheduler;
+
     /**
      * Creates a configuration of elevators for a building
      *
-     * @param numElevator Number of elevators in the building
-     * @param lowestFloor Lowest floor accessible by the elevator
+     * @param numElevator  Number of elevators in the building
+     * @param lowestFloor  Lowest floor accessible by the elevator
      * @param highestFloor Highest floor accessible by the elevator
-     * @param capacity Maximum capacity of the elevator in lbs
-     * @param floorHeight Height of each floor to be given in ft
+     * @param capacity     Maximum capacity of the elevator in lbs
+     * @param floorHeight  Height of each floor to be given in ft
      */
-    public ElevatorSystem(final int numElevator, final int lowestFloor, final int highestFloor, final int capacity, final int floorHeight)
-    {
+    public ElevatorSystem(final int numElevator, final int lowestFloor, final int highestFloor, final int capacity,
+            final int floorHeight, final IElevator elevatorAPI) {
+
+        this.scheduler = Executors.newScheduledThreadPool(1);
+        this.elevatorAPI = elevatorAPI;
         this.lowestFloor = lowestFloor;
         this.highestFloor = highestFloor;
         elevators = new ArrayList<>();
@@ -51,68 +63,102 @@ public class ElevatorSystem implements IElevator {
 
         Map<Integer, Boolean> serviceableFloors = new HashMap<>();
 
-        for(int i = lowestFloor; i <= highestFloor; i++)
-        {
+        for (int i = lowestFloor; i <= highestFloor; i++) {
             serviceableFloors.put(i, true);
         }
 
-
-        for(int i = 0; i < numElevator; i++)
-        {
-            if(elevators != null)
-            {
-                elevators.add(new Elevator(serviceableFloors, capacity));
+        for (int i = 0; i < numElevator; i++) {
+            if (elevators != null) {
+                elevators.add(new Elevator(serviceableFloors, capacity, elevatorAPI, i));
+                elevators.get(i).update();
             }
         }
+
+        // mqtt
+        initializeElevators();
+        startPublishingElevatorStates();
+    }
+
+    // mqtt
+    private void initializeElevators() {
+        // Initialize elevators here
+        // Example: elevators.add(new Elevator(...));
+    }
+
+    // mqtt
+    private void startPublishingElevatorStates() {
+        scheduler.scheduleAtFixedRate(() -> {
+            for (int i = 0; i < elevators.size(); i++) {
+                Elevator elevator = elevators.get(i);
+                mqttAdapter.publishElevatorState(i, elevator.getCurrentFloor());
+            }
+        }, 0, 100, TimeUnit.MILLISECONDS);
     }
 
     /**
-     * Adds a new elevator with a variable capacity with variable servicable floors in the building.
-     * @param serviceableFloors Floors that can be accessed by the elevator in the building
+     * Adds a new elevator with a variable capacity with variable servicable floors
+     * in the building.
+     * 
+     * @param serviceableFloors Floors that can be accessed by the elevator in the
+     *                          building
+     * @param capacity          Max Load of elevator in lbs
+     */
+    /*
+     * public void addElevator(Map<Integer, Boolean> serviceableFloors, int
+     * capacity) {
+     * elevators.add(new Elevator(serviceableFloors, capacity));
+     * }
+     */
+
+    /**
+     * Adds a new elevator with a variable capacity for all servicable floors in the
+     * building.
+     * 
      * @param capacity Max Load of elevator in lbs
      */
-    public void addElevator(Map<Integer, Boolean> serviceableFloors, int capacity)
-    {
-        elevators.add(new Elevator(serviceableFloors, capacity));
-    }
-
-    /**
-     * Adds a new elevator with a variable capacity for all servicable floors in the building.
-     * @param capacity Max Load of elevator in lbs
+    /*
+     * public void addElevator(int capacity) {
+     * Map<Integer, Boolean> serviceableFloors = new HashMap<>();
+     * 
+     * for (int i = lowestFloor; i <= highestFloor; i++) {
+     * serviceableFloors.put(i, true);
+     * }
+     * 
+     * elevators.add(new Elevator(serviceableFloors, capacity));
+     * }
      */
-    public void addElevator(int capacity)
-    {
-        Map<Integer, Boolean> serviceableFloors = new HashMap<>();
-
-        for(int i = lowestFloor; i <= highestFloor; i++)
-        {
-            serviceableFloors.put(i, true);
-        }
-
-        elevators.add(new Elevator(serviceableFloors, capacity));
-    }
 
     /**
-     * Adds a new elevator with a default capacity for all servicable floors in the building.
+     * Adds a new elevator with a default capacity for all servicable floors in the
+     * building.
      *
      */
-    public void addElevator()
-    {
+
+    /**
+     * Adds a new elevator with a default capacity for all servicable floors.
+     * Forwards the elevatorAPI for RMI access to PLC
+     * and provides a number for the elevator.
+     * 
+     * @param elevatorNumber number of the elevator
+     * @param elevatorAPI    RMI API for the elevator
+     */
+    public void addElevator(final int elevatorNumber, IElevator elevatorAPI) {
         Map<Integer, Boolean> serviceableFloors = new HashMap<>();
 
-        for(int i = lowestFloor; i <= highestFloor; i++)
-        {
+        for (int i = lowestFloor; i <= highestFloor; i++) {
             serviceableFloors.put(i, true);
         }
 
-        elevators.add(new Elevator(serviceableFloors, elevators.get(0).getCapacity()));
+        elevators.add(new Elevator(serviceableFloors, elevators.get(0).getCapacity(), elevatorAPI, elevatorNumber));
     }
 
     /**
      * Returns the direction of the elevator heading
      *
-     * @param elevatorNumber - elevator number whose committed direction is being retrieved
-     * @return The committed direction (movement) of the elevator (UP / DOWN / UNCOMMITTED)
+     * @param elevatorNumber - elevator number whose committed direction is being
+     *                       retrieved
+     * @return The committed direction (movement) of the elevator (UP / DOWN /
+     *         UNCOMMITTED)
      * @throws RemoteException RMI Invalid exception
      */
     @Override
@@ -135,8 +181,10 @@ public class ElevatorSystem implements IElevator {
     /**
      * Returns the buttons and its respective logical states
      *
-     * @param elevatorNumber - elevator number whose button status is being retrieved
-     * @param floor - floor number button being checked on the selected elevator
+     * @param elevatorNumber - elevator number whose button status is being
+     *                       retrieved
+     * @param floor          - floor number button being checked on the selected
+     *                       elevator
      * @return Returns Mapping of elevator buttons and the
      * @throws RemoteException RMI Invalid exception
      */
@@ -144,8 +192,7 @@ public class ElevatorSystem implements IElevator {
     public boolean getElevatorButton(int elevatorNumber, int floor) throws RemoteException {
 
         /** check for service range of elevator */
-        if(!elevators.get(elevatorNumber).getServiceableFloors().get(floor))
-        {
+        if (!elevators.get(elevatorNumber).getServiceableFloors().get(floor)) {
             System.err.println("Floor " + floor + " not within elevator service range.");
         }
         return elevators.get(elevatorNumber).getButtons().get(floor);
@@ -165,17 +212,20 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Returns the current floor being serviced
+     * 
      * @param elevatorNumber - elevator number whose location is being retrieved
-     * @return Current position of elevator with respect to the floor layout of the building
+     * @return Current position of elevator with respect to the floor layout of the
+     *         building
      * @throws RemoteException RMI Invalid exception
      */
     @Override
     public int getElevatorFloor(int elevatorNumber) throws RemoteException {
-        return (int)Math.round((double)elevators.get(elevatorNumber).getLocation() / (double)this.floorHeight);
+        return (int) Math.round((double) elevators.get(elevatorNumber).getLocation() / (double) this.floorHeight);
     }
 
     /***
      * Returns the current elevator ID
+     * 
      * @return interger value of elevator ID
      * @throws RemoteException RMI Invalid exception
      */
@@ -186,7 +236,8 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Returns the elevator location with respect to building layout
-     * @param elevatorNumber  - elevator number whose location is being retrieved
+     * 
+     * @param elevatorNumber - elevator number whose location is being retrieved
      * @return Current Elevator position
      * @throws RemoteException RMI Invalid exception
      */
@@ -197,6 +248,7 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Return speed of the elevator
+     * 
      * @param elevatorNumber - elevator number whose speed is being retrieved
      * @return Speed of the elevator in ft/s
      * @throws RemoteException RMI Invalid exception
@@ -220,6 +272,7 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Returns the set capacity of the elevator
+     * 
      * @param elevatorNumber - elevator number whose service is being retrieved
      * @return Max Capacity of the respective elevator in lbs
      * @throws RemoteException Throws RMI Execption
@@ -231,6 +284,7 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Returns the logical state of the down button of a respective floor
+     * 
      * @param floor - floor number whose down button status is being retrieved
      * @return (TRUE or FALSE ) state for the down button
      * @throws RemoteException Throws an Exception for RMI
@@ -242,6 +296,7 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Returns the logical state of the up button of a respective floor
+     * 
      * @param floor - floor number whose Up button status is being retrieved
      * @return (TRUE or FALSE ) state for the up button
      * @throws RemoteException Throws an Exception for RMI
@@ -253,6 +308,7 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Returns the height of the floor in the building layout
+     * 
      * @return height of the floor in ft
      * @throws RemoteException Throws an Exception for RMI
      */
@@ -263,6 +319,7 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Returns the current floor number
+     * 
      * @return Integer value of floor number
      * @throws RemoteException Throws an Exception for RMI
      */
@@ -273,8 +330,10 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Returns the servicable floors
+     * 
      * @param elevatorNumber elevator number whose service is being retrieved
-     * @param floor floor whose service status by the specified elevator is being retrieved
+     * @param floor          floor whose service status by the specified elevator is
+     *                       being retrieved
      * @return Returns the servicable floors
      * @throws RemoteException Throws an Exception for RMI
      */
@@ -286,6 +345,7 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Returns the targeted floor
+     * 
      * @param elevatorNumber elevator number whose target floor is being retrieved
      * @return Targetted floor for the elevator to head in that direction
      * @throws RemoteException Throws an Exception for RMI
@@ -297,8 +357,10 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Sets the direction of the elevator
+     * 
      * @param elevatorNumber elevator number whose committed direction is being set
-     * @param direction direction being set where up=0, down=1 and uncommitted=2
+     * @param direction      direction being set where up=0, down=1 and
+     *                       uncommitted=2
      * @throws RemoteException Throws an Exception for RMI
      */
     @Override
@@ -308,9 +370,12 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Sets the floors accessible by the elevator
+     * 
      * @param elevatorNumber elevator number whose service is being defined
-     * @param floor floor whose service by the specified elevator is being set
-     * @param service indicates whether the floor is serviced by the specified elevator (yes=true,no=false)
+     * @param floor          floor whose service by the specified elevator is being
+     *                       set
+     * @param service        indicates whether the floor is serviced by the
+     *                       specified elevator (yes=true,no=false)
      * @throws RemoteException Throws an Exception for RMI
      */
     @Override
@@ -320,8 +385,9 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Returns set target floor of the elevator
+     * 
      * @param elevatorNumber elevator number whose target floor is being set
-     * @param target floor number which the specified elevator is to target
+     * @param target         floor number which the specified elevator is to target
      * @throws RemoteException Throws an Exception for RMI
      */
     @Override
@@ -331,6 +397,7 @@ public class ElevatorSystem implements IElevator {
 
     /**
      * Returns clock tick
+     * 
      * @return Clock tick
      * @throws RemoteException Throws an Exception for RMI
      */
@@ -339,14 +406,4 @@ public class ElevatorSystem implements IElevator {
         return this.clockTick;
     }
 
-    /**
-     * Update all internal states of the elevator
-     */
-    private void updateAll()
-    {
-        for(Elevator elevator : elevators)
-        {
-            elevator.update();
-        }
-    }
 }
