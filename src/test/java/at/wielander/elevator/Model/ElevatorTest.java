@@ -158,7 +158,4 @@ class ElevatorTest {
             "Test Failed: Fourth Floor should be the targeted floor");
     }
 
-
-
-
 }

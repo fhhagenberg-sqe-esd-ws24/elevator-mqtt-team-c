@@ -9,7 +9,6 @@ class ElevatorSystemTest {
 
     private ElevatorSystem elevatorSystem;
 
-
     @BeforeAll
     public static void setupOnce(){
         System.out.println("setupOnce called");
