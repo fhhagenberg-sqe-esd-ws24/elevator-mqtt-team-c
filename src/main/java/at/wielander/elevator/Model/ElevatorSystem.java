@@ -11,7 +11,6 @@ package at.wielander.elevator.Model;
  */
 
 import at.fhhagenberg.sqelevator.IElevator;
-import at.wielander.elevator.controller.ElevatorMQTTAdapter;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -34,11 +33,7 @@ public class ElevatorSystem implements IElevator {
     private boolean downButtonPress;
     private boolean upButtonPress;
     private long clockTick;
-
-    // mqtt
-    private ElevatorMQTTAdapter mqttAdapter;
     private IElevator elevatorAPI;
-    private ScheduledExecutorService scheduler;
 
     /**
      * Creates a configuration of elevators for a building
@@ -52,7 +47,6 @@ public class ElevatorSystem implements IElevator {
     public ElevatorSystem(final int numElevator, final int lowestFloor, final int highestFloor, final int capacity,
             final int floorHeight, final IElevator elevatorAPI) {
 
-        this.scheduler = Executors.newScheduledThreadPool(1);
         this.elevatorAPI = elevatorAPI;
         this.lowestFloor = lowestFloor;
         this.highestFloor = highestFloor;
@@ -69,30 +63,10 @@ public class ElevatorSystem implements IElevator {
 
         for (int i = 0; i < numElevator; i++) {
             if (elevators != null) {
-                elevators.add(new Elevator(serviceableFloors, capacity, elevatorAPI, i));
+                elevators.add(new Elevator(serviceableFloors, capacity, this.elevatorAPI, i));
                 elevators.get(i).update();
             }
         }
-
-        // mqtt
-        initializeElevators();
-        startPublishingElevatorStates();
-    }
-
-    // mqtt
-    private void initializeElevators() {
-        // Initialize elevators here
-        // Example: elevators.add(new Elevator(...));
-    }
-
-    // mqtt
-    private void startPublishingElevatorStates() {
-        scheduler.scheduleAtFixedRate(() -> {
-            for (int i = 0; i < elevators.size(); i++) {
-                Elevator elevator = elevators.get(i);
-                mqttAdapter.publishElevatorState(i, elevator.getCurrentFloor());
-            }
-        }, 0, 100, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -406,4 +380,9 @@ public class ElevatorSystem implements IElevator {
         return this.clockTick;
     }
 
+    public void updateAll() {
+        for (Elevator elevator : elevators) {
+            elevator.update();
+        }
+    }
 }

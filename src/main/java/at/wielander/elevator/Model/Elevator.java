@@ -262,6 +262,10 @@ public class Elevator {
         return currentFloor;
     }
 
+    public int getElevatorNumber() {
+        return elevatorNumber;
+    }
+
     /**
      * Uses the IElevator API to update the elevator's state
      */
