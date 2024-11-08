@@ -1,5 +1,5 @@
 
-import at.wielander.elevatorcontrol.*;
+import at.wielander.elevator.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
