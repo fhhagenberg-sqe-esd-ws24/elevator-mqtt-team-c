@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * Internal Data Model for the individual elevators.
- *
+
  * This class represents the physical elevator and its attributes. The behaviors
  * are inherited
  * from the provided interface {@link IElevator} as follows:
@@ -41,7 +41,7 @@ import java.util.Map;
  * at zero for elevator 1.</li>
  * </ul>
  *
- * @version 0.1
+ * @version 1.0
  */
 public class Elevator {
 
@@ -87,21 +87,27 @@ public class Elevator {
     /** Variable for the targeted floor */
     protected int targetedFloor;
 
+    /** Variable for the elevator at the current floor */
     private int currentFloor;
 
+    /** Variable for the elevator API **/
     private IElevator elevatorAPI;
 
-    private int elevatorNumber;
+    /** Variable for the elevator number */
+    private final int elevatorNumber;
 
     /**
-     * Default constructor for the elevators. Initialise the variables required for
-     * the base elevator
+     * Constructor for the Elevator Data Model based on IElevator interface
      *
-     * @param serviceableFloors Floors that are included in the elevators service
-     *                          plan
-     * @param capacity          Capacity of the elevator in lbs
+     * @param serviceableFloors Floors to be serviced
+     * @param capacity Capacity of the elevator
+     * @param elevatorAPI Implements the IElevator interface
+     * @param elevatorNumber Number of elevators in a system
      */
-    public Elevator(Map<Integer, Boolean> serviceableFloors, int capacity, IElevator elevatorAPI, int elevatorNumber) {
+    public Elevator(Map<Integer, Boolean> serviceableFloors,
+                    int capacity,
+                    IElevator elevatorAPI,
+                    int elevatorNumber) {
         if (serviceableFloors == null || capacity <= 0) {
             throw new IllegalArgumentException("Invalid Arguments");
         }
@@ -111,11 +117,11 @@ public class Elevator {
         this.acceleration = INITIAL_ACCELERATION;
         this.speed = INITIAL_SPEED;
         this.weight = INITIAL_WEIGHT;
+        this.position = GROUND_FLOOR;
         this.targetedFloor = GROUND_FLOOR;
         this.buttons = new HashMap<>();
         this.serviceableFloors = serviceableFloors;
         this.capacity = capacity;
-
         this.currentFloor = 0;
         this.elevatorNumber = elevatorNumber;
         this.elevatorAPI = elevatorAPI;
@@ -150,6 +156,15 @@ public class Elevator {
     }
 
     /**
+     * Method to return the current acceleration of the lift in ft/s²
+     *
+     * @return acceleration of the elevator in ft/s²
+     */
+    public int getAcceleration() {
+        return acceleration;
+    }
+
+    /**
      * Obtain the current state of the doors.
      *
      * @return current state of the doors(OPEN / CLOSED / OPENING / CLOSING)
@@ -158,14 +173,7 @@ public class Elevator {
         return doorState;
     }
 
-    /**
-     * Method to return the current acceleration of the lift in ft/s²
-     *
-     * @return acceleration of the elevator in ft/s²
-     */
-    public int getAcceleration() {
-        return acceleration;
-    }
+
 
     /**
      * Method to return the current speed of the lift in ft/s
@@ -274,9 +282,10 @@ public class Elevator {
             this.currentFloor = elevatorAPI.getElevatorFloor(elevatorNumber);
             this.targetedFloor = elevatorAPI.getTarget(elevatorNumber);
             this.speed = elevatorAPI.getElevatorSpeed(elevatorNumber);
+            this.acceleration = elevatorAPI.getElevatorAccel(elevatorNumber);
             this.weight = elevatorAPI.getElevatorWeight(elevatorNumber);
             this.doorState = elevatorAPI.getElevatorDoorStatus(elevatorNumber);
-            // Update other attributes as needed
+            this.commitedDirection = elevatorAPI.getCommittedDirection(elevatorNumber);
         } catch (RemoteException e) {
             e.printStackTrace();
         }

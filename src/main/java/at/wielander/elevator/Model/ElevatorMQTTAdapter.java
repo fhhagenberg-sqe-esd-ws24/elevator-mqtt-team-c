@@ -1,5 +1,6 @@
 package at.wielander.elevator.Model;
 
+import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -17,6 +18,7 @@ public class ElevatorMQTTAdapter {
 
     public ElevatorMQTTAdapter(ElevatorSystem elevatorSystem, String brokerUrl, String clientId) {
         this.elevatorSystem = elevatorSystem;
+
         try {
             this.client = new MqttClient(brokerUrl, clientId, new MemoryPersistence());
         } catch (MqttException e) {
@@ -39,8 +41,12 @@ public class ElevatorMQTTAdapter {
     private void startPublishingElevatorStates() {
         scheduler.scheduleAtFixedRate(() -> {
             elevatorSystem.updateAll();
-            for (int i = 0; i < elevatorSystem.getElevatorNum() - 1; i++) {
-                publishElevatorState(i, elevatorSystem.getElevatorPosition(i));
+            for (int i = 0; i < (elevatorSystem.getTotalElevators()); i++) {
+                try {
+                    publishElevatorState(i, elevatorSystem.getElevatorPosition(i));
+                } catch (RemoteException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
         }, 0, 100, TimeUnit.MILLISECONDS);

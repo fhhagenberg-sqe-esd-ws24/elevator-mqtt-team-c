@@ -1,9 +1,4 @@
-
-import at.wielander.elevator.*;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+package at.wielander.elevator.Controller;
 
 class ElevatorAlgorithmTest {
 /*
