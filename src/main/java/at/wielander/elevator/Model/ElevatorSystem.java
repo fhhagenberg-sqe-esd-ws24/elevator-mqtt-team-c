@@ -1,7 +1,5 @@
 package at.wielander.elevator.Model;
 
-import at.fhhagenberg.sqelevator.IElevator;
-
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,14 +23,32 @@ import java.util.Map;
 public class ElevatorSystem
         implements IElevator {
 
+    /** Field for the lowest floor in the building */
     private final int lowestFloor;
+
+    /** Field for the highest floor in the building */
     private final int highestFloor;
+
+    /** Field for the elevators in the building */
     private List<Elevator> elevators;
+
+    /** Field for the floor height in the building */
     private final int floorHeight;
-    private boolean downButtonPress;
-    private boolean upButtonPress;
+
+    /** array for the total number of buttons ('DOWN') in the building */
+    private boolean[] downButtonPress;
+
+    /** array for the total number of buttons ('UP') in the building */
+    private boolean[] upButtonPress;
+
+    /** Field  for the clock ticks - to be implemented in future assignment */
     private long clockTick;
+
+    /** Instance of IElevator interface */
     private IElevator elevatorAPI;
+
+    /** Instance of  buttonstate */
+    protected Boolean buttonState;
 
     /**
      * Creates a configuration of elevators for a building
@@ -49,14 +65,14 @@ public class ElevatorSystem
                           final int capacity,
                           final int floorHeight,
                           final IElevator elevatorAPI) {
-
+        this.floorHeight = floorHeight;
+        this.downButtonPress = new boolean[highestFloor+1];
+        this.upButtonPress = new boolean[highestFloor+1];
         this.elevatorAPI = elevatorAPI;
         this.lowestFloor = lowestFloor;
         this.highestFloor = highestFloor;
+
         elevators = new ArrayList<>();
-        this.floorHeight = floorHeight;
-        this.downButtonPress = false;
-        this.upButtonPress = false;
 
         Map<Integer, Boolean> serviceableFloors = new HashMap<>();
 
@@ -109,13 +125,13 @@ public class ElevatorSystem
      * @throws RemoteException RMI Invalid exception
      */
     @Override
-    public boolean getElevatorButton(int elevatorNumber, int floor) throws RemoteException {
+    public boolean getElevatorButton(int elevatorNumber, int floor) throws RemoteException{
+        buttonState = elevators.get(elevatorNumber).getButtonsInElevatorStatus().get(floor);
 
-        /* check for service range of elevator */
-        if (!elevators.get(elevatorNumber).getServiceableFloors().get(floor)) {
-            System.err.println("Floor " + floor + " not within elevator service range.");
+        if (buttonState == null){
+            return false;
         }
-        return elevators.get(elevatorNumber).getButtonsInElevatorStatus().get(floor);
+        return buttonState;
     }
 
     /**
@@ -219,7 +235,10 @@ public class ElevatorSystem
      */
     @Override
     public boolean getFloorButtonDown(int floor) throws RemoteException {
-        return this.downButtonPress;
+        if (floor < lowestFloor || floor > highestFloor) {
+            throw new RemoteException("Floor number out of range");
+        }
+        return this.downButtonPress[floor];
     }
 
     /**
@@ -231,7 +250,10 @@ public class ElevatorSystem
      */
     @Override
     public boolean getFloorButtonUp(int floor) throws RemoteException {
-        return this.upButtonPress;
+        if (floor < lowestFloor || floor > highestFloor) {
+            throw new RemoteException("Floor number out of range");
+        }
+        return this.upButtonPress[floor];
     }
 
     /**
@@ -344,11 +366,17 @@ public class ElevatorSystem
         return this.clockTick;
     }
 
-    public void updateAll() {
+    /**
+     *  Updates all elevators based on current states
+     */
+    public void updateAll() throws RemoteException {
         for (Elevator elevator : elevators) {
             elevator.update();
         }
+
+        for (int floor = lowestFloor; floor<= highestFloor; floor++){
+            this.upButtonPress[floor]= elevatorAPI.getFloorButtonUp(floor);
+            this.downButtonPress[floor]= elevatorAPI.getFloorButtonDown(floor);
+        }
     }
-
-
 }

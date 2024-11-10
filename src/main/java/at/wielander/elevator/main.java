@@ -1,6 +1,6 @@
 package at.wielander.elevator;
 
-import at.fhhagenberg.sqelevator.IElevator;
+import at.wielander.elevator.Model.IElevator;
 import at.wielander.elevator.Model.ElevatorMQTTAdapter;
 import at.wielander.elevator.Model.ElevatorSystem;
 import at.wielander.elevator.View.Dashboard;

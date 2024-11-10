@@ -1,7 +1,5 @@
 package at.wielander.elevator.Model;
 
-import at.fhhagenberg.sqelevator.IElevator;
-
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
@@ -269,7 +267,7 @@ public class Elevator {
     }
 
     /**
-     * Updates the Elevator#s API
+     *  Updates elevator based on current states
      */
     public void update() {
         try {
