@@ -13,6 +13,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 public class ElevatorMQTTAdapter {
     private MqttClient client;
+    private Elevator elevator;
     private ElevatorSystem elevatorSystem;
     private ScheduledExecutorService scheduler;
 
@@ -40,13 +41,14 @@ public class ElevatorMQTTAdapter {
 
     private void startPublishingElevatorStates() {
         scheduler.scheduleAtFixedRate(() -> {
-            elevatorSystem.updateAll();
-            for (int i = 0; i < (elevatorSystem.getTotalElevators()); i++) {
-                try {
-                    publishElevatorState(i, elevatorSystem.getElevatorPosition(i));
-                } catch (RemoteException e) {
-                    throw new RuntimeException(e);
+            try {
+                elevatorSystem.updateAll();
+                for (int i = 0; i < (elevatorSystem.getTotalElevators()); i++) {
+                    elevator = elevatorSystem.getElevator(i);
+                    publishElevatorState(i, elevator);
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
 
         }, 0, 100, TimeUnit.MILLISECONDS);
@@ -55,9 +57,9 @@ public class ElevatorMQTTAdapter {
     private void publishElevatorState(int elevatorNumber, Elevator elevator) {
         publish("elevator/" + elevatorNumber + "/currentFloor", String.valueOf(elevator.getCurrentFloor()));
         publish("elevator/" + elevatorNumber + "/targetedFloor", String.valueOf(elevator.getTargetedFloor()));
-        publish("elevator/" + elevatorNumber + "/speed", String.valueOf(elevator.getSpeed()));
-        publish("elevator/" + elevatorNumber + "/weight", String.valueOf(elevator.getWeight()));
-        publish("elevator/" + elevatorNumber + "/doorState", String.valueOf(elevator.getDoorState()));
+        publish("elevator/" + elevatorNumber + "/speed", String.valueOf(elevator.getCurrentSpeed()));
+        publish("elevator/" + elevatorNumber + "/weight", String.valueOf(elevator.getCurrentWeight()));
+        publish("elevator/" + elevatorNumber + "/doorState", String.valueOf(elevator.getElevatorDoorStatus()));
 
         for (Map.Entry<Integer, Boolean> entry : elevator.getServiceableFloors().entrySet()) {
             publish("elevator/" + elevatorNumber + "/serviceableFloors/" + entry.getKey(),

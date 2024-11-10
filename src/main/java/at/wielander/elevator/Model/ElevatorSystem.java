@@ -73,26 +73,6 @@ public class ElevatorSystem
     }
 
     /**
-     * Adds a new elevator with a default capacity for all serviceable floors.
-     * Forwards the elevatorAPI for RMI access to PLC
-     * and provides a number for the elevator.
-     * 
-     * @param elevatorNumber number of the elevator
-     * @param elevatorAPI    RMI API for the elevator
-     */
-    public void addElevator(final int elevatorNumber, IElevator elevatorAPI) {
-        Map<Integer, Boolean> serviceableFloors = new HashMap<>();
-
-
-
-        for (int i = lowestFloor; i <= highestFloor; i++) {
-            serviceableFloors.put(i, true);
-        }
-
-        elevators.add(new Elevator(serviceableFloors, elevators.get(0).getCapacity(), elevatorAPI, elevatorNumber));
-    }
-
-    /**
      * Returns the direction of the elevator heading
      *
      * @param elevatorNumber - elevator number whose committed direction is being
@@ -135,7 +115,7 @@ public class ElevatorSystem
         if (!elevators.get(elevatorNumber).getServiceableFloors().get(floor)) {
             System.err.println("Floor " + floor + " not within elevator service range.");
         }
-        return elevators.get(elevatorNumber).getButtons().get(floor);
+        return elevators.get(elevatorNumber).getButtonsInElevatorStatus().get(floor);
     }
 
     /**
@@ -147,7 +127,7 @@ public class ElevatorSystem
      */
     @Override
     public int getElevatorDoorStatus(int elevatorNumber) throws RemoteException {
-        return elevators.get(elevatorNumber).getDoorState();
+        return elevators.get(elevatorNumber).getElevatorDoorStatus();
     }
 
     /**
@@ -160,7 +140,7 @@ public class ElevatorSystem
      */
     @Override
     public int getElevatorFloor(int elevatorNumber) throws RemoteException {
-        return (int) Math.round((double) elevators.get(elevatorNumber).getLocation() / (double) this.floorHeight);
+        return (int) Math.round((double) elevators.get(elevatorNumber).getCurrentPosition() / (double) this.floorHeight);
     }
 
     /***
@@ -190,7 +170,7 @@ public class ElevatorSystem
      * @throws RemoteException RMI Invalid exception
      */
     @Override
-    public Elevator getElevatorPosition(int elevatorNumber) throws RemoteException {
+    public int getElevatorPosition(int elevatorNumber) throws RemoteException {
         return elevatorAPI.getElevatorPosition(elevatorNumber);
     }
 
@@ -203,7 +183,7 @@ public class ElevatorSystem
      */
     @Override
     public int getElevatorSpeed(int elevatorNumber) throws RemoteException {
-        return elevators.get(elevatorNumber).getSpeed();
+        return elevators.get(elevatorNumber).getCurrentSpeed();
     }
 
     /**
@@ -215,7 +195,7 @@ public class ElevatorSystem
      */
     @Override
     public int getElevatorWeight(int elevatorNumber) throws RemoteException {
-        return elevators.get(elevatorNumber).getWeight();
+        return elevators.get(elevatorNumber).getCurrentWeight();
     }
 
     /**
@@ -227,7 +207,7 @@ public class ElevatorSystem
      */
     @Override
     public int getElevatorCapacity(int elevatorNumber) throws RemoteException {
-        return elevators.get(elevatorNumber).getCapacity();
+        return elevators.get(elevatorNumber).getElevatorCapacity();
     }
 
     /**
@@ -313,7 +293,7 @@ public class ElevatorSystem
      */
     @Override
     public void setCommittedDirection(int elevatorNumber, int direction) throws RemoteException {
-        elevators.get(elevatorNumber).setCommitedDirection(direction);
+        elevators.get(elevatorNumber).setCommittedDirection(direction);
     }
 
     /**
@@ -341,6 +321,16 @@ public class ElevatorSystem
     @Override
     public void setTarget(int elevatorNumber, int target) throws RemoteException {
         elevators.get(elevatorNumber).setTargetedFloor(target);
+    }
+
+    /**
+     * Return requested elevator
+     * @param elevatorNumber elevator number
+     *
+     * @return requested elevator
+     */
+    public Elevator getElevator(int elevatorNumber) {
+        return elevators.get(elevatorNumber);
     }
 
     /**

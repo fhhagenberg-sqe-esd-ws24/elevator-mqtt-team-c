@@ -61,7 +61,7 @@ public class Elevator {
     private int commitedDirection;
 
     /** Variable of the state of the doors */
-    protected int doorState;
+    protected int doorStatus;
 
     /** Variable for the elevator in ft/sec² */
     protected int acceleration;
@@ -70,7 +70,7 @@ public class Elevator {
     protected int speed;
 
     /** Variable for the current position of the elevator in ft */
-    private int position;
+    protected int position;
 
     /** Variable for the buttons with the floors mapped to a logical state */
     protected Map<Integer, Boolean> buttons;
@@ -88,16 +88,16 @@ public class Elevator {
     protected int targetedFloor;
 
     /** Variable for the elevator at the current floor */
-    private int currentFloor;
+    protected int currentFloor;
 
     /** Variable for the elevator API **/
-    private IElevator elevatorAPI;
+    protected IElevator elevatorAPI;
 
     /** Variable for the elevator number */
-    private final int elevatorNumber;
+    protected int elevatorNumber;
 
     /**
-     * Constructor for the Elevator Data Model based on IElevator interface
+     * Constructor for internal Data Model based on IElevator interface
      *
      * @param serviceableFloors Floors to be serviced
      * @param capacity Capacity of the elevator
@@ -113,16 +113,16 @@ public class Elevator {
         }
 
         this.commitedDirection = IElevator.ELEVATOR_DIRECTION_UNCOMMITTED;
-        this.doorState = IElevator.ELEVATOR_DOORS_CLOSED;
+        this.doorStatus = IElevator.ELEVATOR_DOORS_CLOSED;
         this.acceleration = INITIAL_ACCELERATION;
         this.speed = INITIAL_SPEED;
         this.weight = INITIAL_WEIGHT;
         this.position = GROUND_FLOOR;
         this.targetedFloor = GROUND_FLOOR;
+        this.currentFloor = GROUND_FLOOR;
         this.buttons = new HashMap<>();
         this.serviceableFloors = serviceableFloors;
         this.capacity = capacity;
-        this.currentFloor = 0;
         this.elevatorNumber = elevatorNumber;
         this.elevatorAPI = elevatorAPI;
 
@@ -137,26 +137,25 @@ public class Elevator {
     }
 
     /**
-     * Returns the direction in which the elevator in currently moving towards (UP/
-     * DOWN /UNCOMMITTED)
+     * Direction in which the elevator in currently moving towards
      * 
      * @return Direction of current elevator
      */
     public int getCommitedDirection() {
-        return this.commitedDirection;
+        return commitedDirection;
     }
 
     /**
-     * Sets the direction in which the elevator should head
+     * Set the direction for the elevator
      *
-     * @param commitedDirection Sets the direction (UP/ DOWN /UNCOMMITTED)
+     * @param committedDirection Sets the direction (UP/ DOWN /UNCOMMITTED)
      */
-    public void setCommitedDirection(int commitedDirection) {
-        this.commitedDirection = commitedDirection;
+    public void setCommittedDirection(int committedDirection) {
+        this.commitedDirection = committedDirection;
     }
 
     /**
-     * Method to return the current acceleration of the lift in ft/s²
+     * Current acceleration of the lift in ft/s²
      *
      * @return acceleration of the elevator in ft/s²
      */
@@ -165,66 +164,74 @@ public class Elevator {
     }
 
     /**
-     * Obtain the current state of the doors.
-     *
-     * @return current state of the doors(OPEN / CLOSED / OPENING / CLOSING)
-     */
-    public int getDoorState() {
-        return doorState;
-    }
-
-
-
-    /**
-     * Method to return the current speed of the lift in ft/s
-     *
-     * @return speed of the elevator in ft/s
-     */
-    public int getSpeed() {
-        return speed;
-    }
-
-    /**
-     * Return the truth value fo the buttons mapped to a logical state
-     * representing the buttons either as pressed or depressed.
+     * Current the truth value for the floor buttons in the elevator
      *
      * @return Map of the buttons representing each floor and their state (TRUE /
      *         FALSE)
      */
-    public Map<Integer, Boolean> getButtons() {
+    public Map<Integer, Boolean> getButtonsInElevatorStatus() {
         return buttons;
     }
 
     /**
-     * Returns the current position of the elevator with respect to the ground floor
+     * Current state of the doors.
+     *
+     * @return current state of the doors(OPEN / CLOSED / OPENING / CLOSING)
+     */
+    public int getElevatorDoorStatus() {
+        return doorStatus;
+    }
+
+    /**
+     * Current floor of the elevator to the nearest floor
+     *
+     * @return current floor of the elevator
+     */
+    public int getCurrentFloor() {
+        return currentFloor;
+    }
+
+    /**
+     * Current position of the elevator with respect to the ground floor
      *
      * @return position of the elevator identified by the current floor being
      *         serviced
      */
-    public int getLocation() {
+    public int getCurrentPosition() {
         return position;
     }
 
+
     /**
-     * Method to obtain the current weight of the passengers in lbs
+     * Current speed of the lift in ft/s
+     *
+     * @return speed of the elevator in ft/s
+     */
+    public int getCurrentSpeed() {
+        return speed;
+    }
+
+
+   /**
+     * Current weight of the passengers in lbs
      *
      * @return The current weight of the passengers in lbs
      */
-    public int getWeight() {
+    public int getCurrentWeight() {
         return weight;
     }
 
     /**
-     * Returns the capacity of the elevator
+     * Capacity of the elevator
      *
      * @return returns the maximum load the elevator can handle in lbs
      */
-    public int getCapacity() {
+    public int getElevatorCapacity() {
         return capacity;
     }
 
     /**
-     * Returns a list of serviceable floors mapped to a truth value
+     * Serviceable floors for an elevator
      *
      * @return Floors as an integer mapped to a logical state (TRUE / FALSE)
      */
@@ -233,7 +240,7 @@ public class Elevator {
     }
 
     /**
-     * Sets the serviceable floors
+     * Setst the Serviceable floors
      *
      * @param floor   integer value of floors to be serviced
      * @param service Logic state if the floors can be accessed or not (TRUE /
@@ -244,7 +251,7 @@ public class Elevator {
     }
 
     /**
-     * Return the current targeted floors
+     * Current targeted floor
      *
      * @return current targeted floors
      */
@@ -262,32 +269,26 @@ public class Elevator {
     }
 
     /**
-     * Returns the current floor of the elevator
-     * 
-     * @return current floor of the elevator
-     */
-    public int getCurrentFloor() {
-        return currentFloor;
-    }
-
-    public int getElevatorNumber() {
-        return elevatorNumber;
-    }
-
-    /**
-     * Uses the IElevator API to update the elevator's state
+     * Updates the Elevator#s API
      */
     public void update() {
         try {
             this.currentFloor = elevatorAPI.getElevatorFloor(elevatorNumber);
             this.targetedFloor = elevatorAPI.getTarget(elevatorNumber);
+            this.position = elevatorAPI.getElevatorPosition(elevatorNumber);
             this.speed = elevatorAPI.getElevatorSpeed(elevatorNumber);
             this.acceleration = elevatorAPI.getElevatorAccel(elevatorNumber);
             this.weight = elevatorAPI.getElevatorWeight(elevatorNumber);
-            this.doorState = elevatorAPI.getElevatorDoorStatus(elevatorNumber);
+            this.doorStatus = elevatorAPI.getElevatorDoorStatus(elevatorNumber);
             this.commitedDirection = elevatorAPI.getCommittedDirection(elevatorNumber);
-        } catch (RemoteException e) {
-            e.printStackTrace();
+            for (int floor : buttons.keySet()) {
+                buttons.put(floor, elevatorAPI.getElevatorButton(elevatorNumber, floor));
+            }
+
+        }catch(RemoteException e){
+                e.printStackTrace();
+            }
         }
+
     }
-}
+
