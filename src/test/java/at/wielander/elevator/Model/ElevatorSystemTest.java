@@ -1,181 +1,546 @@
 package at.wielander.elevator.Model;
 
-import at.fhhagenberg.sqelevator.IElevator;
 import org.junit.jupiter.api.*;
-
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import java.rmi.RemoteException;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.*;
+
+
+@ExtendWith(MockitoExtension.class)
 class ElevatorSystemTest {
 
-    private static final int GROUND_FLOOR = 0;
+    @Mock
+    private IElevator mockIElevator;
 
-    private static final int ZERO_ELEVATORS = 0;
+    @Test
+    void testGetCommittedDirection() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                3,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
+        /* INIT */
+        assertEquals(0, elevatorSystem.getCommittedDirection(2),
+                "Test Failed: Elevator should be heading IDLE");
+        assertEquals(0, elevatorSystem.getCommittedDirection(2),
+                "Test Failed: Elevator should be heading IDLE");
+        assertEquals(0, elevatorSystem.getCommittedDirection(2),
+                "Test Failed: Elevator should be IDLE");
 
-    private static final int TOTAL_ELEVATORS = 5;
+        /* NEW CONDITION */
+        when(mockIElevator.getCommittedDirection(0))
+                .thenReturn(0);
+        when(mockIElevator.getCommittedDirection(1))
+                .thenReturn(1);
+        when(mockIElevator.getCommittedDirection(2))
+                .thenReturn(2);
+        elevatorSystem.updateAll();
 
-    private static final int HIGHEST_FLOOR = 4;
-
-    private static final int CAPACITY_ELEVATOR = 1000;
-
-    private static final int FLOOR_HEIGHT = 7;
-
-    private ElevatorSystem elevatorSystem;
-
-
-    @BeforeAll
-    public static void setupOnce(){
-        System.out.println("setupOnce called");
-    }
-
-    @AfterAll
-    public static void tearDownOnce(){
-        System.out.println("tearDownOnce called");
-    }
-
-    @BeforeEach
-    public void setup() {
-
-        System.out.println("Setup called. Creating Elevator");
-
-        /* Initialise a new elevator system */
-        elevatorSystem = new ElevatorSystem(TOTAL_ELEVATORS,
-                GROUND_FLOOR,
-                HIGHEST_FLOOR,
-                CAPACITY_ELEVATOR,
-                FLOOR_HEIGHT);
-    }
-
-
-    @AfterEach
-    public void teardown() {
-        System.out.println("Teardown called. ");
+        assertEquals(0, elevatorSystem.getCommittedDirection(0),
+                "Test Failed: Elevator should be heading UP");
+        assertEquals(1, elevatorSystem.getCommittedDirection(1),
+                "Test Failed: Elevator should be heading DOWN");
+        assertEquals(2, elevatorSystem.getCommittedDirection(2),
+                "Test Failed: Elevator should be IDLE");
+        verify(mockIElevator, atLeast(6)).getCommittedDirection(anyInt());
     }
 
     @Test
-    void testZeroNumberOfElevators() throws RemoteException {
-        /* Assert if zero elevators were initialised */
-        ElevatorSystem zeroElevatorsSystem = new ElevatorSystem(
-                ZERO_ELEVATORS,
-                GROUND_FLOOR,
-                HIGHEST_FLOOR,
-                CAPACITY_ELEVATOR,
-                FLOOR_HEIGHT);
-        Assertions.assertEquals(zeroElevatorsSystem.getElevatorNum(), ZERO_ELEVATORS,
-                " Test FAILED: Zero elevators should be initialised.");
+    void testGetAcceleration() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                3,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
+
+        /* INIT */
+        assertEquals(0, elevatorSystem.getElevatorAccel(0),
+                "Test Failed: Elevator #1's speed SHOULD BE 0 ft/s");
+        assertEquals(0, elevatorSystem.getElevatorAccel(1),
+                "Test Failed: Elevator #2's speed SHOULD BE 0 ft/s");
+        assertEquals(0, elevatorSystem.getElevatorAccel(2),
+                "Test Failed: Elevator #3's speed SHOULD BE 0 ft/s");
+
+        /* NEW CONDITION */
+        when(mockIElevator.getElevatorAccel(0))
+                .thenReturn(0);
+        when(mockIElevator.getElevatorAccel(1))
+                .thenReturn(5);
+        when(mockIElevator.getElevatorAccel(2))
+                .thenReturn(9);
+        elevatorSystem.updateAll();
+
+        assertEquals(0, elevatorSystem.getElevatorAccel(0),
+                "Test Failed: Elevator #1's speed SHOULD BE 0 ft/s");
+        assertEquals(5, elevatorSystem.getElevatorAccel(1),
+                "Test Failed: Elevator #2's speed SHOULD BE 14 ft/s");
+        assertEquals(9, elevatorSystem.getElevatorAccel(2),
+                "Test Failed: Elevator #3's speed SHOULD BE 20 ft/s");
+        verify(mockIElevator,atLeast(6)).getElevatorAccel(anyInt());
+    }
+
+    @Test
+    void testGetElevatorButton() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                2,
+                0,
+                2,
+                4000,
+                7,
+                mockIElevator);
+
+        /* INIT */
+        assertFalse(elevatorSystem.getElevatorButton(0, 0),
+                "Test Failed: 2nd Floor is accessible by elevator #0");
+        assertFalse(elevatorSystem.getElevatorButton(1, 1),
+                "Test Failed: 3rd Floor is inaccessible by elevator #1");
+        assertFalse(elevatorSystem.getElevatorButton(1, 2),
+                "Test Failed: 1st Floor is inaccessible by elevator #2");
+
+        /* NEW CONDITION */
+        when(mockIElevator.getElevatorButton(0, 0))
+                .thenReturn(true);
+        when(mockIElevator.getElevatorButton(0,1))
+                .thenReturn(true);
+        when(mockIElevator.getElevatorButton(0, 2))
+                .thenReturn(true);
+        when(mockIElevator.getElevatorButton(1,0))
+                .thenReturn(false);
+        when(mockIElevator.getElevatorButton(1, 1))
+                .thenReturn(false);
+        when(mockIElevator.getElevatorButton(0, 2))
+                .thenReturn(true);
+
+        elevatorSystem.updateAll();
+
+        assertTrue(elevatorSystem.getElevatorButton(0, 2),
+                "Test Failed: 2nd Floor is accessible by elevator #0");
+        assertFalse(elevatorSystem.getElevatorButton(1, 3),
+                "Test Failed: 3rd Floor is inaccessible by elevator #1");
+        assertFalse(elevatorSystem.getElevatorButton(1, 1),
+                "Test Failed: 1st Floor is inaccessible by elevator #2");
+
+        verify(mockIElevator,atLeast(3)).getElevatorButton(anyInt(),anyInt());
 
     }
 
     @Test
-    void testMultipleElevatorSetup() throws RemoteException {
-        /* Assert if five elevators were initialised */
-        Assertions.assertEquals(TOTAL_ELEVATORS, elevatorSystem.getElevatorNum(),
-                " Test FAILED: Five elevators should be initialised.");
+    void testElevatorDoorStatus() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                4,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
+
+        when(mockIElevator.getElevatorDoorStatus(anyInt()))
+                .thenReturn(1, 2, 3, 4);
+
+        elevatorSystem.updateAll();
+
+
+        assertEquals(1, elevatorSystem.getElevatorDoorStatus(0),
+                "Test FAILED: Doors should be CLOSED by default");
+        assertEquals(2, elevatorSystem.getElevatorDoorStatus(1),
+                "Test FAILED: Doors should be CLOSED by default");
+        assertEquals(3, elevatorSystem.getElevatorDoorStatus(2),
+                "Test FAILED: Doors should be CLOSED by default");
+        assertEquals(4, elevatorSystem.getElevatorDoorStatus(3),
+                "Test FAILED: Doors should be CLOSED by default");
+        verify(mockIElevator, atLeast(4)).getElevatorDoorStatus(anyInt());
     }
 
     @Test
-    void testGetElevatorCapacity() throws RemoteException {
-        /* Assert if the capacity of the elevator set to 1000 */
-        Assertions.assertEquals(CAPACITY_ELEVATOR,elevatorSystem.getElevatorCapacity(2),
-                "Test FAILED: Elevator #2 elevators should have capacity of 1000 lbs.");
+    void testGetElevatorPosition() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                2,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
 
-        /* Assert if the capacity of the elevator set to 1000 */
-        Assertions.assertEquals(CAPACITY_ELEVATOR,elevatorSystem.getElevatorCapacity(3),
-                "Test FAILED: Elevator #3 elevators should have capacity of 1000 lbs.");
+        when(mockIElevator.getElevatorPosition(0))
+                .thenReturn(1);
+        when(mockIElevator.getElevatorPosition(1))
+                .thenReturn(4);
+        elevatorSystem.updateAll();
 
+        assertEquals(1, elevatorSystem.getElevatorPosition(0),
+                "Test FAILED: Doors should be CLOSED by default");
+        assertNotEquals(2, elevatorSystem.getElevatorPosition(1),
+                "Test FAILED: Doors should be CLOSED by default");
+        verify(mockIElevator, atLeast(2)).getElevatorPosition(anyInt());
+    }
+
+
+
+    @Test
+    void testServicesFloors() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                2,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
+        /* INIT */
+        assertTrue(elevatorSystem.getServicesFloors(0, 0),
+                "Test FAILED: Floor should be SERVICEABLE by default");
+        assertTrue( elevatorSystem.getServicesFloors(1, 4),
+                "Test FAILED: Floor should be UNSERVICEABLE by default");
+
+        /* NEW CONDITION*/
+        elevatorSystem.setServicesFloors(0,3, false);
+        elevatorSystem.setServicesFloors(1,4, false);
+        elevatorSystem.updateAll();
+
+        assertFalse(elevatorSystem.getServicesFloors(0,3),
+                "Test FAILED: Floor should be SERVICEABLE by default");
+        assertFalse(elevatorSystem.getServicesFloors(1, 4),
+                "Test FAILED: Floor should be UNSERVICEABLE by default");
+    }
+
+
+    @Test
+    void testGetELElevatorFloor() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                3,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
+        /* INIT */
+        assertEquals(0, elevatorSystem.getTarget(0),
+                "Test Failed: Elevator #1's should be at ground floor");
+        assertEquals(0, elevatorSystem.getTarget(1),
+                "Test Failed: Elevator #2's should be at ground floor");
+        assertEquals(0, elevatorSystem.getTarget(2),
+                "Test Failed: Elevator #3's should be at ground floor");
+
+        /* NEW CONDITION */
+        elevatorSystem.setTarget(0,1);
+        elevatorSystem.setTarget(1,2);
+        elevatorSystem.setTarget(2,4);
+        assertEquals(1, elevatorSystem.getTarget(0),
+                "Test Failed: Elevator #1's should be at ground floor");
+        assertEquals(2, elevatorSystem.getTarget(1),
+                "Test Failed: Elevator #2's should be at the 2nd floor");
+        assertEquals(4, elevatorSystem.getTarget(2),
+                "Test Failed: Elevator #3's should be at the 4nd floor");
+    }
+
+
+
+    @Test
+    void testSetTargetFloor() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                3,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
+
+        /* INIT */
+        assertEquals(0, elevatorSystem.getTarget(0),
+                "Test Failed: Elevator #1's should be at ground floor");
+        assertEquals(0, elevatorSystem.getTarget(1),
+                "Test Failed: Elevator #2's should be at the 2nd floor");
+        assertEquals(0, elevatorSystem.getTarget(2),
+                "Test Failed: Elevator #3's should be at the 4nd floor");
+
+        /* NEW CONDITION */
+        elevatorSystem.setTarget(0,0);
+        elevatorSystem.setTarget(1,2);
+        elevatorSystem.setTarget(2,4);
+
+        assertEquals(0, elevatorSystem.getTarget(0),
+                "Test Failed: Elevator #1's should be at ground floor");
+        assertEquals(2, elevatorSystem.getTarget(1),
+                "Test Failed: Elevator #2's should be at the 2nd floor");
+        assertEquals(4, elevatorSystem.getTarget(2),
+                "Test Failed: Elevator #3's should be at the 4nd floor");
     }
 
     @Test
     void testGetFloorHeight() throws RemoteException {
-        /* Assert if floor height is initially set to 7 ft */
-        Assertions.assertEquals(FLOOR_HEIGHT,elevatorSystem.getFloorHeight(),
-                "Test FAILED: Floor Height is initially set at 7 feet.");
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                3,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
 
+        /* INIT */
+        assertEquals(7, elevatorSystem.getFloorHeight());
     }
 
     @Test
     void testGetFloorNum() throws RemoteException {
-        /* Assert if floor height is initially set to 5 floors */
-        Assertions.assertEquals(HIGHEST_FLOOR ,elevatorSystem.getFloorNum(),
-                "Test FAILED: The elevators services 5 elevators at start.");
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                3,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
+
+        /* INIT */
+        assertEquals(4, elevatorSystem.getFloorNum());
+    }
+
+    @Test
+    void testGetCurrentSpeed() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                3,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
+        assertEquals(0, elevatorSystem.getElevatorSpeed(0),
+                "Test Failed: Elevator #1's speed SHOULD BE 0 ft/s");
+        assertEquals(0, elevatorSystem.getElevatorSpeed(1),
+                "Test Failed: Elevator #2's speed SHOULD BE 0 ft/s");
+        assertEquals(0, elevatorSystem.getElevatorSpeed(2),
+                "Test Failed: Elevator #3's speed SHOULD BE 0 ft/s");
+
+        /* NEW CONDITION */
+        when(mockIElevator.getElevatorSpeed(0))
+                .thenReturn(0);
+        when(mockIElevator.getElevatorSpeed(1))
+                .thenReturn(14);
+        when(mockIElevator.getElevatorSpeed(2))
+                .thenReturn(20);
+        elevatorSystem.updateAll();
+
+        assertEquals(0, elevatorSystem.getElevatorSpeed(0),
+                "Test Failed: Elevator #1's speed SHOULD BE 0 ft/s");
+        assertEquals(14, elevatorSystem.getElevatorSpeed(1),
+                "Test Failed: Elevator #2's speed SHOULD BE 14 ft/s");
+        assertEquals(20, elevatorSystem.getElevatorSpeed(2),
+                "Test Failed: Elevator #3's speed SHOULD BE 20 ft/s");
+        verify(mockIElevator, atLeast(6)).getElevatorSpeed(anyInt());
+    }
+
+    @Test
+    void testGetElevatorWeight() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                3,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
+
+        /* INIT */
+        assertEquals(0, elevatorSystem.getElevatorWeight(0),
+                "Test FAILED: Elevator' weight should be 0 lbs");
+        assertEquals(0, elevatorSystem.getElevatorWeight(1),
+                "Test FAILED: Elevator' weight should be 0 lbs");
+        assertEquals(0, elevatorSystem.getElevatorWeight(2),
+                "Test FAILED: Elevator' weight should be 0 lbs");
+
+        /* NEW CONDITION */
+        when(mockIElevator.getElevatorWeight(0))
+                .thenReturn(0);
+        when(mockIElevator.getElevatorWeight(1))
+                .thenReturn(2000);
+        when(mockIElevator.getElevatorWeight(2))
+                .thenReturn(3500);
+        elevatorSystem.updateAll();
+
+        assertEquals(0, elevatorSystem.getElevatorWeight(0),
+                "Test FAILED: Elevator' weight should be 0 lbs");
+        assertEquals(2000, elevatorSystem.getElevatorWeight(1),
+                "Test FAILED: Elevator' weight should be 2000 lbs");
+        assertEquals(3500, elevatorSystem.getElevatorWeight(2),
+                "Test FAILED: Elevator' weight should be 3500 lbs");
+        verify(mockIElevator, atLeast(6)).getElevatorWeight(anyInt());
+    }
+
+
+
+    @Test
+    void testGetElevatorCapacity() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                3,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
+
+        /* INIT **/
+        elevatorSystem.updateAll();
+
+        assertEquals(4000, elevatorSystem.getElevatorCapacity(0),
+                "Test FAILED: Elevator' capacity should be 4000 lbs");
+        assertEquals(4000, elevatorSystem.getElevatorCapacity(1),
+                "Test FAILED: Elevator' capacity should be 4000 lbs");
+        assertEquals(4000, elevatorSystem.getElevatorCapacity(2),
+                "Test FAILED: Elevator' capacity should be 4000 lbs");
+    }
+
+    @Test
+    void testGetFloorButtonDown() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                3,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
+
+        /* INIT **/
+        assertFalse(elevatorSystem.getFloorButtonDown(0),
+                "Test FAILED: The floor down floor button on floor 0 should not be pressed");
+        assertFalse( elevatorSystem.getFloorButtonDown(1),
+                "Test FAILED: The floor down floor button on floor 1 should not be pressed");
+        assertFalse( elevatorSystem.getFloorButtonDown(2),
+                "Test FAILED: The floor down floor button on floor 2 should not be pressed");
+        assertFalse( elevatorSystem.getFloorButtonDown(3),
+                "Test FAILED: The floor down floor button on floor 3 should not be pressed");
+
+        /* CONDITION */
+        when(mockIElevator.getFloorButtonDown(0)).thenReturn(false);
+        when(mockIElevator.getFloorButtonDown(1)).thenReturn(true);
+        when(mockIElevator.getFloorButtonDown(2)).thenReturn(true);
+        when(mockIElevator.getFloorButtonDown(3)).thenReturn(false);
+        elevatorSystem.updateAll();
+
+        assertFalse(elevatorSystem.getFloorButtonDown(0),
+                "Test FAILED: The floor down floor button on floor 0 should not be pressed");
+        assertTrue( elevatorSystem.getFloorButtonDown(1),
+                "Test FAILED: The floor down floor button on floor 1 should be pressed");
+        assertTrue( elevatorSystem.getFloorButtonDown(2),
+                "Test FAILED: The floor down floor button on floor 2 should be pressed");
+        assertFalse( elevatorSystem.getFloorButtonDown(3),
+                "Test FAILED: The floor down floor button on floor 3 should not be pressed");
+
+        verify(mockIElevator,atLeast(4)).getFloorButtonDown(anyInt());
+    }
+
+    @Test
+    void testGetFloorButtonUp() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                3,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
+
+        /* INIT **/
+        assertFalse(elevatorSystem.getFloorButtonUp(0),
+                "Test FAILED: The floor down floor button on floor 0 should not be pressed");
+        assertFalse( elevatorSystem.getFloorButtonUp(1),
+                "Test FAILED: The floor down floor button on floor 1 should not be pressed");
+        assertFalse( elevatorSystem.getFloorButtonUp(2),
+                "Test FAILED: The floor down floor button on floor 2 should not be pressed");
+        assertFalse( elevatorSystem.getFloorButtonUp(3),
+                "Test FAILED: The floor down floor button on floor 3 should not be pressed");
+
+        /* CONDITION */
+        when(mockIElevator.getFloorButtonUp(0)).thenReturn(true);
+        when(mockIElevator.getFloorButtonUp(1)).thenReturn(false);
+        when(mockIElevator.getFloorButtonUp(2)).thenReturn(false);
+        when(mockIElevator.getFloorButtonUp(3)).thenReturn(true);
+        elevatorSystem.updateAll();
+
+        assertTrue(elevatorSystem.getFloorButtonUp(0),
+                "Test FAILED: The floor up floor button on floor 0 should not be pressed");
+        assertFalse( elevatorSystem.getFloorButtonUp(1),
+                "Test FAILED: The floor down floor button on floor 1 should be pressed");
+        assertFalse( elevatorSystem.getFloorButtonUp(2),
+                "Test FAILED: The floor down floor button on floor 2 should be pressed");
+        assertTrue( elevatorSystem.getFloorButtonUp(3),
+                "Test FAILED: The floor down floor button on floor 3 should not be pressed");
+
+        verify(mockIElevator,atLeast(4)).getFloorButtonUp(anyInt());
+
     }
 
     @Test
     void testSetServicesFloors() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                2,
+                0,
+                2,
+                4000,
+                7,
+                mockIElevator);
 
-        /* Arrange the floor setup */
-        elevatorSystem.setServicesFloors(0, 0, true);  // Ground Floor is serviceable
-        elevatorSystem.setServicesFloors(1, 4, true);  // First Floor is serviceable
-        elevatorSystem.setServicesFloors(2, 2, false);// Second Floor is NOT serviceable
-        elevatorSystem.setServicesFloors(3, 5, false); // Third Floor is NOT serviceable
-        elevatorSystem.setServicesFloors(4, 3, true);  // Fourth Floor is serviceable
-
-        /* Assert for invalid service floor for elevator */
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
-            elevatorSystem.setServicesFloors(-1, 0, true);
-        }, "Test FAILED: Floor -1 should be INVALID");
-
-        /* Assert for invalid floor in building for elevator */
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
-            elevatorSystem.setServicesFloors(5, 0, true);
-        }, "Test FAILED: 5th Floor is INVALID and should NOT exist on building mapping .");
-
-        /* Assert if only first floors are serviceable */
-        Assertions.assertTrue(elevatorSystem.getServicesFloors(0, 0),
-                "Test FAILED: This elevator should be serving the ground floor");
-
-        /* Assert if only three floors are serviceable */
-        Assertions.assertTrue(elevatorSystem.getServicesFloors(1, 4),
-                "Test FAILED: This elevator should be serving the fourth floor");
-
-        /* Assert if only first floors are serviceable */
-        Assertions.assertFalse(elevatorSystem.getServicesFloors(2, 2),
-                "Test FAILED: This elevator should be NOT serving the second floor");
-
+        /* INIT */
+        assertTrue( elevatorSystem.getServicesFloors(0,0),
+                "Test FAILED: Floor can be serviced");
+        assertTrue( elevatorSystem.getServicesFloors(0,1),
+                "Test FAILED: Floor cannot be serviced");
+        assertTrue( elevatorSystem.getServicesFloors(1,0),
+                "Test FAILED: Floor can be serviced");
+        assertTrue( elevatorSystem.getServicesFloors(1,1),
+                "Test FAILED: Floor cannot be serviced");
     }
 
     @Test
-    void testSetCommittedDirection()throws RemoteException {
+    void testSetTarget() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                3,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
 
+        /* INIT */
+        assertEquals(0, elevatorSystem.getTarget(0),
+                "Test FAILED: Elevator should have no target");
+        assertEquals(0, elevatorSystem.getTarget(0),
+                "Test FAILED: Elevator should have no target");
+        assertEquals(0, elevatorSystem.getTarget(0),
+                "Test FAILED: Elevator should have no target");
 
-        /* Assert if elevator 1 moves up */
-        elevatorSystem.setCommittedDirection(1, IElevator.ELEVATOR_DIRECTION_UP);
-        Assertions.assertEquals(IElevator.ELEVATOR_DIRECTION_UP,
-                elevatorSystem.getCommittedDirection(1),
-                "Test FAILED: Elevator 1 should head UP ");
+        elevatorSystem.setTarget(0, 1);
+        elevatorSystem.setTarget(1, 2);
+        elevatorSystem.setTarget(2, 4);
 
-        /* Assert if elevator 2 moves down */
-        elevatorSystem.setCommittedDirection(2, IElevator.ELEVATOR_DIRECTION_DOWN);
-        Assertions.assertEquals(IElevator.ELEVATOR_DIRECTION_DOWN,
-                elevatorSystem.getCommittedDirection(2),
-                "Test FAILED: Elevator 2 should head DOWN");
-
-        /* Assert if elevator 3 is IDLE / UNCOMMITTED */
-        elevatorSystem.setCommittedDirection(3, IElevator.ELEVATOR_DIRECTION_UNCOMMITTED);
-        Assertions.assertEquals(IElevator.ELEVATOR_DIRECTION_UNCOMMITTED,
-                elevatorSystem.getCommittedDirection(3),
-                "Test FAILED: Elevator 3 should be UNCOMMITTED and IDLE");
-
+        /* CONDITION **/
+        assertEquals(1, elevatorSystem.getTarget(0),
+                "Test FAILED: Elevator should have no target");
+        assertEquals(2, elevatorSystem.getTarget(1),
+                "Test FAILED: Elevator should have no target");
+        assertEquals(4, elevatorSystem.getTarget(2),
+                "Test FAILED: Elevator should have no target");
     }
 
     @Test
-    void testSetTarget() {
+    void testGetElevator() throws RemoteException {
+        ElevatorSystem elevatorSystem = new ElevatorSystem(
+                2,
+                0,
+                4,
+                4000,
+                7,
+                mockIElevator);
 
-        /* Initialise */
-        ElevatorSystem testElevatorTargets = new ElevatorSystem(
-                ZERO_ELEVATORS,
-                GROUND_FLOOR,
-                HIGHEST_FLOOR,
-                CAPACITY_ELEVATOR,
-                FLOOR_HEIGHT);
-
-        /* Assert if an invalid floor on building map can be set */
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
-            testElevatorTargets.setTarget(-1, 5);
-        }, "Test FAILED: Floor -1 should is INVALID.");
-
-        /* Assert if INVALID elevator's target can be set */
-        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> {
-            testElevatorTargets.setTarget(TOTAL_ELEVATORS, 5);
-        }, "Test FAILED: Elevator DOES not exist");
+        /* CONDITION */
+        assertEquals(0,elevatorSystem.getElevator(0).elevatorNumber,
+                "Test Failed: Elevator #1's should be at ground floor");
+        assertEquals(1, elevatorSystem.getElevator(1).elevatorNumber,
+                "Test Failed: Elevator #2's should be at the 2nd floor");
     }
+
 }
