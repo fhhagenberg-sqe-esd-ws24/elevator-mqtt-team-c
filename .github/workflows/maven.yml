@@ -33,7 +33,7 @@ jobs:
 
       - name: Build and Test
         if: always()
-        run: mvn -B package --file pom.xml                 
+        run: mvn -B verify --file pom.xml                 
         continue-on-error: true    
 
       - name: Upload Report
