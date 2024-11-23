@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>main.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">mqtt-elevator-team-c</a> &gt; <a href="index.source.html" class="el_package">at.wielander.elevator</a> &gt; <span class="el_source">main.java</span></div><h1>main.java</h1><pre class="source lang-java linenums">package at.wielander.elevator;
+
+import at.wielander.elevator.Model.IElevator;
+import at.wielander.elevator.Model.ElevatorMQTTAdapter;
+import at.wielander.elevator.Model.ElevatorSystem;
+import at.wielander.elevator.View.Dashboard;
+
+<span class="nc" id="L8">public class main {</span>
+    private static IElevator ElevatorAPI;
+
+    public static void main(String[] args) {
+
+<span class="nc" id="L13">        ElevatorSystem buildingElevators = new ElevatorSystem(</span>
+                3,
+                0,
+                10,
+                4000,
+                10,
+                ElevatorAPI);
+
+<span class="nc" id="L21">        String brokerUrl = &quot;tcp://localhost:1883&quot;; // Lokaler MQTT Broker</span>
+<span class="nc" id="L22">        String adapterClientId = &quot;ElevatorMQTTAdapter2&quot;;</span>
+<span class="nc" id="L23">        String dashboardClientId = &quot;DashboardClient2&quot;;</span>
+
+        // Starte den MQTT-Adapter
+<span class="nc" id="L26">        ElevatorMQTTAdapter adapter = new ElevatorMQTTAdapter(buildingElevators, brokerUrl, adapterClientId);</span>
+
+<span class="nc" id="L28">        adapter.connect();</span>
+
+        // Starte das Dashboard
+<span class="nc" id="L31">        Dashboard dashboard = new Dashboard(brokerUrl, dashboardClientId);</span>
+<span class="nc" id="L32">        dashboard.connect();</span>
+
+        // Teste den Austausch von Nachrichten
+<span class="nc" id="L35">        dashboard.subscribeToElevatorState();</span>
+
+        //adapter.publishElevatorState(1, 3); // z.B. Etage 3 für Aufzug 1
+<span class="nc" id="L38">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
