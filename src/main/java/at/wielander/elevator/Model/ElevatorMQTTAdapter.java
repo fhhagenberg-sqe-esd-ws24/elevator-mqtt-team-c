@@ -1,12 +1,3 @@
-/*
- * 
- * On start, connect to the IElevator RMI interface of the elevator PLC [configurable].
-On start, connect to an MQTT broker [configurable].
-Poll the elevator state via its RMI interface every 250 ms [configurable].
-Whenever a value changes, publishe the value via MQTT.
-Subscribe to a topic to enable setting the target floor and the committed direction of elevators via MQTT messages.
-Whenever the corresponding "control" message is delivered, pass it to the elevator PLC via its RMI interface (e.g. call setTargetFloor(...))
- */
 
 package at.wielander.elevator.Model;
 
@@ -22,11 +13,33 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 /**
- * This class is responsible for adapting the ElevatorSystem to communicate via
- * MQTT.
- * It updates the elevator system's elevators every 250 milliseconds. If changes
- * to
- * elevator values occur, they are published via MQTT to specific topics.
+ * @class ElevatorMQTTAdapter
+ * @brief This class is responsible for adapting the ElevatorSystem to
+ *        communicate via MQTT.
+ *
+ *        The ElevatorMQTTAdapter class connects to an MQTT broker, subscribes
+ *        to control topics, and publishes elevator states at regular intervals.
+ *        It uses the Eclipse Paho MQTT client library for MQTT communication.
+ *
+ * @details
+ *          - The constructor initializes the MQTT client, connects to the
+ *          broker, subscribes to control topics, and starts publishing elevator
+ *          states.
+ *          - The connect() method connects the MQTT client to the broker.
+ *          - The startPublishingElevatorStates() method publishes elevator
+ *          states at regular intervals if there are changes.
+ *          - The publish() method publishes messages to specific MQTT topics.
+ *          - The subscribeToControlTopics() method subscribes to control topics
+ *          to receive commands for setting targeted floors and committed
+ *          directions.
+ *          - The start() method reconnects to the broker, subscribes to control
+ *          topics, and starts publishing elevator states.
+ *
+ * @note The polling interval for publishing elevator states is specified in
+ *       milliseconds.
+ *
+ * @see ElevatorSystem
+ * @see Elevator
  */
 public class ElevatorMQTTAdapter {
     private MqttClient client;
@@ -34,6 +47,18 @@ public class ElevatorMQTTAdapter {
     private ScheduledExecutorService scheduler;
     private int pollingInterval;
 
+    /**
+     * Constructs an ElevatorMQTTAdapter with the specified ElevatorSystem, broker
+     * URL, client ID, and polling interval.
+     *
+     * @param elevatorSystem  The ElevatorSystem instance to be monitored and
+     *                        controlled.
+     * @param brokerUrl       The URL of the MQTT broker to connect to.
+     * @param clientId        The client ID to use when connecting to the MQTT
+     *                        broker.
+     * @param pollingInterval The interval in milliseconds at which elevator states
+     *                        are polled and published.
+     */
     public ElevatorMQTTAdapter(ElevatorSystem elevatorSystem, String brokerUrl, String clientId, int pollingInterval) {
         this.elevatorSystem = elevatorSystem;
         this.pollingInterval = pollingInterval; // in milliseconds
@@ -48,6 +73,14 @@ public class ElevatorMQTTAdapter {
         startPublishingElevatorStates();
     }
 
+    /**
+     * @brief Connects to the MQTT broker.
+     *
+     *        This function attempts to connect to the MQTT broker using the
+     *        provided broker URL and client ID.
+     *        If the connection is successful, a message is printed to the console.
+     *        If the connection fails, the exception stack trace is printed.
+     */
     public void connect() {
         try {
             client.connect();
@@ -58,8 +91,12 @@ public class ElevatorMQTTAdapter {
     }
 
     /**
-     * this functions updates the elevatorSystems elevators each 250 ms. If changes
-     * to elevator values occur, they are published via mqtt to specific toppic
+     * @brief Starts publishing elevator states at regular intervals.
+     *
+     *        This function starts a scheduled task that polls the elevator states
+     *        at regular intervals and publishes the states to the MQTT broker.
+     *        If there are changes in the elevator states, the new states are
+     *        published.
      */
     private void startPublishingElevatorStates() {
         ElevatorSystem previousElevatorSystem = elevatorSystem;
@@ -98,26 +135,17 @@ public class ElevatorMQTTAdapter {
         }, 0, pollingInterval, TimeUnit.MILLISECONDS);
     }
 
-    // private void publishElevatorState(int elevatorNumber, Elevator elevator) {
-    // publish("elevator/" + elevatorNumber + "/currentFloor",
-    // String.valueOf(elevator.getCurrentFloor()));
-    // publish("elevator/" + elevatorNumber + "/targetedFloor",
-    // String.valueOf(elevator.getTargetedFloor()));
-    // publish("elevator/" + elevatorNumber + "/speed",
-    // String.valueOf(elevator.getCurrentSpeed()));
-    // publish("elevator/" + elevatorNumber + "/weight",
-    // String.valueOf(elevator.getCurrentWeight()));
-    // publish("elevator/" + elevatorNumber + "/doorState",
-    // String.valueOf(elevator.getElevatorDoorStatus()));
-
-    // for (Map.Entry<Integer, Boolean> entry :
-    // elevator.getServiceableFloors().entrySet()) {
-    // publish("elevator/" + elevatorNumber + "/serviceableFloors/" +
-    // entry.getKey(),
-    // String.valueOf(entry.getValue()));
-    // }
-    // }
-
+    /**
+     * @brief Publishes a message to the specified MQTT topic.
+     *
+     *        This function publishes a message to the specified MQTT topic with the
+     *        given message content.
+     *        The message is set as retained to ensure that the notification is not
+     *        lost.
+     *
+     * @param topic          The MQTT topic to publish the message to.
+     * @param messageContent The content of the message to be published.
+     */
     private void publish(String topic, String messageContent) {
         MqttMessage message = new MqttMessage(messageContent.getBytes());
         // use a retained message in order to not loose the notification
@@ -130,6 +158,15 @@ public class ElevatorMQTTAdapter {
         }
     }
 
+    /**
+     * @brief Subscribes to control topics for setting targeted floors and committed
+     *        directions.
+     *
+     *        This function subscribes to the control topics for setting targeted
+     *        floors and committed directions.
+     *        When a message is received on these topics, the corresponding elevator
+     *        is updated with the new targeted floor or committed direction.
+     */
     private void subscribeToControlTopics() {
         try {
             client.subscribe("elevator/+/setTargetedFloor", (topic, message) -> {
@@ -162,6 +199,12 @@ public class ElevatorMQTTAdapter {
         }
     }
 
+    /**
+     * @brief Starts the ElevatorMQTTAdapter.
+     *
+     *        This function reconnects to the MQTT broker, subscribes to control
+     *        topics, and starts publishing elevator states.
+     */
     public void start() {
         connect();
         subscribeToControlTopics();
