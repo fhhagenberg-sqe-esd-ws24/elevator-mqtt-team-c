@@ -32,10 +32,11 @@ public class ElevatorMQTTAdapter {
     private MqttClient client;
     private ElevatorSystem elevatorSystem;
     private ScheduledExecutorService scheduler;
+    private int pollingInterval;
 
-    public ElevatorMQTTAdapter(ElevatorSystem elevatorSystem, String brokerUrl, String clientId) {
+    public ElevatorMQTTAdapter(ElevatorSystem elevatorSystem, String brokerUrl, String clientId, int pollingInterval) {
         this.elevatorSystem = elevatorSystem;
-
+        this.pollingInterval = pollingInterval; // in milliseconds
         try {
             this.client = new MqttClient(brokerUrl, clientId, new MemoryPersistence());
         } catch (MqttException e) {
@@ -43,6 +44,7 @@ public class ElevatorMQTTAdapter {
         }
         this.scheduler = Executors.newScheduledThreadPool(1);
         connect();
+        subscribeToControlTopics();
         startPublishingElevatorStates();
     }
 
@@ -93,7 +95,7 @@ public class ElevatorMQTTAdapter {
                 throw new RuntimeException(e);
             }
 
-        }, 0, 250, TimeUnit.MILLISECONDS);
+        }, 0, pollingInterval, TimeUnit.MILLISECONDS);
     }
 
     // private void publishElevatorState(int elevatorNumber, Elevator elevator) {
