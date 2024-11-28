@@ -39,8 +39,14 @@ public class ElevatorMQTTAdapter {
     private void startPublishingElevatorStates() {
         scheduler.scheduleAtFixedRate(() -> {
             elevatorSystem.updateAll();
+            try {
             for (int i = 0; i < elevatorSystem.getElevatorNum() - 1; i++) {
-                publishElevatorState(i, elevatorSystem.getElevatorPosition(i));
+                publishElevatorState(i, elevatorSystem.getElevator(i));
+            }
+            }
+            catch(Exception ex)
+            {
+            	System.out.println(ex);
             }
 
         }, 0, 100, TimeUnit.MILLISECONDS);

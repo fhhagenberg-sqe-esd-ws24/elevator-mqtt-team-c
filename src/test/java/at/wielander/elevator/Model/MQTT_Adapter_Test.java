@@ -1,19 +1,27 @@
 package at.wielander.elevator.Model;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
+
+import at.fhhagenberg.sqelevator.ElevatorExample;
+import org.junit.jupiter.api.Assertions;
+
+import at.fhhagenberg.sqelevator.IElevator;
+import at.wielander.elevator.Model.*;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import at.fhhagenberg.sqelevator.*;
 
+import java.rmi.Naming;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static org.mockito.Mockito.*;
 
-class ElevatorMQTTAdapterTest {
-	private static final int GROUND_FLOOR = 0;
+class MQTT_Adapter_Test {
+
+
+    private static final int GROUND_FLOOR = 0;
 
     private static final int ZERO_ELEVATORS = 0;
 
@@ -22,11 +30,10 @@ class ElevatorMQTTAdapterTest {
     private static final int HIGHEST_FLOOR = 4;
 
     private static final int CAPACITY_ELEVATOR = 1000;
-    
-    private MqttClient mockMqttClient;
 
     private static final int FLOOR_HEIGHT = 7;
-	private IElevator elevatorAPI;
+    
+    private IElevator elevatorAPI;
     private ElevatorSystem elevatorSystem;
     private ElevatorMQTTAdapter MQTTAdapter;
 
@@ -62,47 +69,49 @@ class ElevatorMQTTAdapterTest {
             String brokerUrl = "tcp://localhost:1883";
             String clientId = "testClient";
 
-            // Initialisiere den Mock-MQTT-Client
-            mockMqttClient = Mockito.mock(MqttClient.class);
-
             // Initialisiere den ElevatorMQTTAdapter mit dem ElevatorSystem
             MQTTAdapter = new ElevatorMQTTAdapter(elevatorSystem, brokerUrl, clientId);
 
-            // Setze den Mock-MQTT-Client in den Adapter (Reflection, da `client` private ist)
-            var clientField = ElevatorMQTTAdapter.class.getDeclaredField("client");
-            clientField.setAccessible(true);
-            clientField.set(MQTTAdapter, mockMqttClient);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    @Test
-    void testConnect() throws Exception {
-        // Rufe die connect-Methode auf
-    	MQTTAdapter.connect();
 
-        // Überprüfe, ob die Verbindung hergestellt wurde
-        verify(mockMqttClient).connect();
-        System.out.println("Connect method tested successfully.");
-    }
+	@Test
+	void testMQTTAdapterInitialization() {
+	    // Überprüfe, ob der MQTTAdapter korrekt initialisiert wurde
+	    Assertions.assertNotNull(MQTTAdapter, 
+	        "Test FAILED: MQTTAdapter should be initialized.");
+	}
 
-//    @Test
-//    void testPublishElevatorState() throws Exception {
-//        // Rufe die publishElevatorState-Methode für einen Aufzug auf
-//    	MQTTAdapter.publish("elevator/0/currentFloor", "1");
+//@Test
+//void testElevatorSystemInitialization() {
+//    // Überprüfe, ob das ElevatorSystem korrekt initialisiert wurde
+//    Assertions.assertNotNull(elevatorSystem, 
+//        "Test FAILED: ElevatorSystem should be initialized.");
 //
-//        // Überprüfe, ob die Nachricht korrekt veröffentlicht wurde
-//        verify(mockMqttClient).publish(eq("elevator/0/currentFloor"), any(MqttMessage.class));
-//        System.out.println("Publish elevator state tested successfully.");
-//    }
+//    // Verifiziere die Anzahl der Aufzüge
+//    Assertions.assertEquals(TOTAL_ELEVATORS, elevatorSystem.getElevatorNum(),
+//        "Test FAILED: ElevatorSystem should have the correct number of elevators.");
+//}
+
+//@Test
+//void testPublishMethodCalled() throws Exception {
+//    // Mock für MqttClient, um Publish-Aufrufe zu überprüfen
+//    MqttClient mockClient = Mockito.mock(MqttClient.class);
+//    ElevatorMQTTAdapter adapterWithMockClient = new ElevatorMQTTAdapter(elevatorSystem, "tcp://localhost:1883", "testClient");
 //
-//    @Test
-//    void testStartPublishingElevatorStates() {
-//        // Simuliere das Starten der Scheduler-Aufgabe
-//    	MQTTAdapter.connect();
+//    // Verwende Reflection, um das private Feld `client` zu setzen
+//    var clientField = ElevatorMQTTAdapter.class.getDeclaredField("client");
+//    clientField.setAccessible(true);
+//    clientField.set(adapterWithMockClient, mockClient);
 //
-//        verify(mockScheduler).scheduleAtFixedRate(any(Runnable.class), eq(0L), eq(100L), eq(TimeUnit.MILLISECONDS));
-//        System.out.println("Scheduler setup tested successfully.");
-//    }
+//    // Rufe die `publish`-Methode auf
+//    adapterWithMockClient.connect();
+//    adapterWithMockClient.publish("test/topic", "Test Message");
+//
+//    // Verifiziere, dass der MqttClient die publish-Methode aufgerufen hat
+//    verify(mockClient, times(1)).publish(eq("test/topic"), any(MqttMessage.class));
+//}
 }

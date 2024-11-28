@@ -144,6 +144,9 @@ public class ElevatorSystem implements IElevator {
     public int getElevatorDoorStatus(int elevatorNumber) throws RemoteException {
         return elevators.get(elevatorNumber).getDoorState();
     }
+    
+    
+   
 
     /**
      * Returns the current floor being serviced
@@ -339,6 +342,10 @@ public class ElevatorSystem implements IElevator {
     @Override
     public long getClockTick() throws RemoteException {
         return this.clockTick;
+    }
+    
+    public Elevator getElevator(int elevatorNumber) throws RemoteException {
+        return elevators.get(elevatorNumber);
     }
 
     public void updateAll() {
