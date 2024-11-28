@@ -57,16 +57,16 @@
         </dependency>
 
         <!-- Uncomment to use Eclipse Paho Mqttv5 Client -->
-        <!-- <dependency>
+        <dependency>
             <groupId>org.eclipse.paho</groupId>
             <artifactId>org.eclipse.paho.mqttv5.client</artifactId>
-        </dependency> -->
+        </dependency>
 
         <!-- Uncomment to use HiveMQ MQTT Client -->
-        <!-- <dependency>
+        <dependency>
             <groupId>com.hivemq</groupId>
             <artifactId>hivemq-mqtt-client</artifactId>
-        </dependency> -->
+        </dependency>
     </dependencies>
 
     <build>
