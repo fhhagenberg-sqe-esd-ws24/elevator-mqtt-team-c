@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-
 @ExtendWith(MockitoExtension.class)
 class MQTTAdapterTest {
 
@@ -29,37 +28,36 @@ class MQTTAdapterTest {
     @BeforeEach
     public void setup() throws IllegalAccessException, NoSuchFieldException {
 
-            // Initialisiere das ElevatorSystem
-            // Übergabe des gemockten Interfaces
-            elevatorSystem = new ElevatorSystem(
-                    2,
-                    0,
-                    4,
-                    1000,
-                    7,
-                    elevatorAPI // Übergabe des gemockten Interfaces
-            );
+        // Initialisiere das ElevatorSystem
+        // Übergabe des gemockten Interfaces
+        elevatorSystem = new ElevatorSystem(
+                2,
+                0,
+                4,
+                1000,
+                7,
+                elevatorAPI // Übergabe des gemockten Interfaces
+        );
 
-            // Definiere das Broker-URL und Client-ID für HiveMQ
-            String brokerUrl = "tcp://localhost:1883";
-            String clientId = "testClient";
+        // Definiere das Broker-URL und Client-ID für HiveMQ
+        String brokerUrl = "tcp://localhost:1883";
+        String clientId = "testClient";
 
-            // Initialisiere den ElevatorMQTTAdapter mit dem ElevatorSystem
-            MQTTAdapter = new ElevatorMQTTAdapter(
+        // Initialisiere den ElevatorMQTTAdapter mit dem ElevatorSystem
+        MQTTAdapter = new ElevatorMQTTAdapter(
                 elevatorSystem,
                 "tcp://localhost:1883",
                 "testClient");
 
-            mockClient = Mockito.mock(MqttClient.class);
+        mockClient = Mockito.mock(MqttClient.class);
 
     }
 
-
-	@Test
-	void testMQTTAdapterInitialisation() {
-	    // Überprüfe, ob der MQTTAdapter korrekt initialisiert wurde
-	    assertNotNull(MQTTAdapter);
-	}
+    @Test
+    void testMQTTAdapterInitialisation() {
+        // Überprüfe, ob der MQTTAdapter korrekt initialisiert wurde
+        assertNotNull(MQTTAdapter);
+    }
 
     @Test
     void testConnect() throws Exception {
@@ -71,17 +69,34 @@ class MQTTAdapterTest {
         verify(mockClient, times(1)).connect();
     }
 
-//    @Test
-//    void testElevatorSystemInitialization() throws RemoteException {
-//        // Überprüfe, ob das ElevatorSystem korrekt initialisiert wurde
-//        doNothing().when(MQTTAdapter).connect();
-//        assertNotNull(elevatorSystem);
-//
-//        // Verifiziere die Anzahl der Aufzüge
-//        when(elevatorSystem.getElevatorNum()).thenReturn(5);
-//        assertEquals(5, elevatorSystem.getElevatorNum());
-//        verify(elevatorSystem, times(1)).getElevator(0);
-//    }
+    @Test
+    void testElevatorLevelChange() throws Exception {
+        // Mock the behavior of the elevatorAPI to change the level of an elevator
+        when(elevatorAPI.getElevatorFloor(eq(0))).thenReturn(1).thenReturn(2);
+        Thread.sleep(100);
+        // Verify initial level
+        assertEquals(1, elevatorSystem.getElevator(0).getCurrentFloor());
+
+        Thread.sleep(150);
+
+        // Verify the level change
+        assertEquals(2, elevatorSystem.getElevator(0).getCurrentFloor());
+
+        // Verify that the publish method was called with the updated state
+        verify(mockClient, times(2)).publish(anyString(), any(MqttMessage.class));
+    }
+
+    // @Test
+    // void testElevatorSystemInitialization() throws RemoteException {
+    // // Überprüfe, ob das ElevatorSystem korrekt initialisiert wurde
+    // doNothing().when(MQTTAdapter).connect();
+    // assertNotNull(elevatorSystem);
+    //
+    // // Verifiziere die Anzahl der Aufzüge
+    // when(elevatorSystem.getElevatorNum()).thenReturn(5);
+    // assertEquals(5, elevatorSystem.getElevatorNum());
+    // verify(elevatorSystem, times(1)).getElevator(0);
+    // }
 
     @Test
     void testPublishMethodCalled() throws Exception {
