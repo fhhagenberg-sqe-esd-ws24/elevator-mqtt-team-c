@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Elevator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">mqtt-elevator-team-c</a> &gt; <a href="index.source.html" class="el_package">at.wielander.elevator.Model</a> &gt; <span class="el_source">Elevator.java</span></div><h1>Elevator.java</h1><pre class="source lang-java linenums">package at.wielander.elevator.Model;
+
+import java.rmi.RemoteException;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Internal Data Model for the individual elevators.
+
+ * This class represents the physical elevator and its attributes. The behaviors
+ * are inherited
+ * from the provided interface {@link IElevator} as follows:
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;&lt;i&gt;Elevator capacity:&lt;/i&gt; The maximum number of passengers that can fit
+ * in an elevator.&lt;/li&gt;
+ * &lt;li&gt;&lt;i&gt;Elevator speed:&lt;/i&gt; The maximum speed an elevator can travel at in
+ * feet/sec. It is assumed to be the same for
+ * all elevators.&lt;/li&gt;
+ * &lt;li&gt;&lt;i&gt;Elevator acceleration:&lt;/i&gt; The rate at which the elevator can increase
+ * or decrease
+ * speed in ft/sec². It is assumed to be the same for all elevators. The higher
+ * the acceleration,
+ * the faster the elevator can accelerate and decelerate, allowing its average
+ * speed to be faster.&lt;/li&gt;
+ * &lt;li&gt;&lt;i&gt;Number of floors:&lt;/i&gt; The number of floors in the building, including
+ * the ground floor. It is
+ * assumed there are no floors below ground level. All elevators service the
+ * ground floor but may, as described below, not necessarily service all other
+ * floors. Each floor has
+ * an up and a down button for the purposes of passengers calling the elevator.
+ * Floor numbering starts
+ * at 0 for floor 1.&lt;/li&gt;
+ * &lt;li&gt;&lt;i&gt;Floor height:&lt;/i&gt; The height of the floors in feet. It is assumed that
+ * each floor is
+ * the same height.&lt;/li&gt;
+ * &lt;li&gt;&lt;i&gt;Number of elevators:&lt;/i&gt; The number of elevators in the building.
+ * Elevator numbering starts
+ * at zero for elevator 1.&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @version 1.0
+ */
+public class Elevator {
+
+    /** Constant state variable for the initial position in ft */
+    private static final int GROUND_FLOOR = 0;
+
+    /** Constant state variable for the initial speed in ft/s */
+    private static final int INITIAL_SPEED = 0;
+
+    /** Constant state variable for the initial acceleration in ft/s² */
+    private static final int INITIAL_ACCELERATION = 0;
+
+    /** Constant state variable for the initial capacity in lbs */
+    private static final int INITIAL_WEIGHT = 0;
+
+    /** Variable for the direction of the elevator */
+    private int commitedDirection;
+
+    /** Variable of the state of the doors */
+    protected int doorStatus;
+
+    /** Variable for the elevator in ft/sec² */
+    protected int acceleration;
+
+    /** Variable for the elevator speed in ft/sec */
+    protected int speed;
+
+    /** Variable for the current position of the elevator in ft */
+    protected int position;
+
+    /** Variable for the buttons with the floors mapped to a logical state */
+    protected Map&lt;Integer, Boolean&gt; buttons;
+
+    /** Variable for the current weight of the passengers in the elevator in lbs */
+    protected int weight;
+
+    /** Variable for the current capacity of the elevator in lbs */
+    protected int capacity;
+
+    /** Variable for the current serviceable floors mapped to a logical state */
+    protected Map&lt;Integer, Boolean&gt; serviceableFloors;
+
+    /** Variable for the targeted floor */
+    protected int targetedFloor;
+
+    /** Variable for the elevator at the current floor */
+    protected int currentFloor;
+
+    /** Variable for the elevator API **/
+    protected IElevator elevatorAPI;
+
+    /** Variable for the elevator number */
+    protected int elevatorNumber;
+
+    /**
+     * Constructor for internal Data Model based on IElevator interface
+     *
+     * @param serviceableFloors Floors to be serviced
+     * @param capacity Capacity of the elevator
+     * @param elevatorAPI Implements the IElevator interface
+     * @param elevatorNumber Number of elevators in a system
+     */
+    public Elevator(Map&lt;Integer, Boolean&gt; serviceableFloors,
+                    int capacity,
+                    IElevator elevatorAPI,
+<span class="fc" id="L108">                    int elevatorNumber) {</span>
+<span class="pc bpc" id="L109" title="2 of 4 branches missed.">        if (serviceableFloors == null || capacity &lt;= 0) {</span>
+<span class="nc" id="L110">            throw new IllegalArgumentException(&quot;Invalid Arguments&quot;);</span>
+        }
+
+<span class="fc" id="L113">        this.commitedDirection = IElevator.ELEVATOR_DIRECTION_UNCOMMITTED;</span>
+<span class="fc" id="L114">        this.doorStatus = IElevator.ELEVATOR_DOORS_CLOSED;</span>
+<span class="fc" id="L115">        this.acceleration = INITIAL_ACCELERATION;</span>
+<span class="fc" id="L116">        this.speed = INITIAL_SPEED;</span>
+<span class="fc" id="L117">        this.weight = INITIAL_WEIGHT;</span>
+<span class="fc" id="L118">        this.position = GROUND_FLOOR;</span>
+<span class="fc" id="L119">        this.targetedFloor = GROUND_FLOOR;</span>
+<span class="fc" id="L120">        this.currentFloor = GROUND_FLOOR;</span>
+<span class="fc" id="L121">        this.buttons = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L122">        this.serviceableFloors = serviceableFloors;</span>
+<span class="fc" id="L123">        this.capacity = capacity;</span>
+<span class="fc" id="L124">        this.elevatorNumber = elevatorNumber;</span>
+<span class="fc" id="L125">        this.elevatorAPI = elevatorAPI;</span>
+
+        // set all buttons to false within the serviceable floor range
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        for (int id : this.serviceableFloors.keySet()) {</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">            if (serviceableFloors.get(id) != null) {</span>
+<span class="fc" id="L130">                buttons.put(id, false);</span>
+            } else {
+<span class="nc" id="L132">                System.err.println(&quot;Serviceable floor state at &quot; + id + &quot; not specified&quot;);</span>
+            }
+<span class="fc" id="L134">        }</span>
+<span class="fc" id="L135">    }</span>
+
+    /**
+     * Direction in which the elevator in currently moving towards
+     * 
+     * @return Direction of current elevator
+     */
+    public int getCommitedDirection() {
+<span class="fc" id="L143">        return commitedDirection;</span>
+    }
+
+    /**
+     * Set the direction for the elevator
+     *
+     * @param committedDirection Sets the direction (UP/ DOWN /UNCOMMITTED)
+     */
+    public void setCommittedDirection(int committedDirection) {
+<span class="fc" id="L152">        this.commitedDirection = committedDirection;</span>
+<span class="fc" id="L153">    }</span>
+
+    /**
+     * Current acceleration of the lift in ft/s²
+     *
+     * @return acceleration of the elevator in ft/s²
+     */
+    public int getAcceleration() {
+<span class="fc" id="L161">        return acceleration;</span>
+    }
+
+    /**
+     * Current the truth value for the floor buttons in the elevator
+     *
+     * @return Map of the buttons representing each floor and their state (TRUE /
+     *         FALSE)
+     */
+    public Map&lt;Integer, Boolean&gt; getButtonsInElevatorStatus() {
+<span class="fc" id="L171">        return buttons;</span>
+    }
+
+    /**
+     * Current state of the doors.
+     *
+     * @return current state of the doors(OPEN / CLOSED / OPENING / CLOSING)
+     */
+    public int getElevatorDoorStatus() {
+<span class="fc" id="L180">        return doorStatus;</span>
+    }
+
+    /**
+     * Current floor of the elevator to the nearest floor
+     *
+     * @return current floor of the elevator
+     */
+    public int getCurrentFloor() {
+<span class="fc" id="L189">        return currentFloor;</span>
+    }
+
+    /**
+     * Current position of the elevator with respect to the ground floor
+     *
+     * @return position of the elevator identified by the current floor being
+     *         serviced
+     */
+    public int getCurrentPosition() {
+<span class="fc" id="L199">        return position;</span>
+    }
+
+
+    /**
+     * Current speed of the lift in ft/s
+     *
+     * @return speed of the elevator in ft/s
+     */
+    public int getCurrentSpeed() {
+<span class="fc" id="L209">        return speed;</span>
+    }
+
+
+   /**
+     * Current weight of the passengers in lbs
+     *
+     * @return The current weight of the passengers in lbs
+     */
+    public int getCurrentWeight() {
+<span class="fc" id="L219">        return weight;</span>
+    }
+
+    /**
+     * Capacity of the elevator
+     *
+     * @return returns the maximum load the elevator can handle in lbs
+     */
+    public int getElevatorCapacity() {
+<span class="fc" id="L228">        return capacity;</span>
+    }
+
+    /**
+     * Serviceable floors for an elevator
+     *
+     * @return Floors as an integer mapped to a logical state (TRUE / FALSE)
+     */
+    public Map&lt;Integer, Boolean&gt; getServiceableFloors() {
+<span class="fc" id="L237">        return serviceableFloors;</span>
+    }
+
+    /**
+     * Setst the Serviceable floors
+     *
+     * @param floor   integer value of floors to be serviced
+     * @param service Logic state if the floors can be accessed or not (TRUE /
+     *                FALSE)
+     */
+    public void setServiceableFloors(int floor, boolean service) {
+<span class="fc" id="L248">        this.serviceableFloors.put(floor, service);</span>
+<span class="fc" id="L249">    }</span>
+
+    /**
+     * Current targeted floor
+     *
+     * @return current targeted floors
+     */
+    public int getTargetedFloor() {
+<span class="fc" id="L257">        return targetedFloor;</span>
+    }
+
+    /**
+     * Sets the current targeted floor
+     * 
+     * @param targetedFloor Sets the current targeted floor as integer
+     */
+    public void setTargetedFloor(int targetedFloor) {
+<span class="fc" id="L266">        this.targetedFloor = targetedFloor;</span>
+<span class="fc" id="L267">    }</span>
+
+    /**
+     *  Updates elevator based on current states
+     */
+    public void update() {
+        try {
+<span class="fc" id="L274">            this.currentFloor = elevatorAPI.getElevatorFloor(elevatorNumber);</span>
+<span class="fc" id="L275">            this.targetedFloor = elevatorAPI.getTarget(elevatorNumber);</span>
+<span class="fc" id="L276">            this.position = elevatorAPI.getElevatorPosition(elevatorNumber);</span>
+<span class="fc" id="L277">            this.speed = elevatorAPI.getElevatorSpeed(elevatorNumber);</span>
+<span class="fc" id="L278">            this.acceleration = elevatorAPI.getElevatorAccel(elevatorNumber);</span>
+<span class="fc" id="L279">            this.weight = elevatorAPI.getElevatorWeight(elevatorNumber);</span>
+<span class="fc" id="L280">            this.doorStatus = elevatorAPI.getElevatorDoorStatus(elevatorNumber);</span>
+<span class="fc" id="L281">            this.commitedDirection = elevatorAPI.getCommittedDirection(elevatorNumber);</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">            for (int floor : buttons.keySet()) {</span>
+<span class="fc" id="L283">                buttons.put(floor, elevatorAPI.getElevatorButton(elevatorNumber, floor));</span>
+<span class="fc" id="L284">            }</span>
+
+<span class="nc" id="L286">        }catch(RemoteException e){</span>
+<span class="nc" id="L287">                e.printStackTrace();</span>
+<span class="fc" id="L288">            }</span>
+<span class="fc" id="L289">        }</span>
+
+    }
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
