@@ -161,7 +161,7 @@ public class ElevatorSystem
 
     /***
      * Returns the current elevator ID
-     * 
+     *
      * @return integer value of elevator ID
      * @throws RemoteException RMI Invalid exception
      */
@@ -192,7 +192,7 @@ public class ElevatorSystem
 
     /**
      * Return speed of the elevator
-     * 
+     *
      * @param elevatorNumber - elevator number whose speed is being retrieved
      * @return Speed of the elevator in ft/s
      * @throws RemoteException RMI Invalid exception
@@ -216,7 +216,7 @@ public class ElevatorSystem
 
     /**
      * Returns the set capacity of the elevator
-     * 
+     *
      * @param elevatorNumber - elevator number whose service is being retrieved
      * @return Max Capacity of the respective elevator in lbs
      * @throws RemoteException Throws RMI Exception
@@ -228,7 +228,7 @@ public class ElevatorSystem
 
     /**
      * Returns the logical state of the down button of a respective floor
-     * 
+     *
      * @param floor - floor number whose down button status is being retrieved
      * @return (TRUE or FALSE ) state for the down button
      * @throws RemoteException Throws an Exception for RMI
@@ -243,7 +243,7 @@ public class ElevatorSystem
 
     /**
      * Returns the logical state of the up button of a respective floor
-     * 
+     *
      * @param floor - floor number whose Up button status is being retrieved
      * @return (TRUE or FALSE ) state for the up button
      * @throws RemoteException Throws an Exception for RMI
@@ -258,7 +258,7 @@ public class ElevatorSystem
 
     /**
      * Returns the height of the floor in the building layout
-     * 
+     *
      * @return height of the floor in ft
      * @throws RemoteException Throws an Exception for RMI
      */
@@ -269,7 +269,7 @@ public class ElevatorSystem
 
     /**
      * Returns the current floor number
-     * 
+     *
      * @return Integer value of floor number
      * @throws RemoteException Throws an Exception for RMI
      */
@@ -280,7 +280,7 @@ public class ElevatorSystem
 
     /**
      * Returns the serviceable floors
-     * 
+     *
      * @param elevatorNumber elevator number whose service is being retrieved
      * @param floor          floor whose service status by the specified elevator is
      *                       being retrieved
@@ -295,7 +295,7 @@ public class ElevatorSystem
 
     /**
      * Returns the targeted floor
-     * 
+     *
      * @param elevatorNumber elevator number whose target floor is being retrieved
      * @return Targeted floor for the elevator to head in that direction
      * @throws RemoteException Throws an Exception for RMI
@@ -307,7 +307,7 @@ public class ElevatorSystem
 
     /**
      * Sets the direction of the elevator
-     * 
+     *
      * @param elevatorNumber elevator number whose committed direction is being set
      * @param direction      direction being set where up=0, down=1 and
      *                       uncommitted=2
@@ -320,7 +320,7 @@ public class ElevatorSystem
 
     /**
      * Sets the floors accessible by the elevator
-     * 
+     *
      * @param elevatorNumber elevator number whose service is being defined
      * @param floor          floor whose service by the specified elevator is being
      *                       set
@@ -335,7 +335,7 @@ public class ElevatorSystem
 
     /**
      * Returns set target floor of the elevator
-     * 
+     *
      * @param elevatorNumber elevator number whose target floor is being set
      * @param target         floor number which the specified elevator is to target
      * @throws RemoteException Throws an Exception for RMI
@@ -357,7 +357,7 @@ public class ElevatorSystem
 
     /**
      * Returns clock tick
-     * 
+     *
      * @return Clock tick
      * @throws RemoteException Throws an Exception for RMI
      */

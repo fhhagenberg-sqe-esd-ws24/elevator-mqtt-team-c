@@ -142,13 +142,12 @@ public interface IElevator extends java.rmi.Remote {
 	public int getElevatorNum() throws java.rmi.RemoteException; 
 
 	/**
-	 * Provides the current location of the specified elevator in feet from the bottom of the building.
-	 *
-	 * @param elevatorNumber - elevator number whose location is being retrieved
+	 * Provides the current location of the specified elevator in feet from the bottom of the building. 
+	 * @param elevatorNumber  - elevator number whose location is being retrieved 
 	 * @return returns the location in feet of the indicated elevator from the bottom of the building
 	 * @throws RemoteException RMI Invalid exception
 	 */
-	public int getElevatorPosition(int elevatorNumber) throws java.rmi.RemoteException;
+	public int getElevatorPosition(int elevatorNumber) throws java.rmi.RemoteException; 
 
 	/**
 	 * Provides the current speed of the specified elevator in feet per sec. 

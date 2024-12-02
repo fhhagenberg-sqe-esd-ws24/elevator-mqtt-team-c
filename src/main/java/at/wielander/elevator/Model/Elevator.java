@@ -136,7 +136,7 @@ public class Elevator {
 
     /**
      * Direction in which the elevator in currently moving towards
-     * 
+     *
      * @return Direction of current elevator
      */
     public int getCommitedDirection() {
@@ -210,7 +210,7 @@ public class Elevator {
     }
 
 
-   /**
+    /**
      * Current weight of the passengers in lbs
      *
      * @return The current weight of the passengers in lbs
@@ -259,7 +259,7 @@ public class Elevator {
 
     /**
      * Sets the current targeted floor
-     * 
+     *
      * @param targetedFloor Sets the current targeted floor as integer
      */
     public void setTargetedFloor(int targetedFloor) {
@@ -284,9 +284,8 @@ public class Elevator {
             }
 
         }catch(RemoteException e){
-                e.printStackTrace();
-            }
+            e.printStackTrace();
         }
-
     }
 
+}
