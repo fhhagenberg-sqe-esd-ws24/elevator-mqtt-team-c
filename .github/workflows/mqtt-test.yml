@@ -1,9 +1,12 @@
 name: MQTT Tests
 
 on:
+  push:
+    branches:
+      - mqtt  # Der Workflow wird nur ausgeführt, wenn auf den mqtt-Branch gepusht wird
   pull_request:
     branches:
-      - mqtt  # oder den Branch, in den du pullen möchtest
+      - mqtt  # Der Workflow wird auch bei Pull Requests auf den mqtt-Branch ausgeführt
 
 jobs:
   test:
@@ -13,7 +16,7 @@ jobs:
       hivemq:
         image: hivemq/hivemq4
         ports:
-          - 1883:1883  # MQTT Port
+          - 1883:1883
         options: >-
           --health-cmd="curl --silent --fail http://localhost:8080/health || exit 1"
           --health-interval=5s
@@ -30,7 +33,7 @@ jobs:
           java-version: '11'
 
       - name: Install dependencies
-        run: ./mvnw install  # Beispiel für Maven, falls du ein anderes Build-Tool verwendest, ersetze diesen Befehl
+        run: ./mvnw install
 
       - name: Run MQTT Tests
-        run: ./mvnw test  # Wenn du Tests mit Maven ausführst. Anpassen je nach Build-Tool.
+        run: ./mvnw test
