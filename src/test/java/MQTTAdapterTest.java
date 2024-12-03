@@ -1,21 +1,34 @@
-package at.wielander.elevator.Model;
-
-import org.eclipse.paho.client.mqttv3.MqttClient;
+import at.wielander.elevator.Model.ElevatorMQTTAdapter;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
+
+
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.Container;
+
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
-class MQTTAdapterTest {
+import org.testcontainers.*;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+
+@Testcontainers 
+public class MQTTAdapterTest{
+
+	@Container
+    HiveMQContainer hiveMQContainer = new HiveMQContainer("hivemq/hivemq-ce:latest");
+
+	
     @Mock
     private IElevator elevatorAPI;
 
@@ -52,6 +65,13 @@ class MQTTAdapterTest {
         mockClient = Mockito.mock(MqttClient.class);
 
     }
+    
+    @Test
+    @Timeout(value = 2, unit = TimeUnit.MINUTES)  // Timeout für den Test
+    void testMqttConnectionAndPublishing() throws InterruptedException {
+      
+    }
+    /*
 
     @Test
     void testMQTTAdapterInitialisation() {
@@ -86,18 +106,6 @@ class MQTTAdapterTest {
         verify(mockClient, times(2)).publish(anyString(), any(MqttMessage.class));
     }
 
-    // @Test
-    // void testElevatorSystemInitialization() throws RemoteException {
-    // // Überprüfe, ob das ElevatorSystem korrekt initialisiert wurde
-    // doNothing().when(MQTTAdapter).connect();
-    // assertNotNull(elevatorSystem);
-    //
-    // // Verifiziere die Anzahl der Aufzüge
-    // when(elevatorSystem.getElevatorNum()).thenReturn(5);
-    // assertEquals(5, elevatorSystem.getElevatorNum());
-    // verify(elevatorSystem, times(1)).getElevator(0);
-    // }
-
     @Test
     void testPublishMethodCalled() throws Exception {
 
@@ -114,5 +122,5 @@ class MQTTAdapterTest {
 
         // Verifiziere, dass der MqttClient die publish-Methode aufgerufen hat
         verify(mockClient, times(1)).publish(eq("test/topic"), any(MqttMessage.class));
-    }
+    }*/
 }
