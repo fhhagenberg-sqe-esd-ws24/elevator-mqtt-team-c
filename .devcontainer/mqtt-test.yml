@@ -1,0 +1,36 @@
+name: MQTT Tests
+
+on:
+  pull_request:
+    branches:
+      - main  # oder den Branch, in den du pullen möchtest
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      hivemq:
+        image: hivemq/hivemq4
+        ports:
+          - 1883:1883  # MQTT Port
+        options: >-
+          --health-cmd="curl --silent --fail http://localhost:8080/health || exit 1"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+
+      - name: Install dependencies
+        run: ./mvnw install  # Beispiel für Maven, falls du ein anderes Build-Tool verwendest, ersetze diesen Befehl
+
+      - name: Run MQTT Tests
+        run: ./mvnw test  # Wenn du Tests mit Maven ausführst. Anpassen je nach Build-Tool.
