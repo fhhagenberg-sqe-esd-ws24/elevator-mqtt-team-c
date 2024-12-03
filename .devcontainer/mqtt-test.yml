@@ -3,7 +3,7 @@ name: MQTT Tests
 on:
   pull_request:
     branches:
-      - main  # oder den Branch, in den du pullen möchtest
+      - mqtt  # oder den Branch, in den du pullen möchtest
 
 jobs:
   test:
