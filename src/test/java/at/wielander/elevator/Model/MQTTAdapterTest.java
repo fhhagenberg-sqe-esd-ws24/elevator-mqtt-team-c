@@ -4,15 +4,20 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@Testcontainers
 @ExtendWith(MockitoExtension.class)
 class MQTTAdapterTest {
 
@@ -54,12 +59,15 @@ class MQTTAdapterTest {
     }
 
     @Test
+    @Timeout(unit = TimeUnit.MINUTES, value = 2)
     void testMQTTAdapterInitialisation() {
         // Überprüfe, ob der MQTTAdapter korrekt initialisiert wurde
         assertNotNull(MQTTAdapter);
     }
 
+
     @Test
+    @Timeout(unit = TimeUnit.MINUTES, value = 2)
     void testConnect() throws Exception {
         var clientField = ElevatorMQTTAdapter.class.getDeclaredField("client");
         clientField.setAccessible(true);
@@ -70,16 +78,16 @@ class MQTTAdapterTest {
     }
 
     @Test
+    @Timeout(unit = TimeUnit.MINUTES, value = 2)
     void testElevatorLevelChange() throws Exception {
-        // Mock the behavior of the elevatorAPI to change the level of an elevator
+
         when(elevatorAPI.getElevatorFloor(eq(0))).thenReturn(1).thenReturn(2);
         Thread.sleep(100);
-        // Verify initial level
+
         assertEquals(1, elevatorSystem.getElevator(0).getCurrentFloor());
 
         Thread.sleep(150);
 
-        // Verify the level change
         assertEquals(2, elevatorSystem.getElevator(0).getCurrentFloor());
 
         // Verify that the publish method was called with the updated state
@@ -99,6 +107,7 @@ class MQTTAdapterTest {
     // }
 
     @Test
+    @Timeout(unit = TimeUnit.MINUTES, value = 2)
     void testPublishMethodCalled() throws Exception {
 
         // Verwende Reflection, um das private Feld `client` zu setzen
