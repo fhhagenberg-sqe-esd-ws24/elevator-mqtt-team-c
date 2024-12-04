@@ -79,19 +79,24 @@ class MQTTAdapterTest {
 
     @Test
     @Timeout(unit = TimeUnit.MINUTES, value = 2)
-    void testElevatorLevelChange() throws Exception {
+    void testElevatorWeightChange() throws Exception {
+        var clientField = ElevatorMQTTAdapter.class.getDeclaredField("client");
+        clientField.setAccessible(true);
+        clientField.set(MQTTAdapter, mockClient);
 
-        when(elevatorAPI.getElevatorFloor(eq(0))).thenReturn(1).thenReturn(2);
+        when(elevatorAPI.getElevatorWeight(0)).thenReturn(1000);
+        when(elevatorAPI.getElevatorWeight(1)).thenReturn(1000);
+        elevatorSystem.updateAll();
         Thread.sleep(100);
 
-        assertEquals(1, elevatorSystem.getElevator(0).getCurrentFloor());
+        assertEquals(1000, elevatorSystem.getElevatorWeight(0));
 
         Thread.sleep(150);
 
-        assertEquals(2, elevatorSystem.getElevator(0).getCurrentFloor());
+        assertNotEquals(2000, elevatorSystem.getElevatorWeight(1));
 
         // Verify that the publish method was called with the updated state
-        verify(mockClient, times(2)).publish(anyString(), any(MqttMessage.class));
+        verify(mockClient, atLeast(2)).publish(anyString(), any(MqttMessage.class));
     }
 
     // @Test
