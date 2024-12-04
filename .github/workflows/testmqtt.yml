@@ -18,7 +18,6 @@ jobs:
           - 1883:1883  # Exposing the MQTT port
         options:
           --health-cmd "curl --silent --fail localhost:1883 || exit 1"  # Health check using curl
-          --health-interval 15s  # Increasing interval to allow more time for initialization
           --health-timeout 10s
           --health-retries 5
         environment:
