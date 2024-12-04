@@ -13,14 +13,25 @@ jobs:
     runs-on: ubuntu-latest
     services:
       hivemq:
-        image: hivemq/hivemq4  # Specifying a version to avoid potential issues with 'latest'
+        image: hivemq/hivemq4:4.1.0  # Use a specific version for stability
         ports:
-          - 1883:1883  # Exposing the MQTT port
-        options: --health-cmd "curl --silent --fail localhost:1883 || exit 1" --health-interval 10s --health-timeout 5s --health-retries 3  # Health check with curl
+          - 1883:1883
+        options:
+          --health-cmd "curl --silent --fail localhost:1883 || exit 1"
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 5
+        environment:
+          - "HIVEMQ_BROKER_NAME=HiveMQ"
+          - "HIVEMQ_LISTENER_MQTT_1883_ENABLED=true"  # Ensuring MQTT is enabled
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Set up Docker
+        run: |
+          docker pull hivemq/hivemq4:4.1.0  # Pull a stable version
 
       - name: Set up Java
         uses: actions/setup-java@v2
@@ -31,8 +42,8 @@ jobs:
       - name: Install Maven
         run: sudo apt-get install maven
 
-      - name: View container logs for debugging
-        run: docker logs $(docker ps -q --filter "ancestor=hivemq/hivemq-ce:2023.1.0")
-
       - name: Run tests
-        run: mvn clean test  # Running the tests
+        run: mvn clean test
+
+      - name: Get HiveMQ logs
+        run: docker logs $(docker ps -q --filter ancestor=hivemq/hivemq4:4.1.0)
