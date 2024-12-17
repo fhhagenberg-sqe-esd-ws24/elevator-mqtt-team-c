@@ -46,6 +46,8 @@ public class ElevatorSystem
 
     /** Instance of IElevator interface */
     private IElevator elevatorAPI;
+    
+    private ArrayList<Boolean> serviceableFloors;
 
     /** Instance of  buttonstate */
     protected Boolean buttonState;
@@ -74,10 +76,10 @@ public class ElevatorSystem
 
         elevators = new ArrayList<>();
 
-        Map<Integer, Boolean> serviceableFloors = new HashMap<>();
+        serviceableFloors = new ArrayList<>();
 
         for (int i = lowestFloor; i <= highestFloor; i++) {
-            serviceableFloors.put(i, true);
+            serviceableFloors.add(i, true);
         }
 
         for (int i = 0; i < numElevator; i++) {
@@ -353,6 +355,11 @@ public class ElevatorSystem
      */
     public Elevator getElevator(int elevatorNumber) {
         return elevators.get(elevatorNumber);
+    }
+
+ 
+    public int getNumberOfFloors() {
+        return serviceableFloors.size();
     }
 
     /**

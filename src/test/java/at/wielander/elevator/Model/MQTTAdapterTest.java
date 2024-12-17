@@ -1,7 +1,10 @@
 package at.wielander.elevator.Model;
 
 import at.wielander.elevator.Model.IElevator;
+
+import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,13 +21,20 @@ import org.testcontainers.hivemq.HiveMQContainer;
 import static org.junit.jupiter.api.Assertions.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
 import com.hivemq.client.mqtt.MqttVersion;
+import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
+import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
+
 import org.eclipse.paho.mqttv5.common.MqttException;
 
 @ExtendWith(MockitoExtension.class)
@@ -99,10 +109,11 @@ public class MQTTAdapterTest {
                 elevatorAPI // Pass the mocked interface
         );
         // Create the MQTT adapter
-        MQTTAdapter = new ElevatorMQTTAdapter(
+       MQTTAdapter = new ElevatorMQTTAdapter(
                 elevatorSystem,
                 Host,
-                "mqttAdapter");
+                "mqttAdapter", 100);
+     
     }
     
     @AfterEach
@@ -116,7 +127,6 @@ public class MQTTAdapterTest {
         assertTrue(hivemqCe.isRunning(), "HiveMQ container should be running.");
         assertNotNull(hivemqCe.getHost(), "Container host should not be null.");
         assertTrue(hivemqCe.getMappedPort(1883) > 0, "MQTT port should be greater than 0.");
-
     }
 
     @Test
@@ -129,5 +139,34 @@ public class MQTTAdapterTest {
     void testDisconnect() throws MqttException {
 //        testClient.disconnect();
 //        assertFalse(testClient.getState().isConnected());
+    }
+    
+    @Test
+    void testSimpleSubscription() throws MqttException, InterruptedException {
+        // Ensure client is connected
+        assertTrue(testClient.getState().isConnected(), "Client is not connected");
+        MQTTAdapter.connect();
+        // Subscribe to the topic and wait for subscription to be processed
+        testClient.toAsync().subscribeWith()
+        .topicFilter("building/info/numberOfElevators")
+        .qos(MqttQos.AT_LEAST_ONCE)
+        .callback(publish -> {
+            String message = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
+            System.out.println("Nachricht empfangen: " + message);
+            assertEquals("2", message);  // Überprüfe die empfangene Nachricht
+            assertEquals("building/info/numberOfElevators", publish.getTopic().toString());  // Überprüfe das Topic
+        })
+        .send()
+        .whenComplete((subAck, throwable) -> {
+            if (throwable != null) {
+                System.err.println("Subscription failed: " + throwable.getMessage());
+            } else {
+                System.out.println("Subscription erfolgreich: " + subAck);
+            }
+        });
+        
+        // Run the method that publishes the message
+        MQTTAdapter.run();
+       
     }
 }

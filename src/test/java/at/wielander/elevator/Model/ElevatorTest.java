@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import static at.wielander.elevator.Model.IElevator.*;
@@ -20,11 +21,11 @@ class ElevatorTest {
     public void setup() {
 
 
-        HashMap<Integer, Boolean> serviceFloors = new HashMap<>();
-        serviceFloors.put(0, true);
-        serviceFloors.put(1, true);
-        serviceFloors.put(2, false);
-        serviceFloors.put(3, true);
+        ArrayList<Boolean> serviceFloors = new ArrayList<>();
+        serviceFloors.set(0, true);
+        serviceFloors.set(1, true);
+        serviceFloors.set(2, false);
+        serviceFloors.set(3, true);
 
         elevator = new Elevator(
                 serviceFloors,
