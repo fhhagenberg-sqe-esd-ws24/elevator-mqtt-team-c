@@ -308,6 +308,9 @@ public class ElevatorMQTTAdapter {
                     .build();
             client.publish(publishMessage).get(100, TimeUnit.MILLISECONDS);
 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Thread-Unterbrechung wiederherstellen
+            throw new RuntimeException("Thread was interrupted while publishing retained topics", e);
         } catch (Exception exc) {
             throw new RuntimeException("Error while publishing retained topics: " + exc.getMessage(), exc);
         }
