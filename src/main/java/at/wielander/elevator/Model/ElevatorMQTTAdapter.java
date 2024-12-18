@@ -19,21 +19,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-
 public class ElevatorMQTTAdapter {
-	  private static final String topicBase = "building/";
-	    public static final String infoTopic = topicBase + "info/";
-	    private static final String statusTopic = topicBase + "status/";
-	    private static final String controlTopic = topicBase + "control/";
-	    public static final String infoElevatorTopic = infoTopic + "elevator/";
-	    public static final String statusElevatorTopic = statusTopic + "elevator/";
-	    public static final String controlElevatorTopic = controlTopic + "elevator/";
-	    public static final String statusFloorTopic = statusTopic + "floor/";
+    private static final String topicBase = "building/";
+    public static final String infoTopic = topicBase + "info/";
+    private static final String statusTopic = topicBase + "status/";
+    private static final String controlTopic = topicBase + "control/";
+    public static final String infoElevatorTopic = infoTopic + "elevator/";
+    public static final String statusElevatorTopic = statusTopic + "elevator/";
+    public static final String controlElevatorTopic = controlTopic + "elevator/";
+    public static final String statusFloorTopic = statusTopic + "floor/";
     private static final int TIMEOUT_DURATION = 10;
-    private Mqtt5AsyncClient  client;
+    private Mqtt5AsyncClient client;
     private ElevatorSystem elevatorSystem;
     private final ScheduledExecutorService scheduler;
     private int pollingInterval;
+
     /**
      * Establishes connection between the MQTT Broker and the Elevator Data Model
      *
@@ -49,17 +49,17 @@ public class ElevatorMQTTAdapter {
         String host = urlParts[0];
         int port = urlParts.length > 1 ? Integer.parseInt(urlParts[1]) : 1883; // Standard-Port 1883 für MQTT
 
-        this.client = Mqtt5Client.builder()  // Use Mqtt5Client instead of MqttClient
+        this.client = Mqtt5Client.builder() // Use Mqtt5Client instead of MqttClient
                 .serverHost(host)
                 .serverPort(port)
                 .identifier(clientId)
                 .buildAsync();
 
-       this.scheduler = Executors.newScheduledThreadPool(1);
+        this.scheduler = Executors.newScheduledThreadPool(1);
 
-        //connect();
-       // subscribeToControlTopics();
-        //startPublishingElevatorStates();
+        // connect();
+        // subscribeToControlTopics();
+        // startPublishingElevatorStates();
     }
 
     /**
@@ -67,47 +67,46 @@ public class ElevatorMQTTAdapter {
      */
     public void connect() {
         client.connectWith()
-              .cleanStart(true)  // MQTT5 equivalent of cleanSession
-              .send()
-              .whenComplete((connAck, throwable) -> {
-                  if (throwable != null) {
-                      System.err.println("Connection failed: " + throwable.getMessage());
-                  } else {
-                      System.out.println("Connected to MQTT broker: " + connAck.getType());
-                  }
-              });
+                .cleanStart(true) // MQTT5 equivalent of cleanSession
+                .send()
+                .whenComplete((connAck, throwable) -> {
+                    if (throwable != null) {
+                        System.err.println("Connection failed: " + throwable.getMessage());
+                    } else {
+                        System.out.println("Connected to MQTT broker: " + connAck.getType());
+                    }
+                });
     }
-    
 
     /**
      * Reconnect to MQTT Broker
      */
-	public void reconnect() {
-	    if (client != null && !client.getState().isConnected()) {
-	        client.toAsync().connect()
-	                .whenComplete((connAck, throwable) -> {
-	                    if (throwable != null) {
-	                        System.err.println("Failed to reconnect to MQTT broker: " + throwable.getMessage());
-	                        scheduler.schedule(this::reconnect, TIMEOUT_DURATION, TimeUnit.SECONDS);
-	                    } else {
-	                        System.out.println("Reconnected to MQTT broker.");
-	                    }
-	                });
-	    }
-	}
+    public void reconnect() {
+        if (client != null && !client.getState().isConnected()) {
+            client.toAsync().connect()
+                    .whenComplete((connAck, throwable) -> {
+                        if (throwable != null) {
+                            System.err.println("Failed to reconnect to MQTT broker: " + throwable.getMessage());
+                            scheduler.schedule(this::reconnect, TIMEOUT_DURATION, TimeUnit.SECONDS);
+                        } else {
+                            System.out.println("Reconnected to MQTT broker.");
+                        }
+                    });
+        }
+    }
 
     /**
      * Disconnect from MQTT Broker
      */
     private void disconnect() {
         client.disconnect()
-              .whenComplete((ack, throwable) -> {
-                  if (throwable != null) {
-                      System.err.println("Failed to disconnect: " + throwable.getMessage());
-                  } else {
-                      System.out.println("Disconnected from MQTT broker.");
-                  }
-              });
+                .whenComplete((ack, throwable) -> {
+                    if (throwable != null) {
+                        System.err.println("Failed to disconnect: " + throwable.getMessage());
+                    } else {
+                        System.out.println("Disconnected from MQTT broker.");
+                    }
+                });
     }
 
     /**
@@ -169,17 +168,17 @@ public class ElevatorMQTTAdapter {
      */
     private void publish(String topic, String messageContent) {
         client.publishWith()
-              .topic(topic)
-              .payload(messageContent.getBytes(StandardCharsets.UTF_8))
-              .retain(true)
-              .send()
-              .whenComplete((ack, throwable) -> {
-                  if (throwable != null) {
-                      System.err.println("Publish failed: " + throwable.getMessage());
-                  } else {
-                      System.out.println("Published: " + topic + " -> " + messageContent);
-                  }
-              });
+                .topic(topic)
+                .payload(messageContent.getBytes(StandardCharsets.UTF_8))
+                .retain(true)
+                .send()
+                .whenComplete((ack, throwable) -> {
+                    if (throwable != null) {
+                        System.err.println("Publish failed: " + throwable.getMessage());
+                    } else {
+                        System.out.println("Published: " + topic + " -> " + messageContent);
+                    }
+                });
     }
 
     /**
@@ -193,27 +192,26 @@ public class ElevatorMQTTAdapter {
      */
     private void subscribeToControlTopics() {
         client.subscribeWith()
-              .topicFilter("elevator/+/setTargetedFloor")
-              .callback(publish -> {
-                  String topic = publish.getTopic().toString();
-                  String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
-                  handleSetTargetedFloor(topic, payload);
-              })
-              .send();
+                .topicFilter("elevator/+/setTargetedFloor")
+                .callback(publish -> {
+                    String topic = publish.getTopic().toString();
+                    String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
+                    handleSetTargetedFloor(topic, payload);
+                })
+                .send();
 
         client.subscribeWith()
-              .topicFilter("elevator/+/setCommittedDirection")
-              .callback(publish -> {
-                  String topic = publish.getTopic().toString();
-                  String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
-                  handleSetCommittedDirection(topic, payload);
-              })
-              .send();
+                .topicFilter("elevator/+/setCommittedDirection")
+                .callback(publish -> {
+                    String topic = publish.getTopic().toString();
+                    String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
+                    handleSetCommittedDirection(topic, payload);
+                })
+                .send();
 
         System.out.println("Subscribed to control topics.");
     }
-    
-    
+
     private void handleSetTargetedFloor(String topic, String payload) {
         String[] topicLevels = topic.split("/");
         int elevatorNumber = Integer.parseInt(topicLevels[1]);
@@ -229,11 +227,12 @@ public class ElevatorMQTTAdapter {
         elevatorSystem.getElevator(elevatorNumber).setCommittedDirection(direction);
         System.out.println("Set elevator " + elevatorNumber + " committed direction to " + direction);
     }
-    
+
     /**
-     * Connects to broker, subscribes to all control topics,  
-     * publishes all retained topics and runs the update loop. 
-     * @throws MqttError     
+     * Connects to broker, subscribes to all control topics,
+     * publishes all retained topics and runs the update loop.
+     * 
+     * @throws MqttError
      */
     public void run() {
         // Überprüfen, ob der MQTT-Client verbunden ist
@@ -242,22 +241,21 @@ public class ElevatorMQTTAdapter {
             return; // Beende die Methode, wenn der MQTT-Client nicht verbunden ist
         }
 
-
         // Beide Verbindungen sind in Ordnung, also publish die retained topics
         publishRetainedTopics();
     }
-    
-    /** 
-     * Publishes the retained (static) building information topics 
-     * @throws MqttError    
-    */
+
+    /**
+     * Publishes the retained (static) building information topics
+     * 
+     * @throws MqttError
+     */
     public void publishRetainedTopics() {
-    	String payload;
+        String payload;
         // Sicherstellen, dass der Client verbunden ist
         if (client.getState() != MqttClientState.CONNECTED) {
             throw new RuntimeException("MQTT client must be connected before publishing messages");
         }
-
 
         try {
             // Anzahl der Aufzüge
@@ -265,7 +263,7 @@ public class ElevatorMQTTAdapter {
             Mqtt5Publish publishMessage = Mqtt5Publish.builder()
                     .topic(infoTopic + "numberOfElevators")
                     .payload(payload.getBytes(StandardCharsets.UTF_8))
-                    .retain(true)  // Nachricht als retained markieren
+                    .retain(true) // Nachricht als retained markieren
                     .qos(MqttQos.AT_LEAST_ONCE) // QoS Level 1 (AT_LEAST_ONCE)
                     .build();
             client.publish(publishMessage).get(100, TimeUnit.MILLISECONDS);

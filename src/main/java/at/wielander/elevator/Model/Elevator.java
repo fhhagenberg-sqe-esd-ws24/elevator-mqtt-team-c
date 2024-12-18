@@ -7,7 +7,7 @@ import java.util.Map;
 
 /**
  * Internal Data Model for the individual elevators.
-
+ * 
  * This class represents the physical elevator and its attributes. The behaviors
  * are inherited
  * from the provided interface {@link IElevator} as follows:
@@ -99,14 +99,14 @@ public class Elevator {
      * Constructor for internal Data Model based on IElevator interface
      *
      * @param serviceableFloors Floors to be serviced
-     * @param capacity Capacity of the elevator
-     * @param elevatorAPI Implements the IElevator interface
-     * @param elevatorNumber Number of elevators in a system
+     * @param capacity          Capacity of the elevator
+     * @param elevatorAPI       Implements the IElevator interface
+     * @param elevatorNumber    Number of elevators in a system
      */
     public Elevator(ArrayList<Boolean> serviceableFloors,
-                    int capacity,
-                    IElevator elevatorAPI,
-                    int elevatorNumber) {
+            int capacity,
+            IElevator elevatorAPI,
+            int elevatorNumber) {
         if (serviceableFloors == null || capacity <= 0) {
             throw new IllegalArgumentException("Invalid Arguments");
         }
@@ -196,7 +196,6 @@ public class Elevator {
         return position;
     }
 
-
     /**
      * Current speed of the lift in ft/s
      *
@@ -205,7 +204,6 @@ public class Elevator {
     public int getCurrentSpeed() {
         return speed;
     }
-
 
     /**
      * Current weight of the passengers in lbs
@@ -242,7 +240,7 @@ public class Elevator {
      *                FALSE)
      */
     public void setServiceableFloors(int floor, boolean service) {
-    	//todo throw exception if invalid value is passed floors.size() <= floor
+        // todo throw exception if invalid value is passed floors.size() <= floor
         this.serviceableFloors.set(floor, service);
     }
 
@@ -265,7 +263,7 @@ public class Elevator {
     }
 
     /**
-     *  Updates elevator based on current states
+     * Updates elevator based on current states
      */
     public void update() {
         try {
@@ -281,7 +279,7 @@ public class Elevator {
                 buttons.set(floor, elevatorAPI.getElevatorButton(elevatorNumber, floor));
             }
 
-        }catch(RemoteException e){
+        } catch (RemoteException e) {
             e.printStackTrace();
         }
     }

@@ -1,7 +1,5 @@
 package at.wielander.elevator;
 
-import at.wielander.elevator.Model.ElevatorMQTTAdapter;
-
 public class main {
     // public static void main(String[] args) {
     // String brokerUrl = "tcp://localhost:1883"; // Lokaler MQTT Broker
