@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ElevatorSystem.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">mqtt-elevator-team-c</a> &gt; <a href="index.source.html" class="el_package">at.wielander.elevator.Model</a> &gt; <span class="el_source">ElevatorSystem.java</span></div><h1>ElevatorSystem.java</h1><pre class="source lang-java linenums">package at.wielander.elevator.Model;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ElevatorSystem.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MQTT Elevator Team C</a> &gt; <a href="index.source.html" class="el_package">at.wielander.elevator.Model</a> &gt; <span class="el_source">ElevatorSystem.java</span></div><h1>ElevatorSystem.java</h1><pre class="source lang-java linenums">package at.wielander.elevator.Model;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -15,7 +15,6 @@ import java.util.Map;
  *&lt;/p&gt;
  * @version 1.0
  */
-
 
 /**
  * Constructor for multiple configurations of the elevator system.
@@ -41,13 +40,15 @@ public class ElevatorSystem
     /** array for the total number of buttons ('UP') in the building */
     private boolean[] upButtonPress;
 
-    /** Field  for the clock ticks - to be implemented in future assignment */
+    /** Field for the clock ticks - to be implemented in future assignment */
     private long clockTick;
 
     /** Instance of IElevator interface */
     private IElevator elevatorAPI;
 
-    /** Instance of  buttonstate */
+    private ArrayList&lt;Boolean&gt; serviceableFloors;
+
+    /** Instance of buttonstate */
     protected Boolean buttonState;
 
     /**
@@ -60,33 +61,33 @@ public class ElevatorSystem
      * @param floorHeight  Height of each floor to be given in ft
      */
     public ElevatorSystem(final int numElevator,
-                          final int lowestFloor,
-                          final int highestFloor,
-                          final int capacity,
-                          final int floorHeight,
-<span class="fc" id="L67">                          final IElevator elevatorAPI) {</span>
-<span class="fc" id="L68">        this.floorHeight = floorHeight;</span>
-<span class="fc" id="L69">        this.downButtonPress = new boolean[highestFloor+1];</span>
-<span class="fc" id="L70">        this.upButtonPress = new boolean[highestFloor+1];</span>
-<span class="fc" id="L71">        this.elevatorAPI = elevatorAPI;</span>
-<span class="fc" id="L72">        this.lowestFloor = lowestFloor;</span>
-<span class="fc" id="L73">        this.highestFloor = highestFloor;</span>
+            final int lowestFloor,
+            final int highestFloor,
+            final int capacity,
+            final int floorHeight,
+<span class="fc" id="L68">            final IElevator elevatorAPI) {</span>
+<span class="fc" id="L69">        this.floorHeight = floorHeight;</span>
+<span class="fc" id="L70">        this.downButtonPress = new boolean[highestFloor + 1];</span>
+<span class="fc" id="L71">        this.upButtonPress = new boolean[highestFloor + 1];</span>
+<span class="fc" id="L72">        this.elevatorAPI = elevatorAPI;</span>
+<span class="fc" id="L73">        this.lowestFloor = lowestFloor;</span>
+<span class="fc" id="L74">        this.highestFloor = highestFloor;</span>
 
-<span class="fc" id="L75">        elevators = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L76">        elevators = new ArrayList&lt;&gt;();</span>
 
-<span class="fc" id="L77">        Map&lt;Integer, Boolean&gt; serviceableFloors = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L78">        serviceableFloors = new ArrayList&lt;&gt;();</span>
 
-<span class="fc bfc" id="L79" title="All 2 branches covered.">        for (int i = lowestFloor; i &lt;= highestFloor; i++) {</span>
-<span class="fc" id="L80">            serviceableFloors.put(i, true);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (int i = lowestFloor; i &lt;= highestFloor; i++) {</span>
+<span class="fc" id="L81">            serviceableFloors.add(i, true);</span>
         }
 
-<span class="fc bfc" id="L83" title="All 2 branches covered.">        for (int i = 0; i &lt; numElevator; i++) {</span>
-<span class="pc bpc" id="L84" title="1 of 2 branches missed.">            if (elevators != null) {</span>
-<span class="fc" id="L85">                elevators.add(new Elevator(serviceableFloors, capacity, this.elevatorAPI, i));</span>
-<span class="fc" id="L86">                elevators.get(i).update();</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (int i = 0; i &lt; numElevator; i++) {</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">            if (elevators != null) {</span>
+<span class="fc" id="L86">                elevators.add(new Elevator(serviceableFloors, capacity, this.elevatorAPI, i));</span>
+<span class="fc" id="L87">                elevators.get(i).update();</span>
             }
         }
-<span class="fc" id="L89">    }</span>
+<span class="fc" id="L90">    }</span>
 
     /**
      * Returns the direction of the elevator heading
@@ -99,7 +100,7 @@ public class ElevatorSystem
      */
     @Override
     public int getCommittedDirection(int elevatorNumber) throws RemoteException {
-<span class="fc" id="L102">        return elevators.get(elevatorNumber).getCommitedDirection();</span>
+<span class="fc" id="L103">        return elevators.get(elevatorNumber).getCommitedDirection();</span>
     }
 
     /**
@@ -111,7 +112,7 @@ public class ElevatorSystem
      */
     @Override
     public int getElevatorAccel(int elevatorNumber) throws RemoteException {
-<span class="fc" id="L114">        return elevators.get(elevatorNumber).getAcceleration();</span>
+<span class="fc" id="L115">        return elevators.get(elevatorNumber).getAcceleration();</span>
     }
 
     /**
@@ -125,13 +126,13 @@ public class ElevatorSystem
      * @throws RemoteException RMI Invalid exception
      */
     @Override
-    public boolean getElevatorButton(int elevatorNumber, int floor) throws RemoteException{
-<span class="fc" id="L129">        buttonState = elevators.get(elevatorNumber).getButtonsInElevatorStatus().get(floor);</span>
+    public boolean getElevatorButton(int elevatorNumber, int floor) throws RemoteException {
+<span class="fc" id="L130">        buttonState = elevators.get(elevatorNumber).getButtonsInElevatorStatus().get(floor);</span>
 
-<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (buttonState == null){</span>
-<span class="fc" id="L132">            return false;</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        if (buttonState == null) {</span>
+<span class="nc" id="L133">            return false;</span>
         }
-<span class="fc" id="L134">        return buttonState;</span>
+<span class="fc" id="L135">        return buttonState;</span>
     }
 
     /**
@@ -143,7 +144,7 @@ public class ElevatorSystem
      */
     @Override
     public int getElevatorDoorStatus(int elevatorNumber) throws RemoteException {
-<span class="fc" id="L146">        return elevators.get(elevatorNumber).getElevatorDoorStatus();</span>
+<span class="fc" id="L147">        return elevators.get(elevatorNumber).getElevatorDoorStatus();</span>
     }
 
     /**
@@ -156,26 +157,28 @@ public class ElevatorSystem
      */
     @Override
     public int getElevatorFloor(int elevatorNumber) throws RemoteException {
-<span class="nc" id="L159">        return (int) Math.round((double) elevators.get(elevatorNumber).getCurrentPosition() / (double) this.floorHeight);</span>
+<span class="nc" id="L160">        return (int) Math</span>
+<span class="nc" id="L161">                .round((double) elevators.get(elevatorNumber).getCurrentPosition() / (double) this.floorHeight);</span>
     }
 
     /***
      * Returns the current elevator ID
-     * 
+     *
      * @return integer value of elevator ID
      * @throws RemoteException RMI Invalid exception
      */
     @Override
     public int getElevatorNum() throws RemoteException {
-<span class="nc" id="L170">        return elevators.size();</span>
+<span class="fc" id="L172">        return elevators.size();</span>
     }
 
     /**
      * Returns the the total number of elevators with respect to building layout
+     * 
      * @return total num of elevators
      */
     public int getTotalElevators() {
-<span class="nc" id="L178">        return elevators.size();</span>
+<span class="nc" id="L181">        return elevators.size();</span>
     }
 
     /**
@@ -187,19 +190,19 @@ public class ElevatorSystem
      */
     @Override
     public int getElevatorPosition(int elevatorNumber) throws RemoteException {
-<span class="fc" id="L190">        return elevatorAPI.getElevatorPosition(elevatorNumber);</span>
+<span class="fc" id="L193">        return elevatorAPI.getElevatorPosition(elevatorNumber);</span>
     }
 
     /**
      * Return speed of the elevator
-     * 
+     *
      * @param elevatorNumber - elevator number whose speed is being retrieved
      * @return Speed of the elevator in ft/s
      * @throws RemoteException RMI Invalid exception
      */
     @Override
     public int getElevatorSpeed(int elevatorNumber) throws RemoteException {
-<span class="fc" id="L202">        return elevators.get(elevatorNumber).getCurrentSpeed();</span>
+<span class="fc" id="L205">        return elevators.get(elevatorNumber).getCurrentSpeed();</span>
     }
 
     /**
@@ -211,76 +214,76 @@ public class ElevatorSystem
      */
     @Override
     public int getElevatorWeight(int elevatorNumber) throws RemoteException {
-<span class="fc" id="L214">        return elevators.get(elevatorNumber).getCurrentWeight();</span>
+<span class="fc" id="L217">        return elevators.get(elevatorNumber).getCurrentWeight();</span>
     }
 
     /**
      * Returns the set capacity of the elevator
-     * 
+     *
      * @param elevatorNumber - elevator number whose service is being retrieved
      * @return Max Capacity of the respective elevator in lbs
      * @throws RemoteException Throws RMI Exception
      */
     @Override
     public int getElevatorCapacity(int elevatorNumber) throws RemoteException {
-<span class="fc" id="L226">        return elevators.get(elevatorNumber).getElevatorCapacity();</span>
+<span class="fc" id="L229">        return elevators.get(elevatorNumber).getElevatorCapacity();</span>
     }
 
     /**
      * Returns the logical state of the down button of a respective floor
-     * 
+     *
      * @param floor - floor number whose down button status is being retrieved
      * @return (TRUE or FALSE ) state for the down button
      * @throws RemoteException Throws an Exception for RMI
      */
     @Override
     public boolean getFloorButtonDown(int floor) throws RemoteException {
-<span class="pc bpc" id="L238" title="2 of 4 branches missed.">        if (floor &lt; lowestFloor || floor &gt; highestFloor) {</span>
-<span class="nc" id="L239">            throw new RemoteException(&quot;Floor number out of range&quot;);</span>
+<span class="pc bpc" id="L241" title="2 of 4 branches missed.">        if (floor &lt; lowestFloor || floor &gt; highestFloor) {</span>
+<span class="nc" id="L242">            throw new RemoteException(&quot;Floor number out of range&quot;);</span>
         }
-<span class="fc" id="L241">        return this.downButtonPress[floor];</span>
+<span class="fc" id="L244">        return this.downButtonPress[floor];</span>
     }
 
     /**
      * Returns the logical state of the up button of a respective floor
-     * 
+     *
      * @param floor - floor number whose Up button status is being retrieved
      * @return (TRUE or FALSE ) state for the up button
      * @throws RemoteException Throws an Exception for RMI
      */
     @Override
     public boolean getFloorButtonUp(int floor) throws RemoteException {
-<span class="pc bpc" id="L253" title="2 of 4 branches missed.">        if (floor &lt; lowestFloor || floor &gt; highestFloor) {</span>
-<span class="nc" id="L254">            throw new RemoteException(&quot;Floor number out of range&quot;);</span>
+<span class="pc bpc" id="L256" title="2 of 4 branches missed.">        if (floor &lt; lowestFloor || floor &gt; highestFloor) {</span>
+<span class="nc" id="L257">            throw new RemoteException(&quot;Floor number out of range&quot;);</span>
         }
-<span class="fc" id="L256">        return this.upButtonPress[floor];</span>
+<span class="fc" id="L259">        return this.upButtonPress[floor];</span>
     }
 
     /**
      * Returns the height of the floor in the building layout
-     * 
+     *
      * @return height of the floor in ft
      * @throws RemoteException Throws an Exception for RMI
      */
     @Override
     public int getFloorHeight() throws RemoteException {
-<span class="fc" id="L267">        return this.floorHeight;</span>
+<span class="fc" id="L270">        return this.floorHeight;</span>
     }
 
     /**
      * Returns the current floor number
-     * 
+     *
      * @return Integer value of floor number
      * @throws RemoteException Throws an Exception for RMI
      */
     @Override
     public int getFloorNum() throws RemoteException {
-<span class="fc" id="L278">        return this.highestFloor - this.lowestFloor;</span>
+<span class="fc" id="L281">        return this.highestFloor - this.lowestFloor;</span>
     }
 
     /**
      * Returns the serviceable floors
-     * 
+     *
      * @param elevatorNumber elevator number whose service is being retrieved
      * @param floor          floor whose service status by the specified elevator is
      *                       being retrieved
@@ -289,25 +292,25 @@ public class ElevatorSystem
      */
     @Override
     public boolean getServicesFloors(int elevatorNumber, int floor) throws RemoteException {
-<span class="fc" id="L292">        return elevators.get(elevatorNumber).getServiceableFloors().get(floor);</span>
+<span class="fc" id="L295">        return elevators.get(elevatorNumber).getServiceableFloors().get(floor);</span>
 
     }
 
     /**
      * Returns the targeted floor
-     * 
+     *
      * @param elevatorNumber elevator number whose target floor is being retrieved
      * @return Targeted floor for the elevator to head in that direction
      * @throws RemoteException Throws an Exception for RMI
      */
     @Override
     public int getTarget(int elevatorNumber) throws RemoteException {
-<span class="fc" id="L305">        return elevators.get(elevatorNumber).getTargetedFloor();</span>
+<span class="fc" id="L308">        return elevators.get(elevatorNumber).getTargetedFloor();</span>
     }
 
     /**
      * Sets the direction of the elevator
-     * 
+     *
      * @param elevatorNumber elevator number whose committed direction is being set
      * @param direction      direction being set where up=0, down=1 and
      *                       uncommitted=2
@@ -315,12 +318,12 @@ public class ElevatorSystem
      */
     @Override
     public void setCommittedDirection(int elevatorNumber, int direction) throws RemoteException {
-<span class="nc" id="L318">        elevators.get(elevatorNumber).setCommittedDirection(direction);</span>
-<span class="nc" id="L319">    }</span>
+<span class="nc" id="L321">        elevators.get(elevatorNumber).setCommittedDirection(direction);</span>
+<span class="nc" id="L322">    }</span>
 
     /**
      * Sets the floors accessible by the elevator
-     * 
+     *
      * @param elevatorNumber elevator number whose service is being defined
      * @param floor          floor whose service by the specified elevator is being
      *                       set
@@ -330,54 +333,59 @@ public class ElevatorSystem
      */
     @Override
     public void setServicesFloors(int elevatorNumber, int floor, boolean service) throws RemoteException {
-<span class="fc" id="L333">        elevators.get(elevatorNumber).setServiceableFloors(floor, service);</span>
-<span class="fc" id="L334">    }</span>
+<span class="fc" id="L336">        elevators.get(elevatorNumber).setServiceableFloors(floor, service);</span>
+<span class="fc" id="L337">    }</span>
 
     /**
      * Returns set target floor of the elevator
-     * 
+     *
      * @param elevatorNumber elevator number whose target floor is being set
      * @param target         floor number which the specified elevator is to target
      * @throws RemoteException Throws an Exception for RMI
      */
     @Override
     public void setTarget(int elevatorNumber, int target) throws RemoteException {
-<span class="fc" id="L345">        elevators.get(elevatorNumber).setTargetedFloor(target);</span>
-<span class="fc" id="L346">    }</span>
+<span class="fc" id="L348">        elevators.get(elevatorNumber).setTargetedFloor(target);</span>
+<span class="fc" id="L349">    }</span>
 
     /**
      * Return requested elevator
+     * 
      * @param elevatorNumber elevator number
      *
      * @return requested elevator
      */
     public Elevator getElevator(int elevatorNumber) {
-<span class="fc" id="L355">        return elevators.get(elevatorNumber);</span>
+<span class="fc" id="L359">        return elevators.get(elevatorNumber);</span>
+    }
+
+    public int getNumberOfFloors() {
+<span class="fc" id="L363">        return serviceableFloors.size();</span>
     }
 
     /**
      * Returns clock tick
-     * 
+     *
      * @return Clock tick
      * @throws RemoteException Throws an Exception for RMI
      */
     @Override
     public long getClockTick() throws RemoteException {
-<span class="nc" id="L366">        return this.clockTick;</span>
+<span class="fc" id="L374">        return this.clockTick;</span>
     }
 
     /**
-     *  Updates all elevators based on current states
+     * Updates all elevators based on current states
      */
     public void updateAll() throws RemoteException {
-<span class="fc bfc" id="L373" title="All 2 branches covered.">        for (Elevator elevator : elevators) {</span>
-<span class="fc" id="L374">            elevator.update();</span>
-<span class="fc" id="L375">        }</span>
+<span class="fc bfc" id="L381" title="All 2 branches covered.">        for (Elevator elevator : elevators) {</span>
+<span class="fc" id="L382">            elevator.update();</span>
+<span class="fc" id="L383">        }</span>
 
-<span class="fc bfc" id="L377" title="All 2 branches covered.">        for (int floor = lowestFloor; floor&lt;= highestFloor; floor++){</span>
-<span class="fc" id="L378">            this.upButtonPress[floor]= elevatorAPI.getFloorButtonUp(floor);</span>
-<span class="fc" id="L379">            this.downButtonPress[floor]= elevatorAPI.getFloorButtonDown(floor);</span>
+<span class="fc bfc" id="L385" title="All 2 branches covered.">        for (int floor = lowestFloor; floor &lt;= highestFloor; floor++) {</span>
+<span class="fc" id="L386">            this.upButtonPress[floor] = elevatorAPI.getFloorButtonUp(floor);</span>
+<span class="fc" id="L387">            this.downButtonPress[floor] = elevatorAPI.getFloorButtonDown(floor);</span>
         }
-<span class="fc" id="L381">    }</span>
+<span class="fc" id="L389">    }</span>
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

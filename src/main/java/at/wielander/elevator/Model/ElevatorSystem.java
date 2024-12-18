@@ -16,7 +16,6 @@ import java.util.Map;
  * @version 1.0
  */
 
-
 /**
  * Constructor for multiple configurations of the elevator system.
  */
@@ -41,13 +40,15 @@ public class ElevatorSystem
     /** array for the total number of buttons ('UP') in the building */
     private boolean[] upButtonPress;
 
-    /** Field  for the clock ticks - to be implemented in future assignment */
+    /** Field for the clock ticks - to be implemented in future assignment */
     private long clockTick;
 
     /** Instance of IElevator interface */
     private IElevator elevatorAPI;
 
-    /** Instance of  buttonstate */
+    private ArrayList<Boolean> serviceableFloors;
+
+    /** Instance of buttonstate */
     protected Boolean buttonState;
 
     /**
@@ -60,24 +61,24 @@ public class ElevatorSystem
      * @param floorHeight  Height of each floor to be given in ft
      */
     public ElevatorSystem(final int numElevator,
-                          final int lowestFloor,
-                          final int highestFloor,
-                          final int capacity,
-                          final int floorHeight,
-                          final IElevator elevatorAPI) {
+            final int lowestFloor,
+            final int highestFloor,
+            final int capacity,
+            final int floorHeight,
+            final IElevator elevatorAPI) {
         this.floorHeight = floorHeight;
-        this.downButtonPress = new boolean[highestFloor+1];
-        this.upButtonPress = new boolean[highestFloor+1];
+        this.downButtonPress = new boolean[highestFloor + 1];
+        this.upButtonPress = new boolean[highestFloor + 1];
         this.elevatorAPI = elevatorAPI;
         this.lowestFloor = lowestFloor;
         this.highestFloor = highestFloor;
 
         elevators = new ArrayList<>();
 
-        Map<Integer, Boolean> serviceableFloors = new HashMap<>();
+        serviceableFloors = new ArrayList<>();
 
         for (int i = lowestFloor; i <= highestFloor; i++) {
-            serviceableFloors.put(i, true);
+            serviceableFloors.add(i, true);
         }
 
         for (int i = 0; i < numElevator; i++) {
@@ -125,10 +126,10 @@ public class ElevatorSystem
      * @throws RemoteException RMI Invalid exception
      */
     @Override
-    public boolean getElevatorButton(int elevatorNumber, int floor) throws RemoteException{
+    public boolean getElevatorButton(int elevatorNumber, int floor) throws RemoteException {
         buttonState = elevators.get(elevatorNumber).getButtonsInElevatorStatus().get(floor);
 
-        if (buttonState == null){
+        if (buttonState == null) {
             return false;
         }
         return buttonState;
@@ -156,7 +157,8 @@ public class ElevatorSystem
      */
     @Override
     public int getElevatorFloor(int elevatorNumber) throws RemoteException {
-        return (int) Math.round((double) elevators.get(elevatorNumber).getCurrentPosition() / (double) this.floorHeight);
+        return (int) Math
+                .round((double) elevators.get(elevatorNumber).getCurrentPosition() / (double) this.floorHeight);
     }
 
     /***
@@ -172,6 +174,7 @@ public class ElevatorSystem
 
     /**
      * Returns the the total number of elevators with respect to building layout
+     * 
      * @return total num of elevators
      */
     public int getTotalElevators() {
@@ -347,12 +350,17 @@ public class ElevatorSystem
 
     /**
      * Return requested elevator
+     * 
      * @param elevatorNumber elevator number
      *
      * @return requested elevator
      */
     public Elevator getElevator(int elevatorNumber) {
         return elevators.get(elevatorNumber);
+    }
+
+    public int getNumberOfFloors() {
+        return serviceableFloors.size();
     }
 
     /**
@@ -367,16 +375,16 @@ public class ElevatorSystem
     }
 
     /**
-     *  Updates all elevators based on current states
+     * Updates all elevators based on current states
      */
     public void updateAll() throws RemoteException {
         for (Elevator elevator : elevators) {
             elevator.update();
         }
 
-        for (int floor = lowestFloor; floor<= highestFloor; floor++){
-            this.upButtonPress[floor]= elevatorAPI.getFloorButtonUp(floor);
-            this.downButtonPress[floor]= elevatorAPI.getFloorButtonDown(floor);
+        for (int floor = lowestFloor; floor <= highestFloor; floor++) {
+            this.upButtonPress[floor] = elevatorAPI.getFloorButtonUp(floor);
+            this.downButtonPress[floor] = elevatorAPI.getFloorButtonDown(floor);
         }
     }
 }

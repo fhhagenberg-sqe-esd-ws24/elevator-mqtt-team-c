@@ -1,12 +1,13 @@
 package at.wielander.elevator.Model;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Internal Data Model for the individual elevators.
-
+ * 
  * This class represents the physical elevator and its attributes. The behaviors
  * are inherited
  * from the provided interface {@link IElevator} as follows:
@@ -71,7 +72,7 @@ public class Elevator {
     protected int position;
 
     /** Variable for the buttons with the floors mapped to a logical state */
-    protected Map<Integer, Boolean> buttons;
+    protected ArrayList<Boolean> buttons;
 
     /** Variable for the current weight of the passengers in the elevator in lbs */
     protected int weight;
@@ -80,7 +81,7 @@ public class Elevator {
     protected int capacity;
 
     /** Variable for the current serviceable floors mapped to a logical state */
-    protected Map<Integer, Boolean> serviceableFloors;
+    protected ArrayList<Boolean> serviceableFloors;
 
     /** Variable for the targeted floor */
     protected int targetedFloor;
@@ -98,14 +99,14 @@ public class Elevator {
      * Constructor for internal Data Model based on IElevator interface
      *
      * @param serviceableFloors Floors to be serviced
-     * @param capacity Capacity of the elevator
-     * @param elevatorAPI Implements the IElevator interface
-     * @param elevatorNumber Number of elevators in a system
+     * @param capacity          Capacity of the elevator
+     * @param elevatorAPI       Implements the IElevator interface
+     * @param elevatorNumber    Number of elevators in a system
      */
-    public Elevator(Map<Integer, Boolean> serviceableFloors,
-                    int capacity,
-                    IElevator elevatorAPI,
-                    int elevatorNumber) {
+    public Elevator(ArrayList<Boolean> serviceableFloors,
+            int capacity,
+            IElevator elevatorAPI,
+            int elevatorNumber) {
         if (serviceableFloors == null || capacity <= 0) {
             throw new IllegalArgumentException("Invalid Arguments");
         }
@@ -118,19 +119,15 @@ public class Elevator {
         this.position = GROUND_FLOOR;
         this.targetedFloor = GROUND_FLOOR;
         this.currentFloor = GROUND_FLOOR;
-        this.buttons = new HashMap<>();
+        this.buttons = new ArrayList<Boolean>();
         this.serviceableFloors = serviceableFloors;
         this.capacity = capacity;
         this.elevatorNumber = elevatorNumber;
         this.elevatorAPI = elevatorAPI;
 
         // set all buttons to false within the serviceable floor range
-        for (int id : this.serviceableFloors.keySet()) {
-            if (serviceableFloors.get(id) != null) {
-                buttons.put(id, false);
-            } else {
-                System.err.println("Serviceable floor state at " + id + " not specified");
-            }
+        for (int id = 0; id < serviceableFloors.size(); id++) {
+            this.buttons.add(false);
         }
     }
 
@@ -167,7 +164,7 @@ public class Elevator {
      * @return Map of the buttons representing each floor and their state (TRUE /
      *         FALSE)
      */
-    public Map<Integer, Boolean> getButtonsInElevatorStatus() {
+    public ArrayList<Boolean> getButtonsInElevatorStatus() {
         return buttons;
     }
 
@@ -199,7 +196,6 @@ public class Elevator {
         return position;
     }
 
-
     /**
      * Current speed of the lift in ft/s
      *
@@ -208,7 +204,6 @@ public class Elevator {
     public int getCurrentSpeed() {
         return speed;
     }
-
 
     /**
      * Current weight of the passengers in lbs
@@ -233,7 +228,7 @@ public class Elevator {
      *
      * @return Floors as an integer mapped to a logical state (TRUE / FALSE)
      */
-    public Map<Integer, Boolean> getServiceableFloors() {
+    public ArrayList<Boolean> getServiceableFloors() {
         return serviceableFloors;
     }
 
@@ -245,7 +240,8 @@ public class Elevator {
      *                FALSE)
      */
     public void setServiceableFloors(int floor, boolean service) {
-        this.serviceableFloors.put(floor, service);
+        // todo throw exception if invalid value is passed floors.size() <= floor
+        this.serviceableFloors.set(floor, service);
     }
 
     /**
@@ -267,7 +263,7 @@ public class Elevator {
     }
 
     /**
-     *  Updates elevator based on current states
+     * Updates elevator based on current states
      */
     public void update() {
         try {
@@ -279,11 +275,11 @@ public class Elevator {
             this.weight = elevatorAPI.getElevatorWeight(elevatorNumber);
             this.doorStatus = elevatorAPI.getElevatorDoorStatus(elevatorNumber);
             this.commitedDirection = elevatorAPI.getCommittedDirection(elevatorNumber);
-            for (int floor : buttons.keySet()) {
-                buttons.put(floor, elevatorAPI.getElevatorButton(elevatorNumber, floor));
+            for (int floor = 0; floor < buttons.size(); floor++) {
+                buttons.set(floor, elevatorAPI.getElevatorButton(elevatorNumber, floor));
             }
 
-        }catch(RemoteException e){
+        } catch (RemoteException e) {
             e.printStackTrace();
         }
     }
