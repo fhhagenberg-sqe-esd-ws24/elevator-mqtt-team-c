@@ -215,8 +215,7 @@ public class MQTTAdapterTest {
         // Run the method that publishes the retained topics
         MQTTAdapter.run();
 
-        // Wait for all subscriptions to receive messages
         // assertTrue(latch.await(5, TimeUnit.SECONDS), "Not all topics received
-        // messages in time");
+
     }
 }
