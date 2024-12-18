@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -22,6 +23,9 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.hivemq.HiveMQContainer;
 import static org.junit.jupiter.api.Assertions.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.util.concurrent.TimeUnit;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
@@ -39,6 +43,7 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 
 import org.eclipse.paho.mqttv5.common.MqttException;
 
+@Testcontainers
 @ExtendWith(MockitoExtension.class)
 @Testcontainers
 public class MQTTAdapterTest {
@@ -127,6 +132,7 @@ public class MQTTAdapterTest {
         assertTrue(hivemqCe.getMappedPort(1883) > 0, "MQTT port should be greater than 0.");
     }
 
+
     @Test
     void testConnect() throws MqttException {
         // assertNotNull(testClient);
@@ -165,12 +171,14 @@ public class MQTTAdapterTest {
         // Run the method that publishes the message
         MQTTAdapter.run();
 
+
     }
 
     @Test
     void testRetainedTopics() throws MqttException, InterruptedException {
         // Ensure client is connected
         assertTrue(testClient.getState().isConnected(), "Client is not connected");
+
 
         // Connect the MQTT adapter
         MQTTAdapter.connect();

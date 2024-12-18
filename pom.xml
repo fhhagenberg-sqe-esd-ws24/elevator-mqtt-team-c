@@ -1,12 +1,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
+
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>at.fhhagenberg.sqelevator</groupId>
     <artifactId>mqtt-elevator-team-c</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>MQTT Elevator Team C</name>
+
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -15,6 +18,13 @@
         <sonar.organization>fhhagenberg-sqe-esd-ws24</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>hivemq</id>
+            <url>https://repo.hivemq.com/maven/</url>
+        </repository>
+    </repositories>
 
     <dependencyManagement>
         <dependencies>
@@ -29,6 +39,7 @@
     </dependencyManagement>
 
     <dependencies>
+
         <!-- JUnit Jupiter -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -105,7 +116,9 @@
 
     <build>
         <plugins>
+
             <!-- Maven Compiler Plugin -->
+
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
@@ -116,6 +129,7 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.11</version>
+
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
@@ -157,6 +171,7 @@
                             <goal>single</goal>
                         </goals>
                     </execution>
+
                 </executions>
             </plugin>
 

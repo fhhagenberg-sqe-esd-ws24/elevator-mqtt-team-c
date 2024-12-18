@@ -1,0 +1,48 @@
+name: Integration Tests with HiveMQ
+
+on:
+  push:
+    branches:
+      - feat/TestContainers
+  pull_request:
+    branches:
+      - feat/TestContainers
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      hivemq:
+        image: hivemq/hivemq4:latest  # Use the latest stable HiveMQ image (or specify a version)
+        ports:
+          - 1883:1883  # Exposing the MQTT port
+        options:
+          --health-cmd "curl --silent --fail localhost:1883 || exit 1"  # Health check using curl
+          --health-timeout 10s
+          --health-retries 5
+        environment:
+          - HIVEMQ_BROKER_NAME=HiveMQ  # Set broker name
+          - HIVEMQ_LISTENER_MQTT_1883_ENABLED=true  # Enable the MQTT listener
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker
+        run: |
+          docker pull hivemq/hivemq4:latest  # Ensure the correct image version is pulled
+
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adoptopenjdk'
+
+      - name: Install Maven
+        run: sudo apt-get install maven
+
+      - name: Run tests
+        run: mvn clean test  # Running the tests
+
+      - name: Get HiveMQ logs
+        run: docker logs $(docker ps -q --filter ancestor=hivemq/hivemq4:latest)
