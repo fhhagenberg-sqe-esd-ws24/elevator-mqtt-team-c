@@ -20,53 +20,52 @@ class ElevatorTest {
     @BeforeEach
     public void setup() {
 
-
         ArrayList<Boolean> serviceFloors = new ArrayList<>();
-        serviceFloors.set(0, true);
-        serviceFloors.set(1, true);
-        serviceFloors.set(2, false);
-        serviceFloors.set(3, true);
+        serviceFloors.add(0, true);
+        serviceFloors.add(1, true);
+        serviceFloors.add(2, false);
+        serviceFloors.add(3, true);
 
         elevator = new Elevator(
                 serviceFloors,
-                 4000,
+                4000,
                 mockIElevator,
                 0);
     }
 
     @Test
-    void testGetCommittedDirection(){
+    void testGetCommittedDirection() {
         assertEquals(IElevator.ELEVATOR_DIRECTION_UNCOMMITTED, elevator.getCommitedDirection());
     }
 
     @Test
-    void testGetLocation(){
+    void testGetLocation() {
         assertEquals(0, elevator.getCurrentPosition());
     }
 
     @Test
-    void testGetSpeed(){
+    void testGetSpeed() {
         assertEquals(0, elevator.getCurrentSpeed());
     }
 
     @Test
-    void testGetAcceleration(){
+    void testGetAcceleration() {
         assertEquals(0, elevator.getAcceleration());
     }
 
     @Test
-    void testGetButtonStatus(){
+    void testGetButtonStatus() {
 
         assertFalse(elevator.getButtonsInElevatorStatus().get(0));
     }
 
     @Test
-    void testGetElevatorCapacity(){
+    void testGetElevatorCapacity() {
         assertEquals(0, elevator.getCurrentWeight());
     }
 
     @Test
-    void testElevatorDoorState(){
+    void testElevatorDoorState() {
         assertEquals(IElevator.ELEVATOR_DOORS_CLOSED, elevator.getElevatorDoorStatus());
     }
 
@@ -84,7 +83,6 @@ class ElevatorTest {
 
     }
 
-
     @Test
     void testSetServiceableFloors() {
         assertEquals(4, elevator.getServiceableFloors().size());
@@ -97,11 +95,11 @@ class ElevatorTest {
     @Test
     void testSetTargetedFloor() {
 
-    elevator.setTargetedFloor(1);
-    assertEquals(1, elevator.getTargetedFloor());
+        elevator.setTargetedFloor(1);
+        assertEquals(1, elevator.getTargetedFloor());
 
-    elevator.setTargetedFloor(4);
-    assertEquals(4, elevator.getTargetedFloor());
+        elevator.setTargetedFloor(4);
+        assertEquals(4, elevator.getTargetedFloor());
     }
 
 }
