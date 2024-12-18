@@ -3,10 +3,10 @@ name: MQTT Tests
 on:
   push:
     branches:
-      - mqtt  # Der Workflow wird nur ausgeführt, wenn auf den mqtt-Branch gepusht wird
+      - master  # Der Workflow wird nur ausgeführt, wenn auf den mqtt-Branch gepusht wird
   pull_request:
     branches:
-      - mqtt  # Der Workflow wird auch bei Pull Requests auf den mqtt-Branch ausgeführt
+      - master  # Der Workflow wird auch bei Pull Requests auf den mqtt-Branch ausgeführt
 
 jobs:
   test:
