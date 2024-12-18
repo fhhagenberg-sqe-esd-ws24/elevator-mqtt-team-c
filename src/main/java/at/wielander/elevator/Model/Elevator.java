@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import sqelevator.IElevator;
+
 /**
  * Internal Data Model for the individual elevators.
  * 

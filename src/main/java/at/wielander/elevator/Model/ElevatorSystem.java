@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import sqelevator.IElevator;
+
 /**
  * Represents the control structure for monitoring various elevator configurations in the building .
  * <p>

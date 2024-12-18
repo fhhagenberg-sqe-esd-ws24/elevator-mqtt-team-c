@@ -1,7 +1,5 @@
 package at.wielander.elevator.Model;
 
-import at.wielander.elevator.Model.IElevator;
-
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.util.Map;
@@ -40,6 +38,8 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
+
+import sqelevator.IElevator;
 
 import org.eclipse.paho.mqttv5.common.MqttException;
 
