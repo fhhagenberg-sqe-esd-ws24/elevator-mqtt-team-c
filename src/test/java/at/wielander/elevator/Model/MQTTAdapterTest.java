@@ -2,6 +2,7 @@ package at.wielander.elevator.Model;
 
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -26,12 +27,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
 import com.hivemq.client.mqtt.MqttVersion;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
@@ -53,7 +56,7 @@ public class MQTTAdapterTest {
     @Mock
     private IElevator elevatorAPI;
 
-    // @InjectMocks
+
     private ElevatorSystem elevatorSystem;
 
     private ElevatorMQTTAdapter MQTTAdapter;
@@ -80,7 +83,12 @@ public class MQTTAdapterTest {
 
         testClient.connect();
         MockitoAnnotations.openMocks(this);
-
+        //mock all elevator buttons
+        for (int elevator = 0; elevator <= 1; elevator++) {
+            for (int button = 0; button <= 3; button++) {
+                lenient().when(elevatorAPI.getElevatorButton(anyInt(), anyInt())).thenReturn(false);
+            }
+        }
         lenient().when(elevatorAPI.getElevatorNum()).thenReturn(2);
         lenient().when(elevatorAPI.getElevatorFloor(1)).thenReturn(1);
         lenient().when(elevatorAPI.getElevatorAccel(1)).thenReturn(15);
@@ -89,10 +97,9 @@ public class MQTTAdapterTest {
         lenient().when(elevatorAPI.getElevatorSpeed(1)).thenReturn(5);
         lenient().when(elevatorAPI.getElevatorWeight(1)).thenReturn(10);
         lenient().when(elevatorAPI.getElevatorCapacity(1)).thenReturn(5);
-        lenient().when(elevatorAPI.getElevatorButton(1, 1)).thenReturn(true);
-
-        lenient().when(elevatorAPI.getFloorButtonDown(1)).thenReturn(true);
-        lenient().when(elevatorAPI.getFloorButtonUp(1)).thenReturn(false);
+     
+        lenient().when(elevatorAPI.getFloorButtonDown(anyInt())).thenReturn(true);
+        lenient().when(elevatorAPI.getFloorButtonUp(anyInt())).thenReturn(false);
         lenient().when(elevatorAPI.getFloorNum()).thenReturn(5);
         lenient().when(elevatorAPI.getFloorHeight()).thenReturn(3);
         lenient().when(elevatorAPI.getServicesFloors(1, 1)).thenReturn(true);
@@ -110,6 +117,7 @@ public class MQTTAdapterTest {
                 7,
                 elevatorAPI // Pass the mocked interface
         );
+
         // Create the MQTT adapter
         MQTTAdapter = new ElevatorMQTTAdapter(
                 elevatorSystem,
@@ -132,15 +140,34 @@ public class MQTTAdapterTest {
     }
 
     @Test
-    void testConnect() throws MqttException {
-        // assertNotNull(testClient);
-        // assertTrue(testClient.getState().isConnected());
+    void testConnect() {
+        assertDoesNotThrow(() -> {
+            MQTTAdapter.connect();
+            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "MQTT client should be connected.");
+        });
     }
 
     @Test
-    void testDisconnect() throws MqttException {
-        // testClient.disconnect();
-        // assertFalse(testClient.getState().isConnected());
+    void testDisconnect() {
+        assertDoesNotThrow(() -> {
+            MQTTAdapter.connect();
+            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "MQTT client should be connected.");
+
+            // Disconnect
+            MQTTAdapter.disconnect();
+            assertNotEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "MQTT client should be disconnected.");
+        });
+    }
+    
+    @Test
+    void testReconnect() {
+        assertDoesNotThrow(() -> {
+            // Reconnect
+            MQTTAdapter.reconnect();
+            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "MQTT client should be reconnected.");
+            MQTTAdapter.reconnect();
+            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "MQTT client should be reconnected.");
+        });
     }
 
     @Test
@@ -168,7 +195,6 @@ public class MQTTAdapterTest {
 
         // Run the method that publishes the message
         MQTTAdapter.run();
-
     }
 
     @Test
@@ -218,4 +244,122 @@ public class MQTTAdapterTest {
         // assertTrue(latch.await(5, TimeUnit.SECONDS), "Not all topics received
 
     }
+    
+    @Test
+    void testPublishRetainedTopics() throws MqttException, InterruptedException {
+        // Ensure client is connected
+        assertTrue(testClient.getState().isConnected(), "Client is not connected");
+
+        // Verbinde den MQTTAdapter
+        MQTTAdapter.connect();
+
+        // Erwartete Werte basierend auf dem ElevatorSystem-Konstruktor
+        Map<String, String> expectedMessages = Map.of(
+                "building/info/numberOfElevators", "2", // 2 Aufzüge
+                "building/info/numberOfFloors", "5",    // 5 Stockwerke (0 bis 4)
+                "building/info/floorHeight/feet", "7"  // Höhe eines Stockwerks
+        );
+
+        // Abonniere alle Topics und prüfe die Nachrichten
+        CountDownLatch latch = new CountDownLatch(expectedMessages.size()); // Für Synchronisation
+        for (Map.Entry<String, String> entry : expectedMessages.entrySet()) {
+            String topic = entry.getKey();
+            String expectedValue = entry.getValue();
+
+            testClient.toAsync().subscribeWith()
+                    .topicFilter(topic)
+                    .qos(MqttQos.AT_LEAST_ONCE)
+                    .callback(publish -> {
+                        String receivedMessage = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
+                        System.out.println("Nachricht empfangen: " + receivedMessage + " für Topic: " + topic);
+
+                        // Überprüfe die Nachricht und das Topic
+                        assertEquals(expectedValue, receivedMessage, "Unerwartete Nachricht für Topic: " + topic);
+                        assertEquals(topic, publish.getTopic().toString(), "Unerwartetes Topic");
+
+                        latch.countDown(); // Zähle herunter, wenn die Nachricht erfolgreich überprüft wurde
+                    })
+                    .send()
+                    .whenComplete((subAck, throwable) -> {
+                        if (throwable != null) {
+                            System.err.println("Subscription failed for topic " + topic + ": " + throwable.getMessage());
+                        } else {
+                            System.out.println("Subscription erfolgreich für Topic: " + topic);
+                        }
+                    });
+        }
+
+        // Starte die Methode, die die retained Nachrichten veröffentlicht
+        MQTTAdapter.run();
+
+        // Warte, bis alle Nachrichten empfangen und geprüft wurden
+        assertTrue(latch.await(5, TimeUnit.SECONDS), "Nicht alle Nachrichten wurden rechtzeitig empfangen");
+    }
+    
+    @Test
+    void testPeriodicUpdates() throws InterruptedException, RemoteException, MQTTAdapterException {
+
+        assertTrue(testClient.getState().isConnected(), "Client is not connected");
+
+        MQTTAdapter.connect();
+        // Starte den Adapter
+        MQTTAdapter.run();
+   
+        // Werte nach dem ersten Update setzen
+        lenient().when(elevatorAPI.getElevatorFloor(0)).thenReturn(3);
+        lenient().when(elevatorAPI.getElevatorSpeed(0)).thenReturn(2);
+        lenient().when(elevatorAPI.getElevatorWeight(0)).thenReturn(12);
+        lenient().when(elevatorAPI.getElevatorDoorStatus(0)).thenReturn(1);
+
+        lenient().when(elevatorAPI.getElevatorFloor(1)).thenReturn(2);
+        lenient().when(elevatorAPI.getElevatorSpeed(1)).thenReturn(3);
+        lenient().when(elevatorAPI.getElevatorWeight(1)).thenReturn(15);
+        lenient().when(elevatorAPI.getElevatorDoorStatus(1)).thenReturn(1);
+
+        // Aktualisierte Werte in erwartete Nachrichten einfügen
+        Map<String, String> expectedMessages = Map.of(
+       "elevator/0/currentFloor", "3",
+       "elevator/0/speed", "2",
+       "elevator/0/weight", "12",
+        "elevator/0/doorState", "1",
+       "elevator/1/currentFloor", "2",
+        "elevator/1/speed", "3",
+       "elevator/1/weight", "15",
+        "elevator/1/doorState", "1"
+        );
+        
+     // Abonniere alle Topics und prüfe die Nachrichten
+        CountDownLatch latch = new CountDownLatch(expectedMessages.size()); // Für Synchronisation
+        for (Map.Entry<String, String> entry : expectedMessages.entrySet()) {
+            String topic = entry.getKey();
+            String expectedValue = entry.getValue();
+
+            testClient.toAsync().subscribeWith()
+                    .topicFilter(topic)
+                    .qos(MqttQos.AT_LEAST_ONCE)
+                    .callback(publish -> {
+                        String receivedMessage = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
+                        System.out.println("Nachricht empfangen: " + receivedMessage + " für Topic: " + topic);
+
+                        // Überprüfe die Nachricht und das Topic
+                        assertEquals(expectedValue, receivedMessage, "Unerwartete Nachricht für Topic: " + topic);
+                        assertEquals(topic, publish.getTopic().toString(), "Unerwartetes Topic");
+
+                        latch.countDown(); // Zähle herunter, wenn die Nachricht erfolgreich überprüft wurde
+                    })
+                    .send()
+                    .whenComplete((subAck, throwable) -> {
+                        if (throwable != null) {
+                            System.err.println("Subscription fehlgeschlagen für Topic " + topic + ": " + throwable.getMessage());
+                        } else {
+                            System.out.println("Subscription erfolgreich für Topic: " + topic);
+                        }
+                    });
+        }
+
+        // Sicherstellen, dass alle erwarteten Nachrichten empfangen wurden
+        assertTrue(latch.await(5, TimeUnit.SECONDS), "Nicht alle Nachrichten wurden empfangen");
+    }
+   
+
 }

@@ -364,6 +364,10 @@ public class ElevatorSystem
     public int getNumberOfFloors() {
         return serviceableFloors.size();
     }
+    
+    public Boolean getRMIConnection(int elevatorNumber) {
+        return elevators.get(elevatorNumber).elevatorAPIConnected();
+    }
 
     /**
      * Returns clock tick
@@ -388,5 +392,29 @@ public class ElevatorSystem
             this.upButtonPress[floor] = elevatorAPI.getFloorButtonUp(floor);
             this.downButtonPress[floor] = elevatorAPI.getFloorButtonDown(floor);
         }
+    }
+    
+    protected ElevatorSystem copy() {
+        // Kopieren der Parameter (skalare Felder und Listen)
+        ElevatorSystem copy = new ElevatorSystem(
+            this.elevators.size(),    // Anzahl der Aufzüge
+            this.lowestFloor,         // niedrigster Stockwerk
+            this.highestFloor,        // höchster Stockwerk
+            this.elevators.get(0).getElevatorCapacity(), // Kapazität (angenommen alle Aufzüge haben die gleiche Kapazität)
+            this.floorHeight,         // Höhe der Etagen
+            this.elevatorAPI          // API für den Aufzug (dies könnte auch kopiert werden, falls notwendig)
+        );
+
+        // Kopieren der Aufzüge (Elevators) durch Kopie jedes einzelnen Aufzugs
+        for (int i = 0; i < this.elevators.size(); i++) {
+            copy.elevators.add(this.elevators.get(i).copy());
+        }
+
+        // Kopieren der Schalter- und Button-Status
+        copy.downButtonPress = this.downButtonPress.clone();
+        copy.upButtonPress = this.upButtonPress.clone();
+        copy.serviceableFloors = new ArrayList<>(this.serviceableFloors);
+
+        return copy;
     }
 }

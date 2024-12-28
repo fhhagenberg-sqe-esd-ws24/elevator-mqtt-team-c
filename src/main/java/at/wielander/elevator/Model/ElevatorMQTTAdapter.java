@@ -14,6 +14,8 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 
+import static org.mockito.ArgumentMatchers.intThat;
+
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -47,6 +49,15 @@ public class ElevatorMQTTAdapter {
     private  ElevatorSystem previousElevatorSystem;
 
     /**
+     * Returns the current state of the MQTT client.
+     *
+     * @return the state of the MQTT client.
+     */
+    public MqttClientState getClientState() {
+        return client.getState();
+    }
+    
+    /**
      * Establishes connection between the MQTT Broker and the Elevator Data Model
      *
      * @param elevatorSystem Data Model for Elevator system
@@ -55,7 +66,7 @@ public class ElevatorMQTTAdapter {
      */
     public ElevatorMQTTAdapter(ElevatorSystem elevatorSystem, String brokerUrl, String clientId, int pollingInterval) {
         this.elevatorSystem = elevatorSystem;
-        this.previousElevatorSystem = elevatorSystem;
+        this.previousElevatorSystem = elevatorSystem.copy();
         this.pollingInterval = pollingInterval;
         
         try {
@@ -76,23 +87,32 @@ public class ElevatorMQTTAdapter {
     }
 
     /**
-     * Establish connection to MQTT Broker
+     * Establish connection to MQTT Broker and waits until fully connected
      */
     public void connect() {
-    	 try {
-	        client.connectWith()
-	                .cleanStart(true)
-	                .send()
-	                .whenComplete((connAck, throwable) -> {
-	                    if (throwable != null) {
-	                        System.err.println("Connection failed: " + throwable.getMessage());
-	                    } else {
-	                        System.out.println("Connected to MQTT broker: " + connAck.getType());
-	                    }
-	                });
-    	 } catch (Exception e) {
-             throw new MQTTAdapterException("Error during MQTT client connection.", e);
-         }
+        try {
+            client.connectWith()
+                  .cleanStart(true)
+                  .send()
+                  .whenComplete((connAck, throwable) -> {
+                      if (throwable != null) {
+                          System.err.println("Connection failed: " + throwable.getMessage());
+                      } else {
+                          System.out.println("Connected to MQTT broker: " + connAck.getType());
+                      }
+                  });
+
+            // Warten, bis der Zustand CONNECTED erreicht ist
+            long startTime = System.currentTimeMillis();
+            while (client.getState() != MqttClientState.CONNECTED) {
+                if (System.currentTimeMillis() - startTime > 5000) { // Timeout nach 5 Sekunden
+                    throw new MQTTAdapterException("Timeout while waiting for MQTT client to connect", null);
+                }
+                Thread.sleep(100);
+            }
+        } catch (Exception e) {
+            throw new MQTTAdapterException("Error during MQTT client connection.", e);
+        }
     }
     
     private void handleConnectionError(Throwable throwable) {
@@ -105,37 +125,55 @@ public class ElevatorMQTTAdapter {
      */
     public void reconnect() {
         if (client != null && !client.getState().isConnected()) {
-        	 try {
-            client.toAsync().connect()
-                    .whenComplete((connAck, throwable) -> {
-                        if (throwable != null) {
-                        	handleConnectionError(throwable);
-                        } else {
-                            System.out.println("Reconnected to MQTT broker.");
-                        }
-                    });
-        	  } catch (Exception e) {
-                  throw new MQTTAdapterException("Error during MQTT client reconnection.", e);
-              }
+            try {
+                client.toAsync().connect()
+                      .whenComplete((connAck, throwable) -> {
+                          if (throwable != null) {
+                              handleConnectionError(throwable);
+                          } else {
+                              System.out.println("Reconnected to MQTT broker.");
+                          }
+                      });
+
+                // Warten, bis der Zustand CONNECTED erreicht ist
+                long startTime = System.currentTimeMillis();
+                while (client.getState() != MqttClientState.CONNECTED) {
+                    if (System.currentTimeMillis() - startTime > 5000) { // Timeout nach 5 Sekunden
+                        throw new MQTTAdapterException("Timeout while waiting for MQTT client to reconnect", null);
+                    }
+                    Thread.sleep(100);
+                }
+            } catch (Exception e) {
+                throw new MQTTAdapterException("Error during MQTT client reconnection.", e);
+            }
         }
     }
 
     /**
      * Disconnect from MQTT Broker
      */
-    private void disconnect() {
-    	try {
-        client.disconnect()
-                .whenComplete((ack, throwable) -> {
-                    if (throwable != null) {
-                        System.err.println("Failed to disconnect: " + throwable.getMessage());
-                    } else {
-                        System.out.println("Disconnected from MQTT broker.");
-                    }
-                });
-    	 } catch (Exception e) {
-             throw new MQTTAdapterException("Error during MQTT client disconnection.", e);
-         }
+    public void disconnect() {
+        try {
+            client.disconnect()
+                  .whenComplete((ack, throwable) -> {
+                      if (throwable != null) {
+                          System.err.println("Failed to disconnect: " + throwable.getMessage());
+                      } else {
+                          System.out.println("Disconnected from MQTT broker.");
+                      }
+                  });
+
+            // Warten, bis der Zustand nicht mehr CONNECTED ist
+            long startTime = System.currentTimeMillis();
+            while (client.getState() != MqttClientState.DISCONNECTED) {
+                if (System.currentTimeMillis() - startTime > 5000) { // Timeout nach 5 Sekunden
+                    throw new MQTTAdapterException("Timeout while waiting for MQTT client to disconnect", null);
+                }
+                Thread.sleep(100);
+            }
+        } catch (Exception e) {
+            throw new MQTTAdapterException("Error during MQTT client disconnection.", e);
+        }
     }
    
     /**
@@ -156,17 +194,17 @@ public class ElevatorMQTTAdapter {
             try {
                 // Updates all elevators
                 elevatorSystem.updateAll();
-
+                
                 for (int i = 0; i < elevatorSystem.getTotalElevators(); i++) {
-                    Elevator previousElevator = previousElevatorSystem.getElevator(i);
+                    
+                	Elevator previousElevator = previousElevatorSystem.getElevator(i);
                     Elevator elevator = elevatorSystem.getElevator(i);
-
                     if (elevator.getCurrentFloor() != previousElevator.getCurrentFloor()) {
                         publish("elevator/" + i + "/currentFloor", String.valueOf(elevator.getCurrentFloor()));
                     }
-                    if (elevator.getTargetedFloor() != previousElevator.getTargetedFloor()) {
-                        publish("elevator/" + i + "/targetedFloor", String.valueOf(elevator.getTargetedFloor()));
-                    }
+//                    if (elevator.getTargetedFloor() != previousElevator.getTargetedFloor()) {
+//                        publish("elevator/" + i + "/targetedFloor", String.valueOf(elevator.getTargetedFloor()));
+//                    }
                     if (elevator.getCurrentSpeed() != previousElevator.getCurrentSpeed()) {
                         publish("elevator/" + i + "/speed", String.valueOf(elevator.getCurrentSpeed()));
                     }
@@ -176,10 +214,30 @@ public class ElevatorMQTTAdapter {
                     if (elevator.getElevatorDoorStatus() != previousElevator.getElevatorDoorStatus()) {
                         publish("elevator/" + i + "/doorState", String.valueOf(elevator.getElevatorDoorStatus()));
                     }
+                    //iterate every elevators buttons
+                    for(int j = 0; j < elevator.buttons.size(); i++)
+                    {
+                    	if(previousElevator.buttons.get(j) != elevator.buttons.get(j))
+                    	{
+                    		publish("elevator/" + i + "/button/" + j, String.valueOf(elevator.buttons.get(j)));
+                    	}
+                    }
+                    for(int k = 0; k < elevatorSystem.getFloorNum(); k++)
+                    {
+                    	if(elevatorSystem.getFloorButtonDown(k) != previousElevatorSystem.getFloorButtonDown(k))
+                    	{
+                    		publish("floor/" + k + "/buttonDown", String.valueOf(elevatorSystem.getFloorButtonDown(k)));
+                    	}
+                    	if(elevatorSystem.getFloorButtonUp(k) != previousElevatorSystem.getFloorButtonUp(k))
+                    	{
+                    		publish("floor/" + k + "/buttonUp", String.valueOf(elevatorSystem.getFloorButtonDown(k)));
+                    	}
+                    }
                 }
 
                 // Update the previous state for the next comparison
-                previousElevatorSystem = elevatorSystem;
+                previousElevatorSystem = elevatorSystem.copy(); // copy() method is assumed to be available
+
             } catch (Exception e) {
                 throw new RuntimeException("Error while publishing elevator states", e);
             }
@@ -315,6 +373,7 @@ public class ElevatorMQTTAdapter {
         
         // start the scheduler
         startPublishingElevatorStates();
+        System.out.println("MQTT Adapter running");
     	 } catch (Exception e) {
              throw new MQTTAdapterException("Error during MQTT adapter operation.", e);
          }
@@ -342,6 +401,7 @@ public class ElevatorMQTTAdapter {
                     .qos(MqttQos.AT_LEAST_ONCE) // QoS Level 1 (AT_LEAST_ONCE)
                     .build();
             client.publish(publishMessage).get(100, TimeUnit.MILLISECONDS);
+            
 
             // Anzahl der Stockwerke
             payload = String.valueOf(elevatorSystem.getNumberOfFloors());
@@ -362,27 +422,6 @@ public class ElevatorMQTTAdapter {
                     .qos(MqttQos.AT_LEAST_ONCE) // QoS Level 1 (AT_LEAST_ONCE)
                     .build();
             client.publish(publishMessage).get(100, TimeUnit.MILLISECONDS);
-
-            // Systemtakt
-            payload = String.valueOf(elevatorSystem.getClockTick());
-            publishMessage = Mqtt5Publish.builder()
-                    .topic(infoTopic + "systemClockTick")
-                    .payload(payload.getBytes(StandardCharsets.UTF_8))
-                    .retain(true)
-                    .qos(MqttQos.AT_LEAST_ONCE) // QoS Level 1 (AT_LEAST_ONCE)
-                    .build();
-            client.publish(publishMessage).get(100, TimeUnit.MILLISECONDS);
-
-            // RMI-Verbindungsstatus
-            payload = String.valueOf(true);
-            publishMessage = Mqtt5Publish.builder()
-                    .topic(infoTopic + "rmiConnected")
-                    .payload(payload.getBytes(StandardCharsets.UTF_8))
-                    .retain(true)
-                    .qos(MqttQos.AT_LEAST_ONCE) // QoS Level 1 (AT_LEAST_ONCE)
-                    .build();
-            client.publish(publishMessage).get(100, TimeUnit.MILLISECONDS);
-
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); // Thread-Unterbrechung wiederherstellen
             throw new RuntimeException("Thread was interrupted while publishing retained topics", e);

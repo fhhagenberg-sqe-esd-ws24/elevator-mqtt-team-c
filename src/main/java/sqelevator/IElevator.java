@@ -342,6 +342,8 @@ public interface IElevator extends java.rmi.Remote {
 	 * @throws RemoteException RMI Invalid exception
 	 */
 	public int getTarget(int elevatorNumber) throws java.rmi.RemoteException;
+	
+	
 
 	/**
 	 * Sets the committed direction of the specified elevator (up / down /
