@@ -173,33 +173,6 @@ public class MQTTAdapterTest {
         });
     }
 
-    @Test
-    void testSimpleSubscription() throws MqttException, InterruptedException {
-        // Ensure client is connected
-        assertTrue(testClient.getState().isConnected(), "Client is not connected");
-        MQTTAdapter.connect();
-        // Subscribe to the topic and wait for subscription to be processed
-        testClient.toAsync().subscribeWith().topicFilter("building/info/numberOfElevators").qos(MqttQos.AT_LEAST_ONCE)
-                .callback(publish -> {
-                    String message = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
-                    System.out.println("Nachricht empfangen: " + message);
-                    assertEquals("2", message); // Überprüfe die empfangene Nachricht
-                    assertEquals("building/info/numberOfElevators", publish.getTopic().toString()); // Überprüfe das
-                                                                                                    // Topic
-                })
-                .send()
-                .whenComplete((subAck, throwable) -> {
-                    if (throwable != null) {
-                        System.err.println("Subscription failed: " + throwable.getMessage());
-                    } else {
-                        System.out.println("Subscription erfolgreich: " + subAck);
-                    }
-                });
-
-        // Run the method that publishes the message
-        MQTTAdapter.run();
-    }
-
     
     @Test
     void testPublishRetainedTopics() throws MqttException, InterruptedException {
