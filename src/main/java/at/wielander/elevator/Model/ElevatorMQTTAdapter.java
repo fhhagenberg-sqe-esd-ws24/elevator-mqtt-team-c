@@ -112,9 +112,9 @@ public class ElevatorMQTTAdapter {
         scheduler.schedule(() -> {
 			try {
 				reconnect();
-			}  catch (InterruptedException e) {
-	            throw new RuntimeException("Reconnection interrupted", e); // Rethrow as a runtime exception or handle differently
-	        }
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}, TIMEOUT_DURATION, TimeUnit.SECONDS);
     }
 
@@ -222,19 +222,19 @@ public class ElevatorMQTTAdapter {
                         publish("elevator/" + i + "/doorState", String.valueOf(elevator.getElevatorDoorStatus()));
                     }
 
-                 // Iterate over all buttons in the elevator
+                    // Iterate over all buttons in the elevator
                     for (int j = 0; j < elevator.buttons.size(); j++) {
-                        if (isFirstRun || elevator.buttons.get(j) != (previousElevator != null ? previousElevator.buttons.get(j) : null)) {
+                        if (isFirstRun || !String.valueOf(elevator.buttons.get(j)).equals(String.valueOf(previousElevator != null ? previousElevator.buttons.get(j) : null))) {
                             publish("elevator/" + i + "/button/" + j, String.valueOf(elevator.buttons.get(j)));
                         }
                     }
 
                     // Iterate over all floor buttons
                     for (int k = 0; k < elevatorSystem.getFloorNum(); k++) {
-                        if (isFirstRun || elevatorSystem.getFloorButtonDown(k) != (previousElevatorSystem != null ? previousElevatorSystem.getFloorButtonDown(k) : false)) {
+                        if (isFirstRun || !Boolean.valueOf(elevatorSystem.getFloorButtonDown(k)).equals(Boolean.valueOf(previousElevatorSystem != null ? previousElevatorSystem.getFloorButtonDown(k) : null))) {
                             publish("floor/" + k + "/buttonDown", String.valueOf(elevatorSystem.getFloorButtonDown(k)));
                         }
-                        if (isFirstRun || elevatorSystem.getFloorButtonUp(k) != (previousElevatorSystem != null ? previousElevatorSystem.getFloorButtonUp(k) : false)) {
+                        if (isFirstRun || !Boolean.valueOf(elevatorSystem.getFloorButtonUp(k)).equals(Boolean.valueOf(previousElevatorSystem != null ? previousElevatorSystem.getFloorButtonUp(k) : null))) {
                             publish("floor/" + k + "/buttonUp", String.valueOf(elevatorSystem.getFloorButtonUp(k)));
                         }
                     }
