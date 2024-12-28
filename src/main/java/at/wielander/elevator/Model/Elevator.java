@@ -173,7 +173,7 @@ public class Elevator {
     /**
      * Current state of the doors.
      *
-     * @return current state of the doors(OPEN / CLOSED / OPENING / CLOSING)
+     * @return current state of the doors(OPEN = 1 / CLOSED / OPENING / CLOSING)
      */
     public int getElevatorDoorStatus() {
         return doorStatus;
@@ -263,6 +263,17 @@ public class Elevator {
     public void setTargetedFloor(int targetedFloor) {
         this.targetedFloor = targetedFloor;
     }
+    
+    /**
+	 * Checks if the RMI interface has been assigned
+	 * @param elevatorNumber
+	 * @return
+	 * @throws java.rmi.RemoteException
+	 */
+	public Boolean elevatorAPIConnected()
+	{
+		return elevatorAPI == null ? false: true; 
+	}
 
     /**
      * Updates elevator based on current states
@@ -284,6 +295,27 @@ public class Elevator {
         } catch (RemoteException e) {
             e.printStackTrace();
         }
+    }
+    
+    protected Elevator copy() {
+        // Erstellen einer neuen ArrayList für die serviceableFloors und Buttons
+        ArrayList<Boolean> copiedServiceableFloors = new ArrayList<>(this.serviceableFloors);
+        ArrayList<Boolean> copiedButtons = new ArrayList<>(this.buttons);
+
+        // Erstellen einer neuen Elevator-Instanz mit den gleichen Attributen
+        Elevator copiedElevator = new Elevator(copiedServiceableFloors, this.capacity, this.elevatorAPI, this.elevatorNumber);
+
+        // Setzen der restlichen Felder
+        copiedElevator.setCommittedDirection(this.commitedDirection);
+        copiedElevator.doorStatus = this.doorStatus;
+        copiedElevator.acceleration = this.acceleration;
+        copiedElevator.speed = this.speed;
+        copiedElevator.position = this.position;
+        copiedElevator.weight = this.weight;
+        copiedElevator.targetedFloor = this.targetedFloor;
+        copiedElevator.currentFloor = this.currentFloor;
+
+        return copiedElevator;
     }
 
 }

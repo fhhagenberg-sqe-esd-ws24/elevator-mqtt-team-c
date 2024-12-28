@@ -15,3 +15,18 @@ dies überprüfen und darauf reagieren.
 
 
 netzwerkverbindungsabbrüche können simuliert werden, indem die elevatorsimulation gestoppt wird und das simulationsfenster (aber nicht das programm) geschlossen wird.
+
+# MQTT-Adapter
+| **Veröffentlichungshäufigkeit** | **Themen (Topics)**                          | **Beschreibung**                      |
+|----------------------------------|---------------------------------------------|---------------------------------------|
+| **Regelmäßig (periodisch)**     | `elevator/{id}/currentFloor`                | Aktuelle Etage                        |
+|                                  | `elevator/{id}/targetedFloor`               | Ziel-Etage                            |
+|                                  | `elevator/{id}/speed`                       | Geschwindigkeit                       |
+|                                  | `elevator/{id}/weight`                      | Gewicht                               |
+|                                  | `elevator/{id}/doorState`                   | Türstatus                             |
+| **Einmalig (retained)**          | `building/info/numberOfElevators`           | Anzahl der Aufzüge                    |
+|                                  | `building/info/numberOfFloors`              | Anzahl der Etagen                     |
+|                                  | `building/info/floorHeight/feet`            | Etagenhöhe                            |
+|                                  | `building/info/systemClockTick`             | System-Takt                           |
+|                                  | `building/info/rmiConnected`                | RMI-Verbindungsstatus                 |
+
