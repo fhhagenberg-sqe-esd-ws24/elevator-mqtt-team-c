@@ -21,8 +21,7 @@ import sqelevator.IElevator;
 /**
  * Constructor for multiple configurations of the elevator system.
  */
-public class ElevatorSystem
-        implements IElevator {
+public class ElevatorSystem implements IElevator{
 
     /** Field for the lowest floor in the building */
     private final int lowestFloor;
@@ -91,6 +90,7 @@ public class ElevatorSystem
         }
     }
 
+ 
     /**
      * Returns the direction of the elevator heading
      *
@@ -103,6 +103,17 @@ public class ElevatorSystem
     @Override
     public int getCommittedDirection(int elevatorNumber) throws RemoteException {
         return elevators.get(elevatorNumber).getCommitedDirection();
+    }
+    
+    /**
+     * Returns clock tick
+     *
+     * @return Clock tick
+     * @throws RemoteException Throws an Exception for RMI
+     */
+    @Override
+    public long getClockTick() throws RemoteException {
+        return this.clockTick;
     }
 
     /**
@@ -174,14 +185,6 @@ public class ElevatorSystem
         return elevators.size();
     }
 
-    /**
-     * Returns the the total number of elevators with respect to building layout
-     * 
-     * @return total num of elevators
-     */
-    public int getTotalElevators() {
-        return elevators.size();
-    }
 
     /**
      * Returns the elevator location with respect to building layout
@@ -229,73 +232,6 @@ public class ElevatorSystem
     @Override
     public int getElevatorCapacity(int elevatorNumber) throws RemoteException {
         return elevators.get(elevatorNumber).getElevatorCapacity();
-    }
-
-    /**
-     * Returns the logical state of the down button of a respective floor
-     *
-     * @param floor - floor number whose down button status is being retrieved
-     * @return (TRUE or FALSE ) state for the down button
-     * @throws RemoteException Throws an Exception for RMI
-     */
-    @Override
-    public boolean getFloorButtonDown(int floor) throws RemoteException {
-        if (floor < lowestFloor || floor > highestFloor) {
-            throw new RemoteException("Floor number out of range");
-        }
-        return this.downButtonPress[floor];
-    }
-
-    /**
-     * Returns the logical state of the up button of a respective floor
-     *
-     * @param floor - floor number whose Up button status is being retrieved
-     * @return (TRUE or FALSE ) state for the up button
-     * @throws RemoteException Throws an Exception for RMI
-     */
-    @Override
-    public boolean getFloorButtonUp(int floor) throws RemoteException {
-        if (floor < lowestFloor || floor > highestFloor) {
-            throw new RemoteException("Floor number out of range");
-        }
-        return this.upButtonPress[floor];
-    }
-
-    /**
-     * Returns the height of the floor in the building layout
-     *
-     * @return height of the floor in ft
-     * @throws RemoteException Throws an Exception for RMI
-     */
-    @Override
-    public int getFloorHeight() throws RemoteException {
-        return this.floorHeight;
-    }
-
-    /**
-     * Returns the current floor number
-     *
-     * @return Integer value of floor number
-     * @throws RemoteException Throws an Exception for RMI
-     */
-    @Override
-    public int getFloorNum() throws RemoteException {
-        return this.highestFloor - this.lowestFloor;
-    }
-
-    /**
-     * Returns the serviceable floors
-     *
-     * @param elevatorNumber elevator number whose service is being retrieved
-     * @param floor          floor whose service status by the specified elevator is
-     *                       being retrieved
-     * @return Returns the serviceable floors
-     * @throws RemoteException Throws an Exception for RMI
-     */
-    @Override
-    public boolean getServicesFloors(int elevatorNumber, int floor) throws RemoteException {
-        return elevators.get(elevatorNumber).getServiceableFloors().get(floor);
-
     }
 
     /**
@@ -351,6 +287,82 @@ public class ElevatorSystem
     }
 
     /**
+     * Returns the the total number of elevators with respect to building layout
+     * 
+     * @return total num of elevators
+     */
+    public int getTotalElevators() {
+        return elevators.size();
+    }
+
+
+   
+    /**
+     * Returns the logical state of the down button of a respective floor
+     *
+     * @param floor - floor number whose down button status is being retrieved
+     * @return (TRUE or FALSE ) state for the down button
+     * @throws RemoteException Throws an Exception for RMI
+     */
+   
+    public boolean getFloorButtonDown(int floor) throws RemoteException {
+        if (floor < lowestFloor || floor > highestFloor) {
+            throw new RemoteException("Floor number out of range");
+        }
+        return this.downButtonPress[floor];
+    }
+
+    /**
+     * Returns the logical state of the up button of a respective floor
+     *
+     * @param floor - floor number whose Up button status is being retrieved
+     * @return (TRUE or FALSE ) state for the up button
+     * @throws RemoteException Throws an Exception for RMI
+     */
+
+    public boolean getFloorButtonUp(int floor) throws RemoteException {
+        if (floor < lowestFloor || floor > highestFloor) {
+            throw new RemoteException("Floor number out of range");
+        }
+        return this.upButtonPress[floor];
+    }
+
+    /**
+     * Returns the height of the floor in the building layout
+     *
+     * @return height of the floor in ft
+     * @throws RemoteException Throws an Exception for RMI
+     */
+    public int getFloorHeight() throws RemoteException {
+        return this.floorHeight;
+    }
+
+    /**
+     * Returns the current floor number
+     *
+     * @return Integer value of floor number
+     * @throws RemoteException Throws an Exception for RMI
+     */
+    public int getFloorNum() throws RemoteException {
+        return this.highestFloor - this.lowestFloor;
+    }
+
+    /**
+     * Returns the serviceable floors
+     *
+     * @param elevatorNumber elevator number whose service is being retrieved
+     * @param floor          floor whose service status by the specified elevator is
+     *                       being retrieved
+     * @return Returns the serviceable floors
+     * @throws RemoteException Throws an Exception for RMI
+     */
+    public boolean getServicesFloors(int elevatorNumber, int floor) throws RemoteException {
+        return elevators.get(elevatorNumber).getServiceableFloors().get(floor);
+
+    }
+
+
+    /**
      * Return requested elevator
      * 
      * @param elevatorNumber elevator number
@@ -367,17 +379,6 @@ public class ElevatorSystem
     
     public Boolean getRMIConnection(int elevatorNumber) {
         return elevators.get(elevatorNumber).elevatorAPIConnected();
-    }
-
-    /**
-     * Returns clock tick
-     *
-     * @return Clock tick
-     * @throws RemoteException Throws an Exception for RMI
-     */
-    @Override
-    public long getClockTick() throws RemoteException {
-        return this.clockTick;
     }
 
     /**

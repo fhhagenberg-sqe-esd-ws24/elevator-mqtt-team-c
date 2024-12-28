@@ -1,23 +1,13 @@
 package at.wielander.elevator.Model;
 
-import com.hivemq.client.internal.mqtt.message.MqttMessage;
-import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
-import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
-import com.hivemq.client.mqtt.mqtt3.message.Mqtt3Message;
-import com.hivemq.client.mqtt.mqtt3.message.connect.connack.Mqtt3ConnAck;
-import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish;
-import com.hivemq.client.mqtt.mqtt3.message.subscribe.Mqtt3Subscribe;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 
-import static org.mockito.ArgumentMatchers.intThat;
-
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -66,7 +56,7 @@ public class ElevatorMQTTAdapter {
      */
     public ElevatorMQTTAdapter(ElevatorSystem elevatorSystem, String brokerUrl, String clientId, int pollingInterval) {
         this.elevatorSystem = elevatorSystem;
-        this.previousElevatorSystem = elevatorSystem.copy();
+        this.previousElevatorSystem = null;
         this.pollingInterval = pollingInterval;
         
         try {
@@ -195,43 +185,42 @@ public class ElevatorMQTTAdapter {
                 // Updates all elevators
                 elevatorSystem.updateAll();
                 
+                // Überprüfen, ob previousElevatorSystem null ist (erster Durchlauf)
+                boolean isFirstRun = previousElevatorSystem == null;
+
                 for (int i = 0; i < elevatorSystem.getTotalElevators(); i++) {
-                    
-                	Elevator previousElevator = previousElevatorSystem.getElevator(i);
+                    Elevator previousElevator = previousElevatorSystem != null ? previousElevatorSystem.getElevator(i) : null;
                     Elevator elevator = elevatorSystem.getElevator(i);
-                    if (elevator.getCurrentFloor() != previousElevator.getCurrentFloor()) {
+
+                    // Wenn es der erste Durchlauf ist, veröffentlichen wir direkt die Nachrichten
+                    if (isFirstRun || elevator.getCurrentFloor() != previousElevator.getCurrentFloor()) {
                         publish("elevator/" + i + "/currentFloor", String.valueOf(elevator.getCurrentFloor()));
                     }
-//                    if (elevator.getTargetedFloor() != previousElevator.getTargetedFloor()) {
-//                        publish("elevator/" + i + "/targetedFloor", String.valueOf(elevator.getTargetedFloor()));
-//                    }
-                    if (elevator.getCurrentSpeed() != previousElevator.getCurrentSpeed()) {
+                    if (isFirstRun || elevator.getCurrentSpeed() != previousElevator.getCurrentSpeed()) {
                         publish("elevator/" + i + "/speed", String.valueOf(elevator.getCurrentSpeed()));
                     }
-                    if (elevator.getCurrentWeight() != previousElevator.getCurrentWeight()) {
+                    if (isFirstRun || elevator.getCurrentWeight() != previousElevator.getCurrentWeight()) {
                         publish("elevator/" + i + "/weight", String.valueOf(elevator.getCurrentWeight()));
                     }
-                    if (elevator.getElevatorDoorStatus() != previousElevator.getElevatorDoorStatus()) {
+                    if (isFirstRun || elevator.getElevatorDoorStatus() != previousElevator.getElevatorDoorStatus()) {
                         publish("elevator/" + i + "/doorState", String.valueOf(elevator.getElevatorDoorStatus()));
                     }
-                    //iterate every elevators buttons
-                    for(int j = 0; j < elevator.buttons.size(); i++)
-                    {
-                    	if(previousElevator.buttons.get(j) != elevator.buttons.get(j))
-                    	{
-                    		publish("elevator/" + i + "/button/" + j, String.valueOf(elevator.buttons.get(j)));
-                    	}
+
+                    // iterate over all buttons in the elevator
+                    for (int j = 0; j < elevator.buttons.size(); j++) {
+                        if (isFirstRun || elevator.buttons.get(j) != previousElevator.buttons.get(j)) {
+                            publish("elevator/" + i + "/button/" + j, String.valueOf(elevator.buttons.get(j)));
+                        }
                     }
-                    for(int k = 0; k < elevatorSystem.getFloorNum(); k++)
-                    {
-                    	if(elevatorSystem.getFloorButtonDown(k) != previousElevatorSystem.getFloorButtonDown(k))
-                    	{
-                    		publish("floor/" + k + "/buttonDown", String.valueOf(elevatorSystem.getFloorButtonDown(k)));
-                    	}
-                    	if(elevatorSystem.getFloorButtonUp(k) != previousElevatorSystem.getFloorButtonUp(k))
-                    	{
-                    		publish("floor/" + k + "/buttonUp", String.valueOf(elevatorSystem.getFloorButtonDown(k)));
-                    	}
+
+                    // iterate over all floor buttons
+                    for (int k = 0; k < elevatorSystem.getFloorNum(); k++) {
+                        if (isFirstRun || elevatorSystem.getFloorButtonDown(k) != previousElevatorSystem.getFloorButtonDown(k)) {
+                            publish("floor/" + k + "/buttonDown", String.valueOf(elevatorSystem.getFloorButtonDown(k)));
+                        }
+                        if (isFirstRun || elevatorSystem.getFloorButtonUp(k) != previousElevatorSystem.getFloorButtonUp(k)) {
+                            publish("floor/" + k + "/buttonUp", String.valueOf(elevatorSystem.getFloorButtonUp(k)));
+                        }
                     }
                 }
 
@@ -239,6 +228,7 @@ public class ElevatorMQTTAdapter {
                 previousElevatorSystem = elevatorSystem.copy(); // copy() method is assumed to be available
 
             } catch (Exception e) {
+                System.out.println("Error publishing messages");
                 throw new RuntimeException("Error while publishing elevator states", e);
             }
 
@@ -265,7 +255,7 @@ public class ElevatorMQTTAdapter {
                     .qos(MqttQos.AT_LEAST_ONCE) // QoS Level 1 (AT_LEAST_ONCE)
                     .build();
 
-            client.publish(publishMessage).get(100, TimeUnit.MILLISECONDS);
+            client.publish(publishMessage).get(200, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new MQTTAdapterException("Publishing interrupted for topic: " + topic, e);
@@ -285,7 +275,7 @@ public class ElevatorMQTTAdapter {
      */
     private void subscribeToControlTopics() {
         try {
-            for (int id = 0; id < elevatorSystem.getElevatorNum(); id++) {
+            for (int id = 0; id < elevatorSystem.getTotalElevators(); id++) {
                 // Subscribe to the committed direction control topic
                 subscribe(controlElevatorTopic + id + "/committedDirection");
 
@@ -393,7 +383,7 @@ public class ElevatorMQTTAdapter {
 
         try {
             // Anzahl der Aufzüge
-            payload = String.valueOf(elevatorSystem.getElevatorNum());
+            payload = String.valueOf(elevatorSystem.getTotalElevators());
             Mqtt5Publish publishMessage = Mqtt5Publish.builder()
                     .topic(infoTopic + "numberOfElevators")
                     .payload(payload.getBytes(StandardCharsets.UTF_8))
