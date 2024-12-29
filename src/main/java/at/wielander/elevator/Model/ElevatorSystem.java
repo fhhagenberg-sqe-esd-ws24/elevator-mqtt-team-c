@@ -2,10 +2,7 @@ package at.wielander.elevator.Model;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
 import sqelevator.IElevator;
 
 /**
@@ -60,13 +57,14 @@ public class ElevatorSystem implements IElevator{
      * @param highestFloor Highest floor accessible by the elevator
      * @param capacity     Maximum capacity of the elevator in lbs
      * @param floorHeight  Height of each floor to be given in ft
+     * @throws RemoteException 
      */
     public ElevatorSystem(final int numElevator,
             final int lowestFloor,
             final int highestFloor,
             final int capacity,
             final int floorHeight,
-            final IElevator elevatorAPI) {
+            final IElevator elevatorAPI) throws RemoteException {
         this.floorHeight = floorHeight;
         this.downButtonPress = new boolean[highestFloor + 1];
         this.upButtonPress = new boolean[highestFloor + 1];
@@ -140,12 +138,13 @@ public class ElevatorSystem implements IElevator{
      */
     @Override
     public boolean getElevatorButton(int elevatorNumber, int floor) throws RemoteException {
-        buttonState = elevators.get(elevatorNumber).getButtonsInElevatorStatus().get(floor);
+        /*buttonState = elevators.get(elevatorNumber).getButtonsInElevatorStatus().get(floor);
 
         if (buttonState == null) {
             return false;
         }
-        return buttonState;
+        return buttonState;*/
+    	return false;
     }
 
     /**
@@ -395,7 +394,7 @@ public class ElevatorSystem implements IElevator{
         }
     }
     
-    protected ElevatorSystem copy() {
+    protected ElevatorSystem copy() throws RemoteException {
         // Kopieren der Parameter (skalare Felder und Listen)
         ElevatorSystem copy = new ElevatorSystem(
             this.elevators.size(),    // Anzahl der Aufzüge

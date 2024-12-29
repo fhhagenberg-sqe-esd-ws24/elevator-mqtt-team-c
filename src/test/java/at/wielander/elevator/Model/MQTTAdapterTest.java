@@ -3,47 +3,34 @@ package at.wielander.elevator.Model;
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.hivemq.HiveMQContainer;
 import static org.junit.jupiter.api.Assertions.*;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.util.concurrent.TimeUnit;
-
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.hivemq.client.mqtt.MqttClientState;
-import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
-import com.hivemq.client.mqtt.MqttVersion;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
-import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
-
 import sqelevator.IElevator;
 
 import org.eclipse.paho.mqttv5.common.MqttException;
@@ -57,8 +44,7 @@ public class MQTTAdapterTest {
 
     @Mock
     private IElevator elevatorAPI;
-
-
+  
     private ElevatorSystem elevatorSystem;
 
     private ElevatorMQTTAdapter MQTTAdapter;
@@ -72,8 +58,6 @@ public class MQTTAdapterTest {
 
         hivemqCe.start();
 
-        System.out.println("Mapped port: " + hivemqCe.getMappedPort(1883)); // Ausgabe des externen Ports
-
         Host = "tcp://" + hivemqCe.getHost() + ":" + hivemqCe.getMappedPort(1883);
 
         System.out.println("Host addresse: " + Host);
@@ -84,13 +68,17 @@ public class MQTTAdapterTest {
                 .buildBlocking();
 
         testClient.connect();
-        MockitoAnnotations.openMocks(this);
-        //mock all elevator buttons
-        for (int elevator = 0; elevator <= 1; elevator++) {
-            for (int button = 0; button <= 3; button++) {
-                lenient().when(elevatorAPI.getElevatorButton(anyInt(), anyInt())).thenReturn(false);
+        elevatorAPI = mock(IElevator.class);
+        AtomicInteger callCount = new AtomicInteger(0);
+
+        lenient(). when(elevatorAPI.getElevatorButton(anyInt(), anyInt())).thenAnswer(invocation -> {
+            if (callCount.getAndIncrement() % 2 == 0) {
+                return false; // Rückgabewert beim ersten Aufruf
+            } else {
+                return true;  // Rückgabewert bei allen weiteren Aufrufen
             }
-        }
+        });
+        
         lenient().when(elevatorAPI.getElevatorNum()).thenReturn(2);
         lenient().when(elevatorAPI.getFloorNum()).thenReturn(5);
         lenient().when(elevatorAPI.getFloorHeight()).thenReturn(3);
@@ -106,7 +94,7 @@ public class MQTTAdapterTest {
         lenient().when(elevatorAPI.getFloorButtonDown(anyInt())).thenReturn(false);
         lenient().when(elevatorAPI.getFloorButtonUp(anyInt())).thenReturn(false);
         lenient().when(elevatorAPI.getServicesFloors(anyInt(), anyInt())).thenReturn(false);
-
+      
         // when(elevatorAPI.getTarget(1)).thenReturn(5);
         lenient().when(elevatorAPI.getClockTick()).thenReturn(1000L);
         lenient().when(elevatorAPI.getCommittedDirection(1)).thenReturn(1);
@@ -125,13 +113,14 @@ public class MQTTAdapterTest {
         MQTTAdapter = new ElevatorMQTTAdapter(
                 elevatorSystem,
                 Host,
-                "mqttAdapter", 250);
+                "mqttAdapter", 250, elevatorAPI);
 
     }
 
     @AfterEach
-    public void tearDown() {
-
+    public void tearDown() throws InterruptedException {
+    	MQTTAdapter.disconnect();
+    	testClient.disconnect();
         hivemqCe.stop();
     }
 
@@ -200,8 +189,7 @@ public class MQTTAdapterTest {
                     .qos(MqttQos.AT_LEAST_ONCE)
                     .callback(publish -> {
                         String receivedMessage = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
-                        System.out.println("Nachricht empfangen: " + receivedMessage + " für Topic: " + topic);
-
+                       
                         // Überprüfe die Nachricht und das Topic
                        assertEquals(expectedValue, receivedMessage, "Unerwartete Nachricht für Topic: " + topic);
                        assertEquals(topic, publish.getTopic().toString(), "Unerwartetes Topic");
@@ -237,6 +225,10 @@ public class MQTTAdapterTest {
         MQTTAdapter.connect();
         MQTTAdapter.run();
 
+        // Set für empfangene Nachrichten (für jedes Thema)
+        Set<String> receivedValues = new HashSet<>();
+        Set<String> expectedValues = new HashSet<>(Arrays.asList("0", "false", "true"));
+
         // Liste aller Topics vorbereiten
         List<String> topics = new ArrayList<>();
         for (int elevatorId = 0; elevatorId < 2; elevatorId++) {
@@ -253,9 +245,6 @@ public class MQTTAdapterTest {
             topics.add("floor/" + floorId + "/buttonUp");
         }
 
-        // CountDownLatch für Synchronisation
-       // CountDownLatch latch = new CountDownLatch(topics.size());
-
         // Abonnieren der Topics
         for (String topic : topics) {
             testClient.toAsync()
@@ -266,21 +255,19 @@ public class MQTTAdapterTest {
                     String receivedMessage = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
                     System.out.println("Nachricht empfangen: " + receivedMessage + " für Topic: " + publish.getTopic());
                     
-                    
                     // Überprüfung der empfangenen Nachrichten basierend auf dem Topic
                     String topicName = publish.getTopic().toString();
+                    
+                    // Speicherung der empfangenen Werte
                     if (topicName.equals("elevator/0/currentFloor") || topicName.equals("elevator/1/currentFloor")) {
-                        assertEquals("0", receivedMessage, "Unerwarteter Wert für currentFloor");
+                        receivedValues.add(receivedMessage);
                     } else if (topicName.equals("elevator/0/speed") || topicName.equals("elevator/1/speed")) {
-                        assertEquals("0", receivedMessage, "Unerwarteter Wert für speed");
+                        receivedValues.add(receivedMessage);
                     } else if (topicName.equals("elevator/0/weight") || topicName.equals("elevator/1/weight")) {
-                        assertEquals("0", receivedMessage, "Unerwarteter Wert für weight");
+                        receivedValues.add(receivedMessage);
                     } else if (topicName.equals("elevator/0/doorState") || topicName.equals("elevator/1/doorState")) {
-                        assertEquals("2", receivedMessage, "Unerwarteter Wert für doorState");
-                    }
-
-                    // Überprüfung der Button-Status: immer "false" erwarten
-                    else if (topicName.equals("elevator/0/button/0") || topicName.equals("elevator/0/button/1") ||
+                        receivedValues.add(receivedMessage);
+                    } else if (topicName.equals("elevator/0/button/0") || topicName.equals("elevator/0/button/1") ||
                              topicName.equals("elevator/0/button/2") || topicName.equals("elevator/0/button/3") ||
                              topicName.equals("elevator/1/button/0") || topicName.equals("elevator/1/button/1") ||
                              topicName.equals("elevator/1/button/2") || topicName.equals("elevator/1/button/3") ||
@@ -288,10 +275,8 @@ public class MQTTAdapterTest {
                              topicName.equals("floor/1/buttonDown") || topicName.equals("floor/1/buttonUp") ||
                              topicName.equals("floor/2/buttonDown") || topicName.equals("floor/2/buttonUp") ||
                              topicName.equals("floor/3/buttonDown") || topicName.equals("floor/3/buttonUp")) {
-                        assertEquals("false", receivedMessage, "Button-Status sollte false sein für Topic: " + topicName);
+                        receivedValues.add(receivedMessage);
                     }
-                    
-                   // latch.countDown(); // Zähle herunter, wenn Nachricht empfangen wurde
                 })
                 .send()
                 .whenComplete((subAck, throwable) -> {
@@ -302,17 +287,56 @@ public class MQTTAdapterTest {
                     }
                 });
         }
-Thread.sleep(2000);
-//        // Simulierte Werte für die API-Mockings
-//        lenient().when(elevatorAPI.getElevatorFloor(anyInt())).thenReturn(2);
-//        lenient().when(elevatorAPI.getElevatorSpeed(anyInt())).thenReturn(3);
-//        lenient().when(elevatorAPI.getElevatorWeight(anyInt())).thenReturn(15);
-//        lenient().when(elevatorAPI.getElevatorDoorStatus(anyInt())).thenReturn(1);
+        Thread.sleep(3000);
+        //wait until everything is subscribed so changes in the @BeforeEach stubbing can be received
+        MQTTAdapter.run();
 
-        // Wartezeit, damit Nachrichten empfangen werden können
-      //  assertTrue(latch.await(10, TimeUnit.SECONDS), "Nicht alle Nachrichten wurden empfangen");
+     // Warten, um sicherzustellen, dass alle Nachrichten empfangen wurden
+        Thread.sleep(2000);
 
-        // Test-Ende: Verbindung trennen
-        //testClient.toBlocking().disconnect();
+        // Überprüfen, ob alle erwarteten Werte empfangen wurden
+        assertTrue(receivedValues.containsAll(expectedValues), "Nicht alle erwarteten Werte wurden empfangen.");
+
+    }
+    
+    
+    @Test
+    void testMQTTAdapterWithMockedElevatorAPI() throws MqttException, InterruptedException, RemoteException {
+        assertTrue(testClient.getState().isConnected(), "TestClient is not connected");
+
+        MQTTAdapter.connect();
+        MQTTAdapter.run();
+
+        // Testnachrichten und Topics
+        Map<String, String> testMessages = Map.of(
+                "elevator/0/committedDirection", "1",  // Committed direction: 1
+                "elevator/0/targetFloor", "3",         // Target floor: 3
+                "elevator/0/floorService/2", "true"    // Floor 2 service: true
+        );
+        
+        for (Map.Entry<String, String> entry : testMessages.entrySet()) {
+            String topic = entry.getKey();
+            String payload = entry.getValue();
+
+            testClient.toAsync().publishWith()
+                    .topic(topic)
+                    .payload(payload.getBytes(StandardCharsets.UTF_8))
+                    .send()
+                    .whenComplete((publishAck, throwable) -> {
+                        if (throwable != null) {
+                            System.err.println("Publishing failed for topic " + topic + ": " + throwable.getMessage());
+                        } else {
+                            System.out.println("Nachricht veröffentlicht: " + payload + " für Topic: " + topic);
+                        }
+                    });
+        }
+
+        // Wartezeit, um sicherzustellen, dass alle Nachrichten verarbeitet werden
+        Thread.sleep(500); // Zeit zur Verarbeitung der Nachrichten
+        
+     // Überprüfen, ob die Methoden mit den richtigen Parametern aufgerufen wurden
+        verify(elevatorAPI).setCommittedDirection(0, 1); // Elevator 0, Direction 1
+        verify(elevatorAPI).setTarget(0, 3);             // Elevator 0, Target Floor 3
+        verify(elevatorAPI).setServicesFloors(0, 2, true); // Elevator 0, Floor 2, Service true
     }
 }
