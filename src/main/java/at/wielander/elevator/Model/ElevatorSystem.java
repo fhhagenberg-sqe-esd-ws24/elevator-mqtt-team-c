@@ -138,13 +138,12 @@ public class ElevatorSystem implements IElevator{
      */
     @Override
     public boolean getElevatorButton(int elevatorNumber, int floor) throws RemoteException {
-        /*buttonState = elevators.get(elevatorNumber).getButtonsInElevatorStatus().get(floor);
+        buttonState = elevators.get(elevatorNumber).getButtonsInElevatorStatus().get(floor);
 
         if (buttonState == null) {
             return false;
         }
-        return buttonState;*/
-    	return false;
+        return buttonState;
     }
 
     /**
