@@ -261,7 +261,7 @@ public class ElevatorMQTTAdapter {
      *        lost.
      *
      * @param topic          The MQTT topic to publish the message to.
-     * @param messageContent The content of the message to be published.
+     * @param payload The content of the message to be published.
      */
     private void publish(String topic, String payload) {
         try {
@@ -364,7 +364,7 @@ public class ElevatorMQTTAdapter {
      * Connects to broker, subscribes to all control topics,
      * publishes all retained topics and runs the update loop.
      * 
-     * @throws MqttError
+     * @throws MQTTAdapterException
      */
     public void run() {
     	try {
@@ -390,7 +390,7 @@ public class ElevatorMQTTAdapter {
     /**
      * Publishes the retained (static) building information topics
      * 
-     * @throws MqttError
+     * @throws RuntimeException
      */
     public void publishRetainedTopics() {
         String payload;
