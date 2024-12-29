@@ -122,7 +122,7 @@ public class ElevatorMQTTAdapter {
 			try {
 				reconnect();
 			} catch (InterruptedException e) {
-				
+				 Thread.currentThread().interrupt();
 			}
 		}, TIMEOUT_DURATION, TimeUnit.SECONDS);
     }
@@ -240,10 +240,12 @@ public class ElevatorMQTTAdapter {
 
                     // Iterate over all floor buttons
                     for (int k = 0; k < elevatorSystem.getFloorNum(); k++) {
-                        if (isFirstRun || !Boolean.valueOf(elevatorSystem.getFloorButtonDown(k)).equals(Boolean.valueOf(previousElevatorSystem != null ? previousElevatorSystem.getFloorButtonDown(k) : null))) {
+                        if (isFirstRun || 
+                            elevatorSystem.getFloorButtonDown(k) != (previousElevatorSystem != null && previousElevatorSystem.getFloorButtonDown(k))) {
                             publish("floor/" + k + "/buttonDown", String.valueOf(elevatorSystem.getFloorButtonDown(k)));
                         }
-                        if (isFirstRun || !Boolean.valueOf(elevatorSystem.getFloorButtonUp(k)).equals(Boolean.valueOf(previousElevatorSystem != null ? previousElevatorSystem.getFloorButtonUp(k) : null))) {
+                        if (isFirstRun || 
+                            elevatorSystem.getFloorButtonUp(k) != (previousElevatorSystem != null && previousElevatorSystem.getFloorButtonUp(k))) {
                             publish("floor/" + k + "/buttonUp", String.valueOf(elevatorSystem.getFloorButtonUp(k)));
                         }
                     }
