@@ -7,6 +7,8 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 
+import sqelevator.IElevator;
+
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -16,7 +18,12 @@ import java.util.concurrent.TimeUnit;
  * Custom Exception for handling MQTT Adapter errors.
  */
 class MQTTAdapterException extends RuntimeException {
-    public MQTTAdapterException(String message, Throwable cause) {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	public MQTTAdapterException(String message, Throwable cause) {
         super(message, cause);
     }
 }
@@ -37,6 +44,7 @@ public class ElevatorMQTTAdapter {
     private final ScheduledExecutorService scheduler;
     private int pollingInterval;
     private  ElevatorSystem previousElevatorSystem;
+    private IElevator elevatorAPI;
 
     /**
      * Returns the current state of the MQTT client.
@@ -54,8 +62,9 @@ public class ElevatorMQTTAdapter {
      * @param brokerUrl      URL for MQTT Broker
      * @param clientId       Client ID for MQTT Broker
      */
-    public ElevatorMQTTAdapter(ElevatorSystem elevatorSystem, String brokerUrl, String clientId, int pollingInterval) {
-        this.elevatorSystem = elevatorSystem;
+    public ElevatorMQTTAdapter(ElevatorSystem elevatorSystem, String brokerUrl, String clientId, int pollingInterval, IElevator elevatorAPI) {
+        this.elevatorAPI = elevatorAPI;
+    	this.elevatorSystem = elevatorSystem;
         this.pollingInterval = pollingInterval;
         
         try {
@@ -113,7 +122,7 @@ public class ElevatorMQTTAdapter {
 			try {
 				reconnect();
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				
 			}
 		}, TIMEOUT_DURATION, TimeUnit.SECONDS);
     }
@@ -261,7 +270,7 @@ public class ElevatorMQTTAdapter {
      *        lost.
      *
      * @param topic          The MQTT topic to publish the message to.
-     * @param messageContent The content of the message to be published.
+     * @param payload The content of the message to be published.
      */
     private void publish(String topic, String payload) {
         try {
@@ -294,64 +303,29 @@ public class ElevatorMQTTAdapter {
         try {
             for (int id = 0; id < elevatorSystem.getTotalElevators(); id++) {
                 // Subscribe to the committed direction control topic
-                subscribe(controlElevatorTopic + id + "/committedDirection");
+                subscribe("elevator/" + id + "/committedDirection");
 
                 // Subscribe to the target floor control topic
-                subscribe(controlElevatorTopic + id + "/targetFloor");
+                subscribe("elevator/" + id + "/targetFloor");
 
                 // Subscribe to the floor services control topics
                 for (int num = 0; num < elevatorSystem.getNumberOfFloors(); num++) {
-                    subscribe(controlElevatorTopic + id + "/floorService/" + num);
+                    subscribe("elevator/" + id + "/floorService/" + num);
                 }
-                // Set callback to handle incoming messages
-                client.toAsync().publishes(MqttGlobalPublishFilter.ALL, this::handleIncomingMessage);
-           
             }
+            // Set callback to handle incoming messages
+            client.toAsync().publishes(MqttGlobalPublishFilter.ALL, this::handleIncomingMessage);
         } catch (Exception e) {
             throw new RuntimeException("Error while subscribing to control topics", e);
         }
     }
-    
-    // todo implement code to set the received values on the plc
-    private void handleIncomingMessage(Mqtt5Publish publish){
-        String topic = publish.getTopic().toString();
-        String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
-
-        System.out.println("Received message on topic: " + topic + " with payload: " + payload);
-
-        try {
-            String[] parts = topic.split("/");
-
-            if (topic.contains("committedDirection")) {
-                int elevatorNumber = Integer.parseInt(parts[1]); // Assuming topic structure includes elevator ID as the second part
-                int committedDirection = Integer.parseInt(payload);
-                System.out.println("Elevator " + elevatorNumber + " committed direction: " + committedDirection);
-                // Add logic to handle committed direction
-            } else if (topic.contains("targetFloor")) {
-                int elevatorNumber = Integer.parseInt(parts[1]);
-                int targetFloor = Integer.parseInt(payload);
-                System.out.println("Elevator " + elevatorNumber + " target floor: " + targetFloor);
-                // Add logic to handle target floor
-            } else if (topic.contains("floorService")) {
-                int elevatorNumber = Integer.parseInt(parts[1]);
-                int floorNumber = Integer.parseInt(parts[3]); // Assuming topic structure includes floor number as the fourth part
-                boolean floorService = Boolean.parseBoolean(payload);
-                System.out.println("Elevator " + elevatorNumber + " floor " + floorNumber + " service: " + floorService);
-                // Add logic to handle floor service
-            }
-        } 
-        catch (Exception e) {
-            System.err.println("Failed to process message on topic: " + topic + " - Error: " + e.getMessage());
-        }
-    }
-
     private void subscribe(String topic) {
         try {
             client.subscribeWith()
                   .topicFilter(topic)
                   .qos(MqttQos.AT_LEAST_ONCE) // QoS Level 1 (AT_LEAST_ONCE)
                   .send()
-                  .get(100, TimeUnit.MILLISECONDS);
+                  .get(pollingInterval, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new MQTTAdapterException("Subscription interrupted for topic: " + topic, e);
@@ -360,11 +334,42 @@ public class ElevatorMQTTAdapter {
         }
     }
 
+    private void handleIncomingMessage(Mqtt5Publish publish){
+        String topic = publish.getTopic().toString();
+        String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
+
+        System.out.println("Received message on topic: " + topic + " with payload: " + payload);
+
+        try {
+            String[] parts = topic.split("/");
+            if (topic.contains("committedDirection")) {
+                int elevatorNumber = Integer.parseInt(parts[1]);
+                int committedDirection = Integer.parseInt(payload);
+                System.out.println("Elevator " + elevatorNumber + " committed direction: " + committedDirection);
+                elevatorAPI.setCommittedDirection(elevatorNumber, committedDirection);
+            } else if (topic.contains("targetFloor")) {
+                int elevatorNumber = Integer.parseInt(parts[1]);
+                int targetFloor = Integer.parseInt(payload);
+                System.out.println("Elevator " + elevatorNumber + " target floor: " + targetFloor);
+                elevatorAPI.setTarget(elevatorNumber, targetFloor);
+            } else if (topic.contains("floorService")) {
+                int elevatorNumber = Integer.parseInt(parts[1]);
+                int floorNumber = Integer.parseInt(parts[3]); // Assuming topic structure includes floor number as the fourth part
+                boolean floorService = Boolean.parseBoolean(payload);
+                System.out.println("Elevator " + elevatorNumber + " floor " + floorNumber + " service: " + floorService);
+                elevatorAPI.setServicesFloors(elevatorNumber, floorNumber, floorService);
+            }
+        } 
+        catch (Exception e) {
+            System.err.println("Failed to process message on topic: " + topic + " - Error: " + e.getMessage());
+        }
+    } 
+
     /**
      * Connects to broker, subscribes to all control topics,
      * publishes all retained topics and runs the update loop.
      * 
-     * @throws MqttError
+     * @throws MQTTAdapterException
      */
     public void run() {
     	try {
@@ -390,7 +395,7 @@ public class ElevatorMQTTAdapter {
     /**
      * Publishes the retained (static) building information topics
      * 
-     * @throws MqttError
+     * @throws RuntimeException
      */
     public void publishRetainedTopics() {
         String payload;
@@ -437,4 +442,5 @@ public class ElevatorMQTTAdapter {
             throw new RuntimeException("Error while publishing retained topics: " + exc.getMessage(), exc);
         }
     }
+
 }

@@ -2,9 +2,6 @@ package at.wielander.elevator.Model;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
 import sqelevator.IElevator;
 
 /**
@@ -277,8 +274,9 @@ public class Elevator {
 
     /**
      * Updates elevator based on current states
+     * @throws RemoteException 
      */
-    public void update() {
+    public void update() throws RemoteException {
         try {
             this.currentFloor = elevatorAPI.getElevatorFloor(elevatorNumber);
             this.targetedFloor = elevatorAPI.getTarget(elevatorNumber);
@@ -289,18 +287,17 @@ public class Elevator {
             this.doorStatus = elevatorAPI.getElevatorDoorStatus(elevatorNumber);
             this.commitedDirection = elevatorAPI.getCommittedDirection(elevatorNumber);
             for (int floor = 0; floor < buttons.size(); floor++) {
-                buttons.set(floor, elevatorAPI.getElevatorButton(elevatorNumber, floor));
+                buttons.set(floor, (Boolean)elevatorAPI.getElevatorButton(elevatorNumber, floor));
             }
 
         } catch (RemoteException e) {
-            e.printStackTrace();
+            throw e;
         }
     }
     
     protected Elevator copy() {
         // Erstellen einer neuen ArrayList für die serviceableFloors und Buttons
         ArrayList<Boolean> copiedServiceableFloors = new ArrayList<>(this.serviceableFloors);
-        ArrayList<Boolean> copiedButtons = new ArrayList<>(this.buttons);
 
         // Erstellen einer neuen Elevator-Instanz mit den gleichen Attributen
         Elevator copiedElevator = new Elevator(copiedServiceableFloors, this.capacity, this.elevatorAPI, this.elevatorNumber);

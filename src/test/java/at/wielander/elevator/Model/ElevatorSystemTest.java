@@ -22,7 +22,7 @@ class ElevatorSystemTest {
         public ElevatorSystem elevatorSystem;
 
         @BeforeEach
-        void SetUp() {
+        void SetUp() throws RemoteException {
                 elevatorSystem = new ElevatorSystem(
                                 3,
                                 0,
