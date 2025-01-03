@@ -2,7 +2,6 @@ package algorithm;
 
 import sqelevator.IElevator;
 import com.hivemq.client.mqtt.MqttClient;
-import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
@@ -17,15 +16,14 @@ import java.util.Map;
 public class ElevatorAlgorithm {
 
 
-	private IElevator controller;
-    private Map<String, String> retainedMessages = new HashMap<>();
+	private Map<String, String> retainedMessages = new HashMap<>();
     private Map<String, String> liveMessages = new HashMap<>();
     private Mqtt5AsyncClient mqttClient; // MQTT-Client als Instanzvariable
     private ElevatorMQTTAdapter eMQTTAdapter; // Adapter als Instanzvariable
     private ElevatorSystem eSystem;
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
     	ElevatorAlgorithm algorithm = new ElevatorAlgorithm();
         String brokerHost = "tcp://localhost:1883"; // Lokaler Mosquitto Broker
         System.out.println("Connecting to MQTT Broker at: " + brokerHost);
@@ -124,20 +122,18 @@ public class ElevatorAlgorithm {
             algorithm.runAlgorithm(algorithm, algorithm.eMQTTAdapter);
 
         } catch (Exception e) {
-            e.printStackTrace();
+        
+    	 algorithm.eMQTTAdapter.disconnect();
+    	
         }
     }
     
 
     public void runAlgorithm(ElevatorAlgorithm algorithm, ElevatorMQTTAdapter eMQTTAdapter) throws InterruptedException {
-        // Verbindungsstatus überprüfen
-    	MqttClientState isAdapterConnected = algorithm.eMQTTAdapter.getClientState(); // Stelle sicher, dass du eine Methode wie isConnected() im ElevatorMQTTAdapter implementiert hast.
-        boolean isClientConnected = algorithm.mqttClient.getState().isConnected();
         Thread.sleep(3000);
         algorithm.eMQTTAdapter.run();
         Thread.sleep(500);
         
-        final int numberOfElevators = Integer.parseInt(retainedMessages.get("building/info/numberOfElevators"));
         final int numberOfFloors = Integer.parseInt(retainedMessages.get("building/info/numberOfFloors")); // Anzahl der Stockwerke
 
         final int elevator = 0;
@@ -162,20 +158,16 @@ public class ElevatorAlgorithm {
             // Wait until the elevator reaches the target floor and speed is 0
             while (Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/currentFloor", "-1")) < nextFloor
                     || Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/speed", "1")) > 0) {
-                try {
-                    Thread.sleep(sleepTime);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+               
+                Thread.sleep(sleepTime);
+               
             }
 
          // Wait until doors are open
             while (!"1".equals(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/doorState", ""))) {
-                try {
-                    Thread.sleep(sleepTime);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+              
+                Thread.sleep(sleepTime);
+                
             }
         }
 
@@ -197,11 +189,9 @@ public class ElevatorAlgorithm {
         // Wait until ground floor is reached
         while (Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/currentFloor", "1")) > 0
                 || Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/speed", "1")) > 0) {
-            try {
-                Thread.sleep(sleepTime);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+       
+            Thread.sleep(sleepTime);
+         
         }
 
         // Set committed direction to UNCOMMITTED and publish to MQTT
