@@ -124,15 +124,12 @@ public class ElevatorAlgorithm {
             algorithm.runAlgorithm(algorithm, algorithm.eMQTTAdapter);
 
         } catch (Exception e) {
-            e.printStackTrace();
+           
         }
     }
     
 
     public void runAlgorithm(ElevatorAlgorithm algorithm, ElevatorMQTTAdapter eMQTTAdapter) throws InterruptedException {
-        // Verbindungsstatus überprüfen
-    	MqttClientState isAdapterConnected = algorithm.eMQTTAdapter.getClientState(); // Stelle sicher, dass du eine Methode wie isConnected() im ElevatorMQTTAdapter implementiert hast.
-        boolean isClientConnected = algorithm.mqttClient.getState().isConnected();
         Thread.sleep(3000);
         algorithm.eMQTTAdapter.run();
         Thread.sleep(500);
@@ -165,7 +162,7 @@ public class ElevatorAlgorithm {
                 try {
                     Thread.sleep(sleepTime);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                	throw e;
                 }
             }
 
@@ -174,7 +171,7 @@ public class ElevatorAlgorithm {
                 try {
                     Thread.sleep(sleepTime);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                	throw e;
                 }
             }
         }
@@ -200,7 +197,7 @@ public class ElevatorAlgorithm {
             try {
                 Thread.sleep(sleepTime);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+            	throw e;
             }
         }
 
