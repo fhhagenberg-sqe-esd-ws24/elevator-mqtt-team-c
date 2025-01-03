@@ -1,4 +1,4 @@
-package at.wielander.elevator.Model;
+package elevatorTest;
 
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
@@ -31,6 +31,9 @@ import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
+
+import elevator.ElevatorMQTTAdapter;
+import elevator.ElevatorSystem;
 import sqelevator.IElevator;
 
 import org.eclipse.paho.mqttv5.common.MqttException;
@@ -214,7 +217,7 @@ public class MQTTAdapterTest {
     }
     
     @Test
-    void testPeriodicUpdates() throws InterruptedException, RemoteException, MQTTAdapterException {
+    void testPeriodicUpdates() throws InterruptedException, RemoteException, ElevatorMQTTAdapter.MQTTAdapterException {
         // Sicherstellen, dass der Client verbunden ist
         if (!testClient.getState().isConnected()) {
             testClient.toBlocking().connect();

@@ -1,4 +1,4 @@
-package at.wielander.elevator.Model;
+package elevator;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
