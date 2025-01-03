@@ -1,4 +1,4 @@
-package at.wielander.elevator.Model;
+package elevator;
 
 import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
@@ -14,19 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Custom Exception for handling MQTT Adapter errors.
- */
-class MQTTAdapterException extends RuntimeException {
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
 
-	public MQTTAdapterException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}
 
 
 public class ElevatorMQTTAdapter {
@@ -46,6 +34,18 @@ public class ElevatorMQTTAdapter {
     private  ElevatorSystem previousElevatorSystem;
     private IElevator elevatorAPI;
 
+    
+    /**
+     * Custom Exception for handling MQTT Adapter errors.
+     */
+    public static class MQTTAdapterException extends RuntimeException {
+      
+    	private static final long serialVersionUID = 1L;
+
+    	public MQTTAdapterException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
     /**
      * Returns the current state of the MQTT client.
      *

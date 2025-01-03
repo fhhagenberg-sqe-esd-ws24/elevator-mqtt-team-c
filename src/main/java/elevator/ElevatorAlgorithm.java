@@ -1,4 +1,4 @@
-package at.wielander.elevator.Model;
+package elevator;
 
 import java.util.Collections;
 import java.util.LinkedList;

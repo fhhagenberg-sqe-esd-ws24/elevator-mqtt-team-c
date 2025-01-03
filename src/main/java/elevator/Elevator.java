@@ -1,4 +1,4 @@
-package at.wielander.elevator.Model;
+package elevator;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -92,7 +92,7 @@ public class Elevator {
     protected IElevator elevatorAPI;
 
     /** Variable for the elevator number */
-    protected int elevatorNumber;
+    public int elevatorNumber;
 
     /**
      * Constructor for internal Data Model based on IElevator interface

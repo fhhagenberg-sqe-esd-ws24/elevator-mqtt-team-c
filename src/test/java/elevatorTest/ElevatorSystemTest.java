@@ -1,10 +1,11 @@
-package at.wielander.elevator.Model;
+package elevatorTest;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import elevator.ElevatorSystem;
 import sqelevator.IElevator;
 
 import java.rmi.RemoteException;

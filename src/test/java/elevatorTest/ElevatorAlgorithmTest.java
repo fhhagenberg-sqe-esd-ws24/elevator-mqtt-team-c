@@ -1,4 +1,4 @@
-package at.wielander.elevator.Model;
+package elevatorTest;
 
 class ElevatorAlgorithmTest {
 /*
