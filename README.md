@@ -24,9 +24,20 @@ netzwerkverbindungsabbrüche können simuliert werden, indem die elevatorsimulat
 |                                  | `elevator/{id}/speed`                       | Geschwindigkeit                       |
 |                                  | `elevator/{id}/weight`                      | Gewicht                               |
 |                                  | `elevator/{id}/doorState`                   | Türstatus                             |
+|                                  | `elevator/{id}/button/{btn_id}`                      | Knopf im Lift                               |
+|                                  | `floor/{id}/buttonUp`                      | Stockwerk-Knopf nach oben                               |
+|                                  | `floor/{id}/buttonDown`                      | Stockwerk-Knopf nach unten                               |
 | **Einmalig (retained)**          | `building/info/numberOfElevators`           | Anzahl der Aufzüge                    |
 |                                  | `building/info/numberOfFloors`              | Anzahl der Etagen                     |
 |                                  | `building/info/floorHeight/feet`            | Etagenhöhe                            |
-|                                  | `building/info/systemClockTick`             | System-Takt                           |
-|                                  | `building/info/rmiConnected`                | RMI-Verbindungsstatus                 |
+|    **Subscribed**                               | `elevator/{id}/committedDirection`               | Richtung                            |
+|                                  | `elevator/{id}/targetFloor`                       | Ziel-Etage                       |
+|                                  | `elevator/{id}/floorService`                      | Stockwerk erreichbar                               |
+
+# Elevator-Algorithm
+Der Elevator-Algorithm ist ein einfacher Algorithmus, welcher von unten beginnend, Stock für Stock, nach oben fährt und anschließend wieder ganz nach unten.
+Bei der Initialisierung wird ein MQTT-Client erstellt welcher sich mit dem Broker verbindung und sich auf die topics numberOfElevators, sowie numberOfFloors subscribed.
+Für den Algorithmus sind nur ein teil der zuvor gelisteten topics der einfach heit halber verwendet worden.
+Durch publishen der committedDirection und des targetedFloor wird der Lift in bewegung gesetzt und sein aktueller Zustand über currentFloor, speed und doorState abgefragt.
+
 
