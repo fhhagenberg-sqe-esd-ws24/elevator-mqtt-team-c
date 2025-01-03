@@ -158,20 +158,16 @@ public class ElevatorAlgorithm {
             // Wait until the elevator reaches the target floor and speed is 0
             while (Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/currentFloor", "-1")) < nextFloor
                     || Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/speed", "1")) > 0) {
-                try {
-                    Thread.sleep(sleepTime);
-                } catch (InterruptedException e) {
-                	throw e;
-                }
+               
+                Thread.sleep(sleepTime);
+               
             }
 
          // Wait until doors are open
             while (!"1".equals(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/doorState", ""))) {
-                try {
-                    Thread.sleep(sleepTime);
-                } catch (InterruptedException e) {
-                	throw e;
-                }
+              
+                Thread.sleep(sleepTime);
+                
             }
         }
 
@@ -193,11 +189,9 @@ public class ElevatorAlgorithm {
         // Wait until ground floor is reached
         while (Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/currentFloor", "1")) > 0
                 || Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/speed", "1")) > 0) {
-            try {
-                Thread.sleep(sleepTime);
-            } catch (InterruptedException e) {
-            	throw e;
-            }
+       
+            Thread.sleep(sleepTime);
+         
         }
 
         // Set committed direction to UNCOMMITTED and publish to MQTT
