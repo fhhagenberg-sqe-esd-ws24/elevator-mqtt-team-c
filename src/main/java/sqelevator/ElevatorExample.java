@@ -99,7 +99,6 @@ public class ElevatorExample {
 			}
 		}
 
-		// Second, go back from the top floor to the ground floor in one move
 
 		// Set the committed direction displayed on the elevator to down
 		controller.setCommittedDirection(elevator, IElevator.ELEVATOR_DIRECTION_DOWN);

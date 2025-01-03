@@ -112,6 +112,12 @@
     <artifactId>byte-buddy</artifactId>
     <version>1.14.15</version> <!-- Aktuellste Version prüfen -->
 </dependency>
+        <dependency>
+            <groupId>at.fhhagenberg.sqelevator</groupId>
+            <artifactId>mqtt-elevator-team-c</artifactId>
+            <version>0.4</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
