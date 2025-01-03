@@ -2,7 +2,6 @@ package algorithm;
 
 import sqelevator.IElevator;
 import com.hivemq.client.mqtt.MqttClient;
-import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
@@ -17,15 +16,14 @@ import java.util.Map;
 public class ElevatorAlgorithm {
 
 
-	private IElevator controller;
-    private Map<String, String> retainedMessages = new HashMap<>();
+	private Map<String, String> retainedMessages = new HashMap<>();
     private Map<String, String> liveMessages = new HashMap<>();
     private Mqtt5AsyncClient mqttClient; // MQTT-Client als Instanzvariable
     private ElevatorMQTTAdapter eMQTTAdapter; // Adapter als Instanzvariable
     private ElevatorSystem eSystem;
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
     	ElevatorAlgorithm algorithm = new ElevatorAlgorithm();
         String brokerHost = "tcp://localhost:1883"; // Lokaler Mosquitto Broker
         System.out.println("Connecting to MQTT Broker at: " + brokerHost);
@@ -124,7 +122,13 @@ public class ElevatorAlgorithm {
             algorithm.runAlgorithm(algorithm, algorithm.eMQTTAdapter);
 
         } catch (Exception e) {
-           
+        	try {
+        	 algorithm.eMQTTAdapter.disconnect();
+        	}
+        	catch(InterruptedException ex)
+        	{
+        		throw ex;
+        	}
         }
     }
     
@@ -134,7 +138,6 @@ public class ElevatorAlgorithm {
         algorithm.eMQTTAdapter.run();
         Thread.sleep(500);
         
-        final int numberOfElevators = Integer.parseInt(retainedMessages.get("building/info/numberOfElevators"));
         final int numberOfFloors = Integer.parseInt(retainedMessages.get("building/info/numberOfFloors")); // Anzahl der Stockwerke
 
         final int elevator = 0;
