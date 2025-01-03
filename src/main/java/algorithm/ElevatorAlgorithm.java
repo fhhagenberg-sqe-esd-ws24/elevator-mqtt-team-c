@@ -122,13 +122,9 @@ public class ElevatorAlgorithm {
             algorithm.runAlgorithm(algorithm, algorithm.eMQTTAdapter);
 
         } catch (Exception e) {
-        	try {
-        	 algorithm.eMQTTAdapter.disconnect();
-        	}
-        	catch(InterruptedException ex)
-        	{
-        		throw ex;
-        	}
+        
+    	 algorithm.eMQTTAdapter.disconnect();
+    	
         }
     }
     
