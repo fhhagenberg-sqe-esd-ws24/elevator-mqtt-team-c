@@ -356,7 +356,7 @@ public class ElevatorMQTTAdapter {
                 elevatorAPI.setTarget(elevatorNumber, targetFloor);
             } else if (topic.contains("floorService")) {
                 int elevatorNumber = Integer.parseInt(parts[1]);
-                int floorNumber = Integer.parseInt(parts[3]); // Assuming topic structure includes floor number as the fourth part
+                int floorNumber = Integer.parseInt(parts[3]);
                 boolean floorService = Boolean.parseBoolean(payload);
                 System.out.println("Elevator " + elevatorNumber + " floor " + floorNumber + " service: " + floorService);
                 elevatorAPI.setServicesFloors(elevatorNumber, floorNumber, floorService);
