@@ -36,11 +36,11 @@ public class ElevatorAlgorithm {
             
             // Elevator System Configuration
             algorithm.eSystem = new ElevatorSystem(
-                    2,         // Anzahl der Aufzüge
-                    0,         // Mindestgeschwindigkeit
-                    4,         // Höchstgeschwindigkeit
-                    1000,      // Gewichtskapazität
-                    7,         // Anzahl der Stockwerke
+                    1,        
+                    0,         
+                    10,         
+                    1000,     
+                    10,        
                     controller // RMI-Controller
             );
 
@@ -67,38 +67,50 @@ public class ElevatorAlgorithm {
                     .identifier("ElevatorAlgorithmClient")
                     .buildAsync();
 
-            // Subscribe to retained messages
-            Map<String, String> expectedMessages = Map.of(
-                    "building/info/numberOfElevators", "2",
-                    "building/info/numberOfFloors", "5",
-                    "building/info/floorHeight/feet", "7"
-            );
+          
 
-            for (String topic : expectedMessages.keySet()) {
-            	algorithm.mqttClient.subscribeWith()
-                        .topicFilter(topic)
-                        .qos(MqttQos.AT_LEAST_ONCE)
-                        .send();
+         // Liste der Topics, die wir abonnieren wollen (nur die building/info Topics)
+            String topicFilter = "building/info/#"; // Filtert nur Topics unter building/info
 
-            	algorithm.mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -> {
+            // Abonnieren des Topic Filters
+            algorithm.mqttClient.subscribeWith()
+                    .topicFilter(topicFilter) // Wildcard für alle Subtopics unter building/info
+                    .qos(MqttQos.AT_LEAST_ONCE)
+                    .send();
+
+            // Verarbeiten der empfangenen Nachrichten
+            algorithm.mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -> {
+                String topic = publish.getTopic().toString();
+                // Überprüfen, ob das Topic unter "building/info" fällt
+                if (topic.startsWith("building/info")) {
+                    // Payload wird als String gespeichert
                     String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
-                    algorithm.retainedMessages.put(publish.getTopic().toString(), payload);
-                    System.out.println("Retained message received: " + publish.getTopic() + " -> " + payload);
-                });
-            }
+                    algorithm.retainedMessages.put(topic, payload); // Speichern der Payload
+                    System.out.println("Retained message received: " + topic + " -> " + payload);
+                }
+            });
 
-            // Subscribe to live messages
+         // Subscribe to live messages for elevators and floors
             for (int elevatorId = 0; elevatorId < 2; elevatorId++) {
-            	algorithm.mqttClient.subscribeWith().topicFilter("elevator/" + elevatorId + "/#").qos(MqttQos.AT_LEAST_ONCE).send();
+                // Abonniere alle Themen, die mit "elevator/" und der entsprechenden ID beginnen
+                algorithm.mqttClient.subscribeWith().topicFilter("elevator/" + elevatorId + "/#").qos(MqttQos.AT_LEAST_ONCE).send();
             }
             for (int floorId = 0; floorId < 4; floorId++) {
-            	algorithm.mqttClient.subscribeWith().topicFilter("floor/" + floorId + "/#").qos(MqttQos.AT_LEAST_ONCE).send();
+                // Abonniere alle Themen, die mit "floor/" und der entsprechenden ID beginnen
+                algorithm.mqttClient.subscribeWith().topicFilter("floor/" + floorId + "/#").qos(MqttQos.AT_LEAST_ONCE).send();
             }
 
+            // Verarbeiten der empfangenen Nachrichten
             algorithm.mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -> {
+                String topic = publish.getTopic().toString();
                 String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
-                algorithm.liveMessages.put(publish.getTopic().toString(), payload);
-                System.out.println("Live message received: " + publish.getTopic() + " -> " + payload);
+
+                // Überprüfen, ob das Topic mit "elevator/" oder "floor/" beginnt
+                if (topic.startsWith("elevator/") || topic.startsWith("floor/")) {
+                    // Die Nachricht wird in der Map liveMessages gespeichert
+                    algorithm.liveMessages.put(topic, payload);
+                    System.out.println("Live message received: " + topic + " -> " + payload);
+                }
             });
 
             algorithm.mqttClient.connect().whenComplete((ack, throwable) -> {
@@ -129,7 +141,7 @@ public class ElevatorAlgorithm {
         final int numberOfFloors = Integer.parseInt(retainedMessages.get("building/info/numberOfFloors")); // Anzahl der Stockwerke
 
         final int elevator = 0;
-        final int sleepTime = 60;
+        final int sleepTime = 10;
 
         // Set committed direction to UP and publish to MQTT
         String directionTopic = "elevator/" + elevator + "/committedDirection";
@@ -157,8 +169,8 @@ public class ElevatorAlgorithm {
                 }
             }
 
-            // Wait until doors are open
-            while (!"OPEN".equals(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/doorState", ""))) {
+         // Wait until doors are open
+            while (!"1".equals(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/doorState", ""))) {
                 try {
                     Thread.sleep(sleepTime);
                 } catch (InterruptedException e) {
