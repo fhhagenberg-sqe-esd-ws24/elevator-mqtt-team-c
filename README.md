@@ -1,6 +1,6 @@
 # sqelevator-proj
-Group assignment SQElevator
 
+Group assignment SQElevator
 
 package at.fhhagenberg.sqelevator ist der full qualified name vom IElevator und darf nicht verändert werden.
 im repo ist ein codeexample von Elevator auf sqelevator zu finden.
@@ -13,20 +13,35 @@ aufgrund dessen das Felix nicht macht wurde der elevatoralgorithm vereinfach.
 IElevator lässt seinen clocktick abfragen. wenn man immer alles abfragt kann es sein, das unter den calls das rmi interface geupdated wird. hier ist dann wichtig, dass am anfang und ende die clockticks abgefragt werden, dann kann man
 dies überprüfen und darauf reagieren.
 
-
 netzwerkverbindungsabbrüche können simuliert werden, indem die elevatorsimulation gestoppt wird und das simulationsfenster (aber nicht das programm) geschlossen wird.
 
-# MQTT-Adapter
-| **Veröffentlichungshäufigkeit** | **Themen (Topics)**                          | **Beschreibung**                      |
-|----------------------------------|---------------------------------------------|---------------------------------------|
-| **Regelmäßig (periodisch)**     | `elevator/{id}/currentFloor`                | Aktuelle Etage                        |
-|                                  | `elevator/{id}/targetedFloor`               | Ziel-Etage                            |
-|                                  | `elevator/{id}/speed`                       | Geschwindigkeit                       |
-|                                  | `elevator/{id}/weight`                      | Gewicht                               |
-|                                  | `elevator/{id}/doorState`                   | Türstatus                             |
-| **Einmalig (retained)**          | `building/info/numberOfElevators`           | Anzahl der Aufzüge                    |
-|                                  | `building/info/numberOfFloors`              | Anzahl der Etagen                     |
-|                                  | `building/info/floorHeight/feet`            | Etagenhöhe                            |
-|                                  | `building/info/systemClockTick`             | System-Takt                           |
-|                                  | `building/info/rmiConnected`                | RMI-Verbindungsstatus                 |
+# Klassendiagramm
 
+![Klassendiagramm](./docu/Elevator.png)
+
+
+# MQTT-Topics
+
+| **Veröffentlichungshäufigkeit** | **Themen (Topics)**           | **Beschreibung** |
+| --------------------------------------- | ----------------------------------- | ---------------------- |
+| **Regelmäßig (periodisch)**     | `elevator/{id}/currentFloor`      | Aktuelle Etage         |
+|                                         | `elevator/{id}/targetedFloor`     | Ziel-Etage             |
+|                                         | `elevator/{id}/speed`             | Geschwindigkeit        |
+|                                         | `elevator/{id}/weight`            | Gewicht                |
+|                                         | `elevator/{id}/doorState`         | Türstatus             |
+|                                         | `elevator/{id}/button/{floor_id}`            | Lift Knopf                |
+|                                         | `floor/{id}/buttonUp`         | Stock Knopf nach oben             |
+|                                         | `floor/{id}/buttonUp`         | Stock Knopf nach unten             |
+| **Einmalig (retained)**           | `building/info/numberOfElevators` | Anzahl der Aufzüge    |
+|                                         | `building/info/numberOfFloors`    | Anzahl der Etagen      |
+|                                         | `building/info/floorHeight/feet`  | Etagenhöhe            |
+
+
+# Produkt Qualität
+
+**Statische Code Analyse:** Durch SonarCloud bei jedem merge auf GitHub
+**Automatisierte Tests:** Durch GitHub Actions
+
+### Ergebnisse der Automatisierten Tests
+
+![Coverage](./docu/coverage.png)
