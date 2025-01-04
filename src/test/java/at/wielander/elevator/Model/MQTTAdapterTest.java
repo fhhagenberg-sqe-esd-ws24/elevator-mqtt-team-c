@@ -1,4 +1,4 @@
-package elevatorTest;
+package at.wielander.elevator.Model;
 
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
@@ -12,6 +12,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import at.wielander.elevator.Controller.IElevator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,9 +33,7 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 
-import elevator.ElevatorMQTTAdapter;
-import elevator.ElevatorSystem;
-import sqelevator.IElevator;
+import at.wielander.elevator.MQTT.ElevatorMQTTAdapter;
 
 import org.eclipse.paho.mqttv5.common.MqttException;
 
@@ -171,7 +170,7 @@ public class MQTTAdapterTest {
         // Ensure client is connected
         assertTrue(testClient.getState().isConnected(), "Client is not connected");
 
-        // Verbinde den MQTTAdapter
+        // Verbinde den MQTT
         MQTTAdapter.connect();
 
         // Erwartete Werte basierend auf dem ElevatorSystem-Konstruktor
@@ -224,7 +223,7 @@ public class MQTTAdapterTest {
         }
         assertTrue(testClient.getState().isConnected(), "Client ist nicht verbunden");
 
-        // MQTTAdapter starten
+        // MQTT starten
         MQTTAdapter.connect();
         MQTTAdapter.run();
 

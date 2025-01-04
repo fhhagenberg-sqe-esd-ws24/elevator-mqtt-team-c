@@ -1,4 +1,4 @@
-package algorithm;
+package at.wielander.elevator.Algorithm;
 
 import at.wielander.elevator.Exception.MQTTClientException;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;

@@ -1,7 +1,5 @@
 package at.wielander.elevator.Helpers.Topics;
 
-import algorithm.ElevatorListener;
-
 import static at.wielander.elevator.Helpers.Topics.BaseTopics.*;
 
 public enum ElevatorTopics {

@@ -1,12 +1,13 @@
-package elevator;
+package at.wielander.elevator.Model;
+
+import at.wielander.elevator.Controller.IElevator;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import sqelevator.IElevator;
 
 /**
  * Internal Data Model for the individual elevators.
- * 
+ *
  * This class represents the physical elevator and its attributes. The behaviors
  * are inherited
  * from the provided interface {@link IElevator} as follows:
@@ -71,7 +72,7 @@ public class Elevator {
     protected int position;
 
     /** Variable for the buttons with the floors mapped to a logical state */
-    protected ArrayList<Boolean> buttons;
+    public ArrayList<Boolean> buttons;
 
     /** Variable for the current weight of the passengers in the elevator in lbs */
     protected int weight;
@@ -263,9 +264,9 @@ public class Elevator {
     
     /**
 	 * Checks if the RMI interface has been assigned
-	 * @param elevatorNumber
-	 * @return
-	 * @throws java.rmi.RemoteException
+	 *
+	 * @return Elevator Api
+	 * @throws java.rmi.RemoteException throws remote connection
 	 */
 	public Boolean elevatorAPIConnected()
 	{

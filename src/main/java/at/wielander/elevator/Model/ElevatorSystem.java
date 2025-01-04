@@ -1,9 +1,10 @@
-package elevator;
+package at.wielander.elevator.Model;
+
+import at.wielander.elevator.Controller.IElevator;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
-import sqelevator.IElevator;
 
 /**
  * Represents the control structure for monitoring various elevator configurations in the building .
@@ -18,7 +19,7 @@ import sqelevator.IElevator;
 /**
  * Constructor for multiple configurations of the elevator system.
  */
-public class ElevatorSystem implements IElevator{
+public class ElevatorSystem implements IElevator {
 
     /** Field for the lowest floor in the building */
     private final int lowestFloor;
@@ -391,7 +392,7 @@ public class ElevatorSystem implements IElevator{
         }
     }
     
-    protected ElevatorSystem copy() throws RemoteException {
+    public ElevatorSystem copy() throws RemoteException {
         // Kopieren der Parameter (skalare Felder und Listen)
         ElevatorSystem copy = new ElevatorSystem(
             this.elevators.size(),    // Anzahl der Aufzüge

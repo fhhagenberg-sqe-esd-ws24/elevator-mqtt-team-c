@@ -1,19 +1,21 @@
-package algorithm;
+package at.wielander.elevator.Algorithm;
+
+import java.rmi.Naming;
+import java.rmi.RemoteException;
 
 import at.wielander.elevator.Helpers.Constants.ElevatorCommittedDirection;
 import at.wielander.elevator.Helpers.Constants.ElevatorRequest;
 import at.wielander.elevator.Helpers.Constants.ElevatorDoorState;
 import at.wielander.elevator.Helpers.Topics.ElevatorTopics;
-import sqelevator.IElevator;
+import at.wielander.elevator.MQTT.ElevatorMQTTAdapter;
+import at.wielander.elevator.Model.ElevatorSystem;
+import at.wielander.elevator.Controller.IElevator;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 
-import elevator.*;
-
 import java.nio.charset.StandardCharsets;
-import java.rmi.Naming;
-import java.rmi.RemoteException;
+
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Level;
@@ -25,7 +27,6 @@ public class ElevatorAlgorithm {
 
     private static final int CLOSING_OPENING_DURATION = 5000;
     private static final int CLOSE_OPEN_DURATION = 10000;
-    private static final int SLEEP_DURATION = 10;
     private static final int TOTAL_ELEVATORS = 2;
     private static final int LOWEST_FLOOR = 0;
     private static final int HIGHEST_FLOOR = 4;
@@ -57,17 +58,15 @@ public class ElevatorAlgorithm {
 
         logger.info("Initializing the Elevator Algorithm...");
         try {
-            String brokerHost = BROKER_URL.getValue();
-
             algorithm.setupRMIController();
-            algorithm.initialiseMQTTAdapter(brokerHost);
+            algorithm.initialiseMQTTAdapter(BROKER_URL.getValue());
             algorithm.setupMQTTClient();
             algorithm.subscribeToTopics();
 
             logger.info("Starting elevator simulator...");
             algorithm.runElevatorSimulator();
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Critical failure during algorithm execution: {0}", e.getMessage());
+            logger.log(Level.SEVERE, "Critical failure during Algorithm execution: {0}", e.getMessage());
         } finally {
             logger.info("Shutting down resources.");
             algorithm.shutdown();
@@ -78,7 +77,7 @@ public class ElevatorAlgorithm {
      * Initialise the RMI controller
      * @throws Exception Exception for any errors
      */
-    private void setupRMIController() throws Exception {
+    public void setupRMIController() throws Exception {
         try {
             IElevator controller = (IElevator) Naming.lookup(RMI_CONTROLLER.getValue());
             eSystem = new ElevatorSystem(
@@ -101,7 +100,7 @@ public class ElevatorAlgorithm {
      *
      * @param brokerHost Hostname for the MQTT Broker
      */
-    private void initialiseMQTTAdapter(String brokerHost) {
+    public void initialiseMQTTAdapter(String brokerHost) {
         try {
             eMQTTAdapter = new ElevatorMQTTAdapter(
                     eSystem,
@@ -111,6 +110,7 @@ public class ElevatorAlgorithm {
                     (IElevator) Naming.lookup(RMI_CONTROLLER.getValue())
             );
             eMQTTAdapter.connect();
+            eMQTTAdapter.run();
             logger.info("MQTT Adapter initialized and connected successfully.");
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error initializing MQTT Adapter: {0}", e.getMessage());
@@ -121,7 +121,7 @@ public class ElevatorAlgorithm {
     /**
      * Set up the connection to the MQTT Broker
      */
-    private void setupMQTTClient() {
+    public void setupMQTTClient() {
         try {
             mqttClient = MqttClient.builder()
                     .useMqttVersion5()
@@ -141,7 +141,7 @@ public class ElevatorAlgorithm {
     /**
      * Terminate the connection of the MQTT Client and MQTT Adapter
      */
-    private void shutdown() {
+    public void shutdown() {
         try {
             terminateClient = true;
 
@@ -171,7 +171,7 @@ public class ElevatorAlgorithm {
     /**
      *  Subscribe to the topics from MQTT Adapter
      */
-    private void subscribeToTopics() {
+    public void subscribeToTopics() {
         try {
             mqttClient.subscribeWith()
                     .topicFilter("building/info/#")
@@ -202,24 +202,18 @@ public class ElevatorAlgorithm {
     /**
      * Execute the elevator Simulator
      */
-    private void runElevatorSimulator() {
+    public void runElevatorSimulator() {
         try {
-            while (!terminateClient){
-                try {
-                    scheduler.scheduleAtFixedRate(this::runAlgorithm, 0, 500, TimeUnit.MILLISECONDS);
-                } catch (Exception e) {
-                    logger.log(Level.WARNING, "Non-critical error in simulation loop: {0}", e.getMessage());
-                }
-            }
+            scheduler.scheduleAtFixedRate(this::runAlgorithm, 0, 2, TimeUnit.SECONDS);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Critical error in simulator loop: {0}", e.getMessage());
         }
     }
 
     /**
-     * Execute the elevator algorithm
+     * Execute the elevator Algorithm
      */
-    private void runAlgorithm() {
+    public void runAlgorithm() {
         try {
             scheduler.schedule(() -> eMQTTAdapter.run(),3,TimeUnit.SECONDS);
 
@@ -228,7 +222,7 @@ public class ElevatorAlgorithm {
 
             handleFloorRequests();
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error during algorithm execution: {0}", e.getMessage());
+            logger.log(Level.SEVERE, "Error during Algorithm execution: {0}", e.getMessage());
         }
     }
 
@@ -284,10 +278,9 @@ public class ElevatorAlgorithm {
         new Thread(()->{
             try{
                 while(isElevatorMoving(elevatorNum, targetFloor)){
-                    Thread.sleep(SLEEP_DURATION);
 
                     // Determine real-time direction
-                    int currentFloor = eSystem.getElevatorPosition(elevatorNum); // Method to get the elevator's current floor
+                    int currentFloor = eSystem.getElevatorPosition(elevatorNum);
 
                     if (currentFloor < targetFloor) {
                         currentDirection = ElevatorCommittedDirection.UP;
@@ -306,9 +299,6 @@ public class ElevatorAlgorithm {
                     }
                 }
                 latchAwaitElevatorArrival.countDown();
-            }catch(InterruptedException e){
-                Thread.currentThread().interrupt();
-                logger.info("Error whilst awaiting Elevator arrival");
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }
@@ -375,7 +365,7 @@ public class ElevatorAlgorithm {
                     synchronized (elevatorRequests) {
                         /* Send the elevator to the lowest floor if no requests remain */
                         if (elevatorRequests.isEmpty()) {
-                            logger.info("No more requests for Elevator " + elevatorIndex + ". Sending it back to the lowest floor.");
+                            logger.info("No floor requests for Elevator " + elevatorIndex + ". Moving lowest floor.");
                             sendElevatorToLowestFloor(elevatorIndex);
                         }
                         /* If the maximum capacity of the elevator has been reached */
@@ -483,34 +473,6 @@ public class ElevatorAlgorithm {
         } catch (InterruptedException e) {
             logger.log(Level.WARNING, "Movement to the lowest floor interrupted for elevator " + indexElevator, e);
             Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * Adds a floor request when a button is pressed outside the elevator.
-     *
-     * @param targetFloor The floor button pressed outside the elevator.
-     */
-    public void addExternalRequest(int targetFloor) {
-        synchronized (elevatorRequests) {
-            if (!elevatorRequests.containsKey(targetFloor)) {
-                elevatorRequests.put(targetFloor, ElevatorRequest.FLOOR_BUTTON);
-                logger.info("External Floor request added for floor " + targetFloor);
-            }
-        }
-    }
-
-    /**
-     * Adds a floor request when a button is pressed inside the elevator.
-     *
-     * @param targetFloor The floor button pressed inside the elevator.
-     */
-    public void addInternalRequest(int targetFloor) {
-        synchronized (elevatorRequests) {
-            if (!elevatorRequests.containsKey(targetFloor)) {
-                elevatorRequests.put(targetFloor, ElevatorRequest.ELEVATOR_BUTTON);
-                logger.info("Button Floor request added for floor " + targetFloor);
-            }
         }
     }
 

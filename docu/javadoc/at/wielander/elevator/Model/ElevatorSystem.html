@@ -76,12 +76,12 @@ loadScripts(document, 'script');</script>
 <section class="class-description" id="class-description">
 <dl class="notes">
 <dt>All Implemented Interfaces:</dt>
-<dd><code>at.wielander.elevator.Model.IElevator</code>, <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.rmi/java/rmi/Remote.html" title="class or interface in java.rmi" class="external-link">Remote</a></code></dd>
+<dd><code>at.wielander.elevator.Controller.IElevator</code>, <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.rmi/java/rmi/Remote.html" title="class or interface in java.rmi" class="external-link">Remote</a></code></dd>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">ElevatorSystem</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
-implements at.wielander.elevator.Model.IElevator</span></div>
+implements at.wielander.elevator.Controller.IElevator</span></div>
 <div class="block">Constructor for multiple configurations of the elevator system.</div>
 </section>
 <section class="summary">
@@ -91,7 +91,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <section class="field-summary" id="field-summary">
 <h2>Field Summary</h2>
 <div class="inherited-list">
-<h3 id="fields-inherited-from-class-at.fhhagenberg.sqelevator.IElevator">Fields inherited from interface&nbsp;at.wielander.elevator.Model.IElevator</h3>
+<h3 id="fields-inherited-from-class-at.fhhagenberg.sqelevator.IElevator">Fields inherited from interface&nbsp;at.wielander.elevator.Controller.IElevator</h3>
 <code>ELEVATOR_DIRECTION_DOWN, ELEVATOR_DIRECTION_UNCOMMITTED, ELEVATOR_DIRECTION_UP, ELEVATOR_DOORS_CLOSED, ELEVATOR_DOORS_CLOSING, ELEVATOR_DOORS_OPEN, ELEVATOR_DOORS_OPENING</code></div>
 </section>
 </li>
@@ -330,7 +330,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the direction of the elevator heading</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getCommittedDirection</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getCommittedDirection</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - - elevator number whose committed direction is being retrieved</dd>
 <dt>Returns:</dt>
@@ -348,7 +348,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the elevator acceleration</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getElevatorAccel</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getElevatorAccel</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - - elevator number whose acceleration is being retrieved</dd>
 <dt>Returns:</dt>
@@ -367,7 +367,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the buttons and its respective logical states</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getElevatorButton</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getElevatorButton</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - - elevator number whose button status is being retrieved</dd>
 <dd><code>floor</code> - - floor number button being checked on the selected elevator</dd>
@@ -386,7 +386,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the door status of elevator</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getElevatorDoorStatus</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getElevatorDoorStatus</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - - elevator number whose door status is being retrieved</dd>
 <dt>Returns:</dt>
@@ -404,7 +404,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the current floor being serviced</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getElevatorFloor</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getElevatorFloor</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - - elevator number whose location is being retrieved</dd>
 <dt>Returns:</dt>
@@ -422,7 +422,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the current elevator ID</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getElevatorNum</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getElevatorNum</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Returns:</dt>
 <dd>interger value of elevator ID</dd>
 <dt>Throws:</dt>
@@ -438,7 +438,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the elevator location with respect to building layout</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getElevatorPosition</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getElevatorPosition</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - - elevator number whose location is being retrieved</dd>
 <dt>Returns:</dt>
@@ -456,7 +456,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Return speed of the elevator</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getElevatorSpeed</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getElevatorSpeed</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - - elevator number whose speed is being retrieved</dd>
 <dt>Returns:</dt>
@@ -474,7 +474,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Return the weight of the elevator</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getElevatorWeight</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getElevatorWeight</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - - elevator number whose service is being retrieved</dd>
 <dt>Returns:</dt>
@@ -492,7 +492,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the set capacity of the elevator</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getElevatorCapacity</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getElevatorCapacity</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - - elevator number whose service is being retrieved</dd>
 <dt>Returns:</dt>
@@ -510,7 +510,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the logical state of the down button of a respective floor</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getFloorButtonDown</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getFloorButtonDown</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>floor</code> - - floor number whose down button status is being retrieved</dd>
 <dt>Returns:</dt>
@@ -528,7 +528,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the logical state of the up button of a respective floor</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getFloorButtonUp</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getFloorButtonUp</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>floor</code> - - floor number whose Up button status is being retrieved</dd>
 <dt>Returns:</dt>
@@ -546,7 +546,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the height of the floor in the building layout</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getFloorHeight</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getFloorHeight</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Returns:</dt>
 <dd>height of the floor in ft</dd>
 <dt>Throws:</dt>
@@ -562,7 +562,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the current floor number</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getFloorNum</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getFloorNum</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Returns:</dt>
 <dd>Integer value of floor number</dd>
 <dt>Throws:</dt>
@@ -579,7 +579,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the servicable floors</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getServicesFloors</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getServicesFloors</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - elevator number whose service is being retrieved</dd>
 <dd><code>floor</code> - floor whose service status by the specified elevator is being retrieved</dd>
@@ -598,7 +598,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns the targeted floor</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getTarget</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getTarget</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - elevator number whose target floor is being retrieved</dd>
 <dt>Returns:</dt>
@@ -617,7 +617,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Sets the direction of the elevator</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>setCommittedDirection</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>setCommittedDirection</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - elevator number whose committed direction is being set</dd>
 <dd><code>direction</code> - direction being set where up=0, down=1 and uncommitted=2</dd>
@@ -636,7 +636,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Sets the floors accessible by the elevator</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>setServicesFloors</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>setServicesFloors</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - elevator number whose service is being defined</dd>
 <dd><code>floor</code> - floor whose service by the specified elevator is being set</dd>
@@ -655,7 +655,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns set target floor of the elevator</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>setTarget</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>setTarget</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Parameters:</dt>
 <dd><code>elevatorNumber</code> - elevator number whose target floor is being set</dd>
 <dd><code>target</code> - floor number which the specified elevator is to target</dd>
@@ -672,7 +672,7 @@ implements at.wielander.elevator.Model.IElevator</span></div>
 <div class="block">Returns clock tick</div>
 <dl class="notes">
 <dt>Specified by:</dt>
-<dd><code>getClockTick</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Model.IElevator</code></dd>
+<dd><code>getClockTick</code>&nbsp;in interface&nbsp;<code>at.wielander.elevator.Controller.IElevator</code></dd>
 <dt>Returns:</dt>
 <dd>Clock tick</dd>
 <dt>Throws:</dt>

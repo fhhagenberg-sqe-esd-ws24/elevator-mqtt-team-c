@@ -1,16 +1,14 @@
-package elevatorTest;
+package at.wielander.elevator.Model;
 
+import at.wielander.elevator.Controller.IElevator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import elevator.Elevator;
-import sqelevator.IElevator;
-
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static sqelevator.IElevator.*;
+import static at.wielander.elevator.Controller.IElevator.*;
 
 class ElevatorTest {
 
