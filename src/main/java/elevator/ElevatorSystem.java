@@ -10,7 +10,7 @@ import sqelevator.IElevator;
  * <p>
  * This class manages both Load and Passenger elevators in multiple configurations as required for any building. Various
  * elevator physical and behavioural attributes inherited from the Elevator class can be controlled as well as accessed
- * via the methods of MQTT Broker as well as the controller, to be implemented in the later stages of this assignment.
+ * via the methods of MQTT Broker as well as the Controller, to be implemented in the later stages of this assignment.
  *</p>
  * @version 1.0
  */
@@ -27,7 +27,7 @@ public class ElevatorSystem implements IElevator{
     private final int highestFloor;
 
     /** Field for the elevators in the building */
-    private List<Elevator> elevators;
+    private final List<Elevator> elevators;
 
     /** Field for the floor height in the building */
     private final int floorHeight;
@@ -46,7 +46,7 @@ public class ElevatorSystem implements IElevator{
 
     private ArrayList<Boolean> serviceableFloors;
 
-    /** Instance of buttonstate */
+    /** Instance of button state */
     protected Boolean buttonState;
 
     /**
@@ -57,7 +57,7 @@ public class ElevatorSystem implements IElevator{
      * @param highestFloor Highest floor accessible by the elevator
      * @param capacity     Maximum capacity of the elevator in lbs
      * @param floorHeight  Height of each floor to be given in ft
-     * @throws RemoteException 
+     * @throws RemoteException Remote exception
      */
     public ElevatorSystem(final int numElevator,
             final int lowestFloor,
@@ -81,10 +81,8 @@ public class ElevatorSystem implements IElevator{
         }
 
         for (int i = 0; i < numElevator; i++) {
-            if (elevators != null) {
-                elevators.add(new Elevator(serviceableFloors, capacity, this.elevatorAPI, i));
-                elevators.get(i).update();
-            }
+            elevators.add(new Elevator(serviceableFloors, capacity, this.elevatorAPI, i));
+            elevators.get(i).update();
         }
     }
 
@@ -285,7 +283,7 @@ public class ElevatorSystem implements IElevator{
     }
 
     /**
-     * Returns the the total number of elevators with respect to building layout
+     * Returns the total number of elevators with respect to building layout
      * 
      * @return total num of elevators
      */

@@ -2,9 +2,9 @@ package at.wielander.elevator.Helpers.Configuration;
 
 public enum MQTTConfiguration {
 
-    BROKER_URL("tcp://localhost:1883"),
-    CLIENT_ID_ADAPTER("101"),
-    CLIENT_ID_ALGORITHM("126");
+    RMI_CONTROLLER("rmi://localhost/ElevatorSim"),
+    CLIENT_ID("mqttAdapter"),
+    BROKER_URL("tcp://localhost:1883");
 
     private final String value;
 

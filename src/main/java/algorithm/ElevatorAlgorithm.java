@@ -5,7 +5,6 @@ import at.wielander.elevator.Helpers.Constants.ElevatorDoorState;
 import at.wielander.elevator.Helpers.Topics.ElevatorTopics;
 import sqelevator.IElevator;
 import com.hivemq.client.mqtt.MqttClient;
-import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 
@@ -14,275 +13,312 @@ import elevator.*;
 import java.nio.charset.StandardCharsets;
 import java.rmi.Naming;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static at.wielander.elevator.Helpers.Configuration.MQTTConfiguration.*;
+
 public class ElevatorAlgorithm {
 
-    private static final Logger logger = Logger.getLogger(ElevatorAlgorithm.class.getName());
     private static final int CLOSING_OPENING_DURATION = 5000;
     private static final int CLOSE_OPEN_DURATION = 10000;
     private static final int SLEEP_DURATION = 10;
-    private final Map<String, String> retainedMessages = new HashMap<>();
-    private final Map<String, String> liveMessages = new HashMap<>();
-    private final Map<Integer, ElevatorRequest> elevatorRequests = new HashMap<>();
-    private Mqtt5AsyncClient mqttClient; // MQTT-Client als Instanzvariable
-    private ElevatorMQTTAdapter eMQTTAdapter; // Adapter als Instanzvariable
+    private static final int TOTAL_ELEVATORS = 2;
+    private static final int LOWEST_FLOOR = 0;
+    private static final int HIGHEST_FLOOR = 4;
+    private static final int MAXIMUM_PASSENGER_CAPACITY = 4000;
+    private static final int FLOOR_HEIGHT = 10;
+    private static final int POLLING_INTERVAL = 250;
+
+    private static final Logger logger = Logger.getLogger(ElevatorAlgorithm.class.getName());
+    private final ExecutorService executorService = Executors.newFixedThreadPool(TOTAL_ELEVATORS);
+
+    private final Map<String, String> retainedMessages = new ConcurrentHashMap<>();
+    private final Map<String, String> liveMessages = new ConcurrentHashMap<>();
+    private final Map<Integer, ElevatorRequest> elevatorRequests = new ConcurrentHashMap<>();
+
+    private Mqtt5AsyncClient mqttClient;
+    private ElevatorMQTTAdapter eMQTTAdapter;
     private ElevatorSystem eSystem;
+
+    private volatile boolean terminateClient = false;
 
     public static void main(String[] args) {
         ElevatorAlgorithm algorithm = new ElevatorAlgorithm();
-        String brokerHost = "tcp://localhost:1883"; // Local Mosquitto Broker
-        logger.info("Connecting to MQTT Broker at: " + brokerHost);
 
+        logger.info("Initializing the Elevator Algorithm...");
         try {
-            // RMI setup
-            IElevator controller = (IElevator) Naming.lookup("rmi://localhost/ElevatorSim");
+            String brokerHost = BROKER_URL.getValue();
 
-            // Elevator System Configuration
-            algorithm.eSystem = new ElevatorSystem(
-                    1,
-                    0,
-                    3,
-                    4000,
-                    10,
-                    controller // RMI-Controller
+            algorithm.setupRMIController();
+            algorithm.initializeMQTTAdapter(brokerHost);
+            algorithm.setupMQTTClient();
+            algorithm.subscribeToTopics();
+
+            logger.info("Starting elevator simulator...");
+            algorithm.runElevatorSimulator();
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Critical failure during algorithm execution: {0}", e.getMessage());
+        } finally {
+            logger.info("Shutting down resources.");
+            algorithm.shutdown();
+        }
+    }
+
+    private void setupRMIController() throws Exception {
+        try {
+            IElevator controller = (IElevator) Naming.lookup(RMI_CONTROLLER.getValue());
+            eSystem = new ElevatorSystem(
+                    TOTAL_ELEVATORS,
+                    LOWEST_FLOOR,
+                    HIGHEST_FLOOR,
+                    MAXIMUM_PASSENGER_CAPACITY,
+                    FLOOR_HEIGHT,
+                    controller
             );
+            logger.info("RMI Controller initialized successfully.");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error initializing RMI Controller: {0}", e.getMessage());
+            throw e;
+        }
+    }
 
-            // Create the MQTT Adapter
-            algorithm.eMQTTAdapter = new ElevatorMQTTAdapter(
-                    algorithm.eSystem,          // Elevator System
-                    brokerHost,       // MQTT Broker Host
-                    "mqttAdapter",    // Client ID
-                    250,              // Polling Interval (ms)
-                    controller        // RMI-Controller
+    private void initializeMQTTAdapter(String brokerHost) {
+        try {
+            eMQTTAdapter = new ElevatorMQTTAdapter(
+                    eSystem,
+                    brokerHost,
+                    CLIENT_ID.getValue(),
+                    POLLING_INTERVAL,
+                    (IElevator) Naming.lookup(RMI_CONTROLLER.getValue())
             );
+            eMQTTAdapter.connect();
+            logger.info("MQTT Adapter initialized and connected successfully.");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error initializing MQTT Adapter: {0}", e.getMessage());
+            throw new RuntimeException("MQTT Adapter initialization failed.", e);
+        }
+    }
 
-            // Connect MQTT Adapter to the Broker
-            algorithm.eMQTTAdapter.connect();
-
-            // Connect to MQTT Broker
-            algorithm.mqttClient = MqttClient.builder()
+    private void setupMQTTClient() {
+        try {
+            mqttClient = MqttClient.builder()
                     .useMqttVersion5()
                     .serverHost("localhost")
                     .serverPort(1883)
                     .identifier("ElevatorAlgorithmClient")
                     .buildAsync();
 
-            // Subscribe to the topics
-            String topicFilter = "building/info/#"; // Filter topics under "building/info"
-            algorithm.mqttClient.subscribeWith()
-                    .topicFilter(topicFilter)
+            mqttClient.connect().whenComplete((ack, throwable) -> {
+                if (throwable == null) {
+                    logger.info("Successfully connected to MQTT broker.");
+                } else {
+                    logger.log(Level.SEVERE, "Failed to connect to MQTT broker: {0}", throwable.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error setting up MQTT client: {0}", e.getMessage());
+            throw new RuntimeException("MQTT Client setup failed.", e);
+        }
+    }
+
+    private void subscribeToTopics() {
+        try {
+            mqttClient.subscribeWith()
+                    .topicFilter("building/info/#")
                     .qos(MqttQos.AT_LEAST_ONCE)
                     .send();
 
-            // Processing received messages
-            algorithm.mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -> {
-                String topic = publish.getTopic().toString();
-                if (topic.startsWith("building/info")) {
-                    String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
-                    algorithm.retainedMessages.put(topic, payload);
-                    logger.info("Retained message received: " + topic + " -> " + payload);
-                }
-            });
-
-            // Subscribe to elevator and floor topics
-            for (int elevatorId = 0; elevatorId < 2; elevatorId++) {
-                algorithm.mqttClient.subscribeWith()
-                        .topicFilter(ElevatorTopics.ELEVATOR_INFO_CURRENT_FLOOR.elevatorIndex(String.valueOf(elevatorId)))
+            for (int i = 0; i < TOTAL_ELEVATORS; i++) {
+                mqttClient.subscribeWith()
+                        .topicFilter(ElevatorTopics.ELEVATOR_INFO_CURRENT_FLOOR.elevatorIndex(String.valueOf(i)))
                         .qos(MqttQos.AT_LEAST_ONCE)
                         .send();
             }
 
-            for (int floorId = 0; floorId < 4; floorId++) {
-                algorithm.mqttClient.subscribeWith()
-                        .topicFilter("floor/" + floorId + "/#")
+            for (int i = LOWEST_FLOOR; i <= HIGHEST_FLOOR; i++) {
+                mqttClient.subscribeWith()
+                        .topicFilter("floor/" + i + "/#")
                         .qos(MqttQos.AT_LEAST_ONCE)
                         .send();
             }
 
-            // Processing the live messages
-            algorithm.mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -> {
-                String topic = publish.getTopic().toString();
-                String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
-                if (topic.startsWith("elevator/") || topic.startsWith("floor/")) {
-                    algorithm.liveMessages.put(topic, payload);
-                    logger.info("Live message received: " + topic + " -> " + payload);
-                }
-            });
-
-            algorithm.mqttClient.connect().whenComplete((ack, throwable) -> {
-                if (throwable == null) {
-                    logger.info("Connected to MQTT broker");
-                } else {
-                    logger.log(Level.SEVERE, "Failed to connect to MQTT broker: " + throwable.getMessage(), throwable);
-                }
-            });
-
-            algorithm.runElevatorSimulator(algorithm);
-
+            logger.info("Successfully subscribed to MQTT topics.");
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Exception occurred: " + e.getMessage(), e);
-        } finally {
-            try {
-                if (algorithm.eMQTTAdapter != null) {
-                    algorithm.eMQTTAdapter.disconnect();
-                }
-                if (algorithm.mqttClient != null) {
-                    algorithm.mqttClient.disconnect();
-                }
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, "Exception during cleanup: " + e.getMessage(), e);
-            }
+            logger.log(Level.SEVERE, "Error subscribing to topics: {0}", e.getMessage());
+            throw new RuntimeException("Topic subscription failed.", e);
         }
     }
 
-    public void runElevatorSimulator(ElevatorAlgorithm algorithm) {
-        while (true) {  // Infinite loop to keep processing messages
-            try {
-                runAlgorithm(algorithm);
-
-                Thread.sleep(500);  // Sleep for a short period to avoid overloading the system
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, "Error in algorithm loop: " + e.getMessage(), e);
-                break; // Exit the loop if any unexpected error occurs
+    private void runElevatorSimulator() {
+        try {
+            while (true) {
+                try {
+                    runAlgorithm();
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    logger.log(Level.WARNING, "Elevator simulator interrupted, safely terminating.");
+                    Thread.currentThread().interrupt();
+                    return;
+                } catch (Exception e) {
+                    logger.log(Level.WARNING, "Non-critical error in simulation loop: {0}", e.getMessage());
+                }
             }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Critical error in simulator loop: {0}", e.getMessage());
         }
     }
 
-    public void runAlgorithm(ElevatorAlgorithm algorithm) {
+    private void runAlgorithm() {
         try {
             Thread.sleep(3000);
-            algorithm.eMQTTAdapter.run();
+            eMQTTAdapter.run();
             Thread.sleep(500);
 
-            final int numberOfFloors = Integer.parseInt(retainedMessages.get("building/info/numberOfFloors"));
-            final int numberOfElevators = Integer.parseInt(retainedMessages.get("building/info/numberOfElevators"));
-            final int elevatorServicedFloors = Integer.parseInt(retainedMessages.get("building/info/elevatorServicedFloors"));
+            int numberOfFloors = Integer.parseInt(retainedMessages.getOrDefault("building/info/numberOfFloors", "0"));
+            int numberOfElevators = Integer.parseInt(retainedMessages.getOrDefault("building/info/numberOfElevators", "0"));
 
-            handleFloorRequests(algorithm, algorithm.eSystem.getElevatorNum(), algorithm.eSystem.getElevatorNum(), SLEEP_DURATION);
-            handleFloorButtonRequests();
+            handleFloorRequests(numberOfElevators, numberOfFloors);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error during algorithm execution: {0}", e.getMessage());
+        }
+    }
+
+    private void shutdown() {
+        try {
+            terminateClient = true;
+
+            // Terminate the executor service
+            executorService.shutdown();
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                logger.warning("Executor service did not terminate in time.");
+            }
+
+            // Then disconnect from MQTT
+            if (eMQTTAdapter != null) {
+                eMQTTAdapter.disconnect();
+            }
+            if (mqttClient != null) {
+                mqttClient.disconnect();
+            }
+
+            logger.info("Successfully shutdown.");
+        } catch (InterruptedException exception){
+            logger.warning("Shutdown interrupted, forcing termination.");
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error during shutdown: {0}", e.getMessage());
+        }
+    }
+
+    private void publishAsyncTargetFloor(int elevator, int targetFloor) {
+        String targetTopic = ElevatorTopics.ELEVATOR_INFO_CURRENT_FLOOR.elevatorIndex(String.valueOf(elevator));
+        asyncPublish(targetTopic, Integer.toString(targetFloor));
+    }
+
+    private void awaitElevatorArrival(int elevator, int targetFloor) throws InterruptedException {
+        while (isElevatorMoving(elevator, targetFloor)) {
+            Thread.sleep(SLEEP_DURATION);
+        }
+        handleDoorStateTransition(elevator);
+        elevatorRequests.remove(targetFloor);
+    }
+
+    private boolean isElevatorMoving(int elevator, int targetFloor) {
+        int currentFloor = Integer.parseInt(liveMessages.getOrDefault("elevator/" + elevator + "/currentFloor", "-1"));
+        return currentFloor < targetFloor || Integer.parseInt(liveMessages.getOrDefault("elevator/" + elevator + "/speed", "0")) > 0;
+    }
+
+    private void handleElevatorMovement(int elevator, int targetFloor) throws InterruptedException {
+        // Publish target floor asynchronously
+        publishAsyncTargetFloor(elevator, targetFloor);
+
+        // Wait until the elevator reaches the target floor
+        awaitElevatorArrival(elevator, targetFloor);
+
+        // Handle the door state transitions
+        handleDoorStateTransition(elevator);
+
+    }
+
+    private void handleFloorRequests(int numberOfElevators, int numberOfFloors) {
+        try {
+            List<Integer> sortedFloors = new ArrayList<>(elevatorRequests.keySet());
+            Collections.sort(sortedFloors);
+
+            List<Callable<Void>> tasks = new ArrayList<>();
+
+            for (int elevatorNumber = 0; elevatorNumber < TOTAL_ELEVATORS; elevatorNumber++) {
+                final int elevatorId = elevatorNumber;
+                tasks.add(() -> {
+                    synchronized (elevatorRequests){
+                        processElevatorRequests(sortedFloors, elevatorId, SLEEP_DURATION);
+                    }
+                    return null;
+                });
+            }
+
+            executorService.invokeAll(tasks);
+        } catch (InterruptedException e) {
+            logger.log(Level.WARNING, "Error in floor request handling", e);
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void processElevatorRequests(List<Integer> sortedFloors, int elevatorId, int sleepDuration) {
+        for (Integer targetFloor : sortedFloors) {
+            if(Thread.currentThread().isInterrupted() || terminateClient){
+                logger.log(Level.WARNING, "Elevator " + elevatorId + " was interrupted, terminating the request processing.");
+                return;
+            }
+
+            try {
+                if (elevatorRequests.containsKey(targetFloor)) {
+                    handleElevatorMovement(elevatorId, targetFloor);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.log(Level.WARNING, "Movement interrupted for elevator " + elevatorId, e);
+                return;
+            }
+        }
+    }
+
+    private void asyncPublish(String topic, String payload) {
+        mqttClient.publishWith()
+                .topic(topic)
+                .payload(payload.getBytes(StandardCharsets.UTF_8))
+                .send()
+                .whenComplete((result, exception) -> {
+                    if (exception != null) {
+                        logger.log(Level.SEVERE, "Error publishing message: {0}", exception.getMessage());
+                    } else {
+                        logger.info("Message published successfully: " + topic);
+                    }
+                });
+    }
+
+    private void handleDoorStateTransition(int elevator) throws InterruptedException {
+        try {
+            /* CLOSED -> OPENING */
+            asyncPublish(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevator)), Integer.toString(ElevatorDoorState.OPENING.ordinal()));
+            Thread.sleep(CLOSING_OPENING_DURATION);
+
+            /* OPENING -> OPEN */
+            asyncPublish(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevator)), Integer.toString(ElevatorDoorState.OPEN.ordinal()));
+            Thread.sleep(CLOSE_OPEN_DURATION);
+
+            /* OPEN -> CLOSING */
+            asyncPublish(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevator)), Integer.toString(ElevatorDoorState.CLOSING.ordinal()));
+            Thread.sleep(CLOSING_OPENING_DURATION);
+
+            /* CLOSING -> CLOSED */
+            asyncPublish(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevator)), Integer.toString(ElevatorDoorState.CLOSED.ordinal()));
 
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Exception in runAlgorithm: " + e.getMessage(), e);
+            logger.log(Level.SEVERE, "Error handling door state transition: {0}", e.getMessage());
+            throw e;
         }
-    }
-
-    private void handleFloorButtonRequests() {
-        for (int indexFloor = 0; indexFloor < 4; indexFloor++) {
-            // Subscribe to the up and down button press topics for each floor
-            String upButtonTopic = "floor/" + indexFloor + "/buttonUp";
-            String downButtonTopic = "floor/" + indexFloor + "/buttonDown";
-
-            int finalIndexFloor = indexFloor;
-            int finalIndexFloor1 = indexFloor;
-            mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -> {
-                String topic = publish.getTopic().toString();
-                String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
-
-                if (topic.equals(upButtonTopic) || topic.equals(downButtonTopic)) {
-                    logger.info("Button pressed on floor " + finalIndexFloor + ": " + topic + " -> " + payload);
-                    if (payload.equals("pressed")) {
-                        // If the up or down button is pressed, request an elevator to come to this floor
-                        int direction = topic.equals(upButtonTopic) ? 1 : -1;
-                        ElevatorRequest put = elevatorRequests.put(finalIndexFloor, ElevatorRequest.getValue(direction));
-
-                        // Trigger the elevator to go to the requested floor (direction-based)
-                        triggerElevatorRequest(finalIndexFloor, direction);
-                    }
-                }
-            });
-        }
-    }
-
-    private void triggerElevatorRequest(int floorId, int direction) {
-        // Determine which elevator should respond based on the direction
-        for (int elevatorId = 0; elevatorId < 2; elevatorId++) {
-            // Set the target floor for the elevator based on the direction (up or down)
-            String targetTopic = ElevatorTopics.ELEVATOR_INFO_CURRENT_FLOOR.elevatorIndex(String.valueOf(elevatorId));
-            mqttClient.publishWith()
-                    .topic(targetTopic)
-                    .payload(Integer.toString(floorId).getBytes(StandardCharsets.UTF_8))
-                    .send();
-        }
-    }
-
-    private void handleFloorRequests(ElevatorAlgorithm algorithm, int elevator, int numberOfFloors, int sleepTime) throws InterruptedException {
-        List<Integer> sortedFloors = new ArrayList<>(elevatorRequests.keySet());
-        Collections.sort(sortedFloors);
-
-        for (Integer targetFloor : sortedFloors) {
-            // Set target floor for the elevator
-            String targetTopic = ElevatorTopics.ELEVATOR_INFO_CURRENT_FLOOR.elevatorIndex(String.valueOf(elevator));
-            algorithm.mqttClient.publishWith()
-                    .topic(targetTopic)
-                    .payload(Integer.toString(targetFloor).getBytes(StandardCharsets.UTF_8))
-                    .send();
-
-            // Wait for elevator to reach target floor
-            while (Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/currentFloor", "-1")) < targetFloor
-                    || Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/speed", "1")) > 0) {
-
-                Thread.sleep(sleepTime);
-            }
-
-            // Handle door transitions after arrival
-            handleDoorStateTransition(algorithm, elevator);
-
-            elevatorRequests.remove(targetFloor);
-        }
-
-        // Return to ground floor if no requests
-        if (elevatorRequests.isEmpty()) {
-            String targetTopic = ElevatorTopics.ELEVATOR_INFO_CURRENT_FLOOR.elevatorIndex(String.valueOf(elevator));
-            algorithm.mqttClient.publishWith()
-                    .topic(targetTopic)
-                    .payload("0".getBytes(StandardCharsets.UTF_8))
-                    .send();
-
-            while (Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/currentFloor", "1")) > 0
-                    || Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/speed", "1")) > 0) {
-
-                Thread.sleep(sleepTime);
-            }
-
-            handleDoorStateTransition(algorithm, elevator);
-        }
-    }
-
-    /**
-     * Handles door transitions from  CLOSED -> OPENING -> OPEN -> CLOSING -> CLOSED
-     * @param algorithm elevator Algorithm
-     * @param elevator elevator data model
-     * @throws InterruptedException Exception
-     */
-    private void handleDoorStateTransition(ElevatorAlgorithm algorithm, int elevator) throws InterruptedException {
-        /* CLOSED -> OPENING */
-        algorithm.mqttClient.publishWith()
-                .topic(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevator)))
-                .payload(Integer.toString(ElevatorDoorState.getValue(3).ordinal()).getBytes(StandardCharsets.UTF_8))
-                .send();
-        Thread.sleep(CLOSING_OPENING_DURATION);
-
-        /* OPENING -> OPEN */
-        algorithm.mqttClient.publishWith()
-                .topic(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevator)))
-                .payload(Integer.toString(ElevatorDoorState.getValue(1).ordinal()).getBytes(StandardCharsets.UTF_8))
-                .send();
-        Thread.sleep(CLOSE_OPEN_DURATION);
-
-        /* OPEN -> CLOSING */
-        algorithm.mqttClient.publishWith()
-                .topic(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevator)))
-                .payload(Integer.toString(ElevatorDoorState.getValue(4).ordinal()).getBytes(StandardCharsets.UTF_8))
-                .send();
-        Thread.sleep(CLOSING_OPENING_DURATION);
-
-        /* CLOSING -> CLOSE */
-        algorithm.mqttClient.publishWith()
-                .topic(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevator)))
-                .payload(Integer.toString(ElevatorDoorState.getValue(2).ordinal()).getBytes(StandardCharsets.UTF_8))
-                .send();
-        Thread.sleep(CLOSE_OPEN_DURATION);
     }
 }

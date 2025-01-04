@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.testcontainers.hivemq.HiveMQContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -29,7 +30,7 @@ class ElevatorAlgorithmTest {
     final HiveMQContainer hivemqCe = new HiveMQContainer(DockerImageName.parse("hivemq/hivemq-ce").withTag("2024.3"));
 
     @Mock
-    private IElevator elevatorAPI;
+    private IElevator mockElevatorAPI;
 
     private ElevatorSystem elevatorSystem;
     private ElevatorMQTTAdapter MQTTAdapter;
@@ -38,6 +39,8 @@ class ElevatorAlgorithmTest {
 
     @BeforeEach
     public void setup() throws RemoteException, InterruptedException {
+        MockitoAnnotations.initMocks(this);
+
         hivemqCe.start();
         Host = "tcp://" + hivemqCe.getHost() + ":" + hivemqCe.getMappedPort(1883);
         System.out.println("Host address: " + Host);
@@ -47,9 +50,8 @@ class ElevatorAlgorithmTest {
                 .serverHost(hivemqCe.getHost())
                 .buildBlocking();
         testClient.connect();
-        elevatorAPI = mock(IElevator.class);
-        elevatorSystem = new ElevatorSystem(2, 0, 4, 1000, 7, elevatorAPI);
-        MQTTAdapter = new ElevatorMQTTAdapter(elevatorSystem, Host, "mqttAdapter", 250, elevatorAPI);
+        elevatorSystem = new ElevatorSystem(2, 0, 4, 1000, 7, mockElevatorAPI);
+        MQTTAdapter = new ElevatorMQTTAdapter(elevatorSystem, Host, "mqttAdapter", 250, mockElevatorAPI);
         MQTTAdapter.connect();
         MQTTAdapter.run();
     }
@@ -69,19 +71,22 @@ class ElevatorAlgorithmTest {
 
     @Test
     void testFloorRequestHandling() throws InterruptedException, RemoteException {
-        when(elevatorAPI.getFloorNum()).thenReturn(1);
-        when(elevatorAPI.getElevatorPosition(0)).thenReturn(0);
-        elevatorAPI.setTarget(0, 1);
+        when(mockElevatorAPI.getFloorButtonUp(1)).thenReturn(true);
+        when(mockElevatorAPI.getElevatorPosition(0)).thenReturn(0);
+        when(mockElevatorAPI.getTarget(0)).thenReturn(1);
+
         elevatorSystem.updateAll();
 
-        verify(elevatorAPI).setTarget(0, 1);
         assertEquals(1, elevatorSystem.getTarget(0));
         assertEquals(0, elevatorSystem.getElevatorPosition(0));
+        verify(mockElevatorAPI).getTarget(0);
+        verify(mockElevatorAPI).getFloorButtonUp(1);
+
     }
 
     @Test
     void testFloorButtonRequestHandling() throws InterruptedException, RemoteException {
-        when(elevatorAPI.getElevatorPosition(0)).thenReturn(0);
+        when(mockElevatorAPI.getElevatorPosition(0)).thenReturn(0);
 
         String floor1UpButtonTopic = "floor/1/buttonUp";
         testClient.publishWith()
@@ -89,13 +94,13 @@ class ElevatorAlgorithmTest {
                 .payload("pressed".getBytes())
                 .send();
 
-        verify(elevatorAPI).setTarget(0, 2);  // Elevator should go to floor 2
+        verify(mockElevatorAPI).setTarget(0, 2);
 
     }
 
     @Test
     void testFloorButtonRequestHandlingDown() throws InterruptedException, RemoteException {
-        when(elevatorAPI.getElevatorPosition(0)).thenReturn(3);
+        when(mockElevatorAPI.getElevatorPosition(0)).thenReturn(3);
 
         String floor2DownButtonTopic = "floor/2/buttonDown";
         testClient.publishWith()
@@ -103,13 +108,13 @@ class ElevatorAlgorithmTest {
                 .payload("pressed".getBytes())
                 .send();
 
-        verify(elevatorAPI).setTarget(0, 1);  // Elevator should go to floor 1
+        verify(mockElevatorAPI).setTarget(0, 1);  // Elevator should go to floor 1
 
     }
 
     @Test
     void testMultipleFloorRequests() throws InterruptedException, RemoteException {
-        when(elevatorAPI.getElevatorPosition(0)).thenReturn(0);
+        when(mockElevatorAPI.getElevatorPosition(0)).thenReturn(0);
 
         testClient.publishWith()
                 .topic("floor/2/buttonUp")
@@ -121,40 +126,40 @@ class ElevatorAlgorithmTest {
                 .payload("pressed".getBytes())
                 .send();
 
-        verify(elevatorAPI).setTarget(0, 2);
-        verify(elevatorAPI).setTarget(0, 3);
+        verify(mockElevatorAPI).setTarget(0, 2);
+        verify(mockElevatorAPI).setTarget(0, 3);
 
     }
 
     @Test
     void testElevatorArrivesAtRequestedFloor() throws InterruptedException, RemoteException {
-        when(elevatorAPI.getElevatorPosition(0)).thenReturn(0);
+        when(mockElevatorAPI.getElevatorPosition(0)).thenReturn(0);
 
         testClient.publishWith()
                 .topic("floor/2/buttonUp")
                 .payload("pressed".getBytes())
                 .send();
 
-        verify(elevatorAPI).setTarget(0, 2);
+        verify(mockElevatorAPI).setTarget(0, 2);
 
-        when(elevatorAPI.getElevatorPosition(0)).thenReturn(2);
+        when(mockElevatorAPI.getElevatorPosition(0)).thenReturn(2);
     }
 
     @Test
     void testElevatorIdleAfterAllRequests() throws InterruptedException, RemoteException {
-        when(elevatorAPI.getElevatorPosition(0)).thenReturn(0);
+        when(mockElevatorAPI.getElevatorPosition(0)).thenReturn(0);
 
         testClient.publishWith()
                 .topic("floor/2/buttonUp")
                 .payload("pressed".getBytes())
                 .send();
 
-        verify(elevatorAPI).setTarget(0, 2);
+        verify(mockElevatorAPI).setTarget(0, 2);
 
-        when(elevatorAPI.getElevatorPosition(0)).thenReturn(2);
+        when(mockElevatorAPI.getElevatorPosition(0)).thenReturn(2);
 
-        verify(elevatorAPI).setTarget(0, 0);
+        verify(mockElevatorAPI).setTarget(0, 0);
 
-        when(elevatorAPI.getElevatorPosition(0)).thenReturn(0);
+        when(mockElevatorAPI.getElevatorPosition(0)).thenReturn(0);
     }
 }
