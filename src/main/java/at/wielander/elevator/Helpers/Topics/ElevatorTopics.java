@@ -1,5 +1,7 @@
 package at.wielander.elevator.Helpers.Topics;
 
+import algorithm.ElevatorListener;
+
 import static at.wielander.elevator.Helpers.Topics.BaseTopics.*;
 
 public enum ElevatorTopics {
@@ -13,7 +15,9 @@ public enum ElevatorTopics {
     // current door state
     ELEVATOR_CONTROL_DOOR_STATE(ELEVATOR.topic + "%s/doorState"),
     // button state
-    ELEVATOR_FLOOR_BUTTON_STATE(ELEVATOR.topic+ "%s/button/%s");
+    ELEVATOR_FLOOR_BUTTON_STATE(ELEVATOR.topic+ "%s/button/%s"),
+
+    ELEVATOR_INFO_COMMITTED_DIRECTION(ELEVATOR.topic + "%s");
     private final String topic;
 
     ElevatorTopics(String topic) {

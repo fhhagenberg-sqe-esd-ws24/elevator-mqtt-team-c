@@ -1,5 +1,6 @@
 package algorithm;
 
+import at.wielander.elevator.Helpers.Constants.ElevatorCommittedDirection;
 import at.wielander.elevator.Helpers.Constants.ElevatorRequest;
 import at.wielander.elevator.Helpers.Constants.ElevatorDoorState;
 import at.wielander.elevator.Helpers.Topics.ElevatorTopics;
@@ -12,6 +13,7 @@ import elevator.*;
 
 import java.nio.charset.StandardCharsets;
 import java.rmi.Naming;
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Level;
@@ -33,6 +35,7 @@ public class ElevatorAlgorithm {
 
     private static final Logger logger = Logger.getLogger(ElevatorAlgorithm.class.getName());
     private final ExecutorService executorService = Executors.newFixedThreadPool(TOTAL_ELEVATORS);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     private final Map<String, String> retainedMessages = new ConcurrentHashMap<>();
     private final Map<String, String> liveMessages = new ConcurrentHashMap<>();
@@ -43,6 +46,11 @@ public class ElevatorAlgorithm {
     private ElevatorSystem eSystem;
 
     private volatile boolean terminateClient = false;
+    private int numberOfFloors;
+    private int numberOfElevators;
+    private ElevatorCommittedDirection currentDirection = null;
+    private ElevatorCommittedDirection lastDirection = null;
+
 
     public static void main(String[] args) {
         ElevatorAlgorithm algorithm = new ElevatorAlgorithm();
@@ -52,7 +60,7 @@ public class ElevatorAlgorithm {
             String brokerHost = BROKER_URL.getValue();
 
             algorithm.setupRMIController();
-            algorithm.initializeMQTTAdapter(brokerHost);
+            algorithm.initialiseMQTTAdapter(brokerHost);
             algorithm.setupMQTTClient();
             algorithm.subscribeToTopics();
 
@@ -66,6 +74,10 @@ public class ElevatorAlgorithm {
         }
     }
 
+    /**
+     * Initialise the RMI controller
+     * @throws Exception Exception for any errors
+     */
     private void setupRMIController() throws Exception {
         try {
             IElevator controller = (IElevator) Naming.lookup(RMI_CONTROLLER.getValue());
@@ -84,7 +96,12 @@ public class ElevatorAlgorithm {
         }
     }
 
-    private void initializeMQTTAdapter(String brokerHost) {
+    /**
+     * Initialise MQTT Adapter
+     *
+     * @param brokerHost Hostname for the MQTT Broker
+     */
+    private void initialiseMQTTAdapter(String brokerHost) {
         try {
             eMQTTAdapter = new ElevatorMQTTAdapter(
                     eSystem,
@@ -101,6 +118,9 @@ public class ElevatorAlgorithm {
         }
     }
 
+    /**
+     * Set up the connection to the MQTT Broker
+     */
     private void setupMQTTClient() {
         try {
             mqttClient = MqttClient.builder()
@@ -110,19 +130,47 @@ public class ElevatorAlgorithm {
                     .identifier("ElevatorAlgorithmClient")
                     .buildAsync();
 
-            mqttClient.connect().whenComplete((ack, throwable) -> {
-                if (throwable == null) {
-                    logger.info("Successfully connected to MQTT broker.");
-                } else {
-                    logger.log(Level.SEVERE, "Failed to connect to MQTT broker: {0}", throwable.getMessage());
-                }
-            });
+            mqttClient.connect().get();
+            logger.info("Successfully connected to MQTT broker.");
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error setting up MQTT client: {0}", e.getMessage());
             throw new RuntimeException("MQTT Client setup failed.", e);
         }
     }
 
+    /**
+     * Terminate the connection of the MQTT Client and MQTT Adapter
+     */
+    private void shutdown() {
+        try {
+            terminateClient = true;
+
+            // Terminate the executor service
+            executorService.shutdown();
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                logger.warning("Executor service did not terminate in time.");
+            }
+
+            // Then disconnect from MQTT
+            if (eMQTTAdapter != null) {
+                eMQTTAdapter.disconnect();
+            }
+            if (mqttClient != null) {
+                mqttClient.disconnect();
+            }
+
+            logger.info("Successfully shutdown.");
+        } catch (InterruptedException exception){
+            logger.warning("Shutdown interrupted, forcing termination.");
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error during shutdown: {0}", e.getMessage());
+        }
+    }
+
+    /**
+     *  Subscribe to the topics from MQTT Adapter
+     */
     private void subscribeToTopics() {
         try {
             mqttClient.subscribeWith()
@@ -151,16 +199,14 @@ public class ElevatorAlgorithm {
         }
     }
 
+    /**
+     * Execute the elevator Simulator
+     */
     private void runElevatorSimulator() {
         try {
-            while (true) {
+            while (!terminateClient){
                 try {
-                    runAlgorithm();
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    logger.log(Level.WARNING, "Elevator simulator interrupted, safely terminating.");
-                    Thread.currentThread().interrupt();
-                    return;
+                    scheduler.scheduleAtFixedRate(this::runAlgorithm, 0, 500, TimeUnit.MILLISECONDS);
                 } catch (Exception e) {
                     logger.log(Level.WARNING, "Non-critical error in simulation loop: {0}", e.getMessage());
                 }
@@ -170,95 +216,221 @@ public class ElevatorAlgorithm {
         }
     }
 
+    /**
+     * Execute the elevator algorithm
+     */
     private void runAlgorithm() {
         try {
-            Thread.sleep(3000);
-            eMQTTAdapter.run();
-            Thread.sleep(500);
+            scheduler.schedule(() -> eMQTTAdapter.run(),3,TimeUnit.SECONDS);
 
-            int numberOfFloors = Integer.parseInt(retainedMessages.getOrDefault("building/info/numberOfFloors", "0"));
-            int numberOfElevators = Integer.parseInt(retainedMessages.getOrDefault("building/info/numberOfElevators", "0"));
+            numberOfFloors = Integer.parseInt(retainedMessages.getOrDefault("building/info/numberOfFloors", "0"));
+            numberOfElevators = Integer.parseInt(retainedMessages.getOrDefault("building/info/numberOfElevators", "0"));
 
-            handleFloorRequests(numberOfElevators, numberOfFloors);
+            handleFloorRequests();
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error during algorithm execution: {0}", e.getMessage());
         }
     }
 
-    private void shutdown() {
-        try {
-            terminateClient = true;
-
-            // Terminate the executor service
-            executorService.shutdown();
-            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
-                logger.warning("Executor service did not terminate in time.");
-            }
-
-            // Then disconnect from MQTT
-            if (eMQTTAdapter != null) {
-                eMQTTAdapter.disconnect();
-            }
-            if (mqttClient != null) {
-                mqttClient.disconnect();
-            }
-
-            logger.info("Successfully shutdown.");
-        } catch (InterruptedException exception){
-            logger.warning("Shutdown interrupted, forcing termination.");
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error during shutdown: {0}", e.getMessage());
-        }
-    }
-
-    private void publishAsyncTargetFloor(int elevator, int targetFloor) {
-        String targetTopic = ElevatorTopics.ELEVATOR_INFO_CURRENT_FLOOR.elevatorIndex(String.valueOf(elevator));
+    /**
+     * Publishes the message to the MQTT Adapter
+     * @param elevatorNumber elevator Number
+     * @param targetFloor Targeted floor
+     */
+    private void publishAsyncTargetFloor(int elevatorNumber, int targetFloor) {
+        String targetTopic = ElevatorTopics.ELEVATOR_INFO_CURRENT_FLOOR.elevatorIndex(String.valueOf(elevatorNumber));
         asyncPublish(targetTopic, Integer.toString(targetFloor));
     }
 
-    private void awaitElevatorArrival(int elevator, int targetFloor) throws InterruptedException {
-        while (isElevatorMoving(elevator, targetFloor)) {
-            Thread.sleep(SLEEP_DURATION);
+    /**
+     * Handles the door state transitions when the elevator arrives at a single floor
+     * @param elevatorNum Elevator number
+     */
+    private void handleDoorStateTransition(int elevatorNum) {
+        try {
+            /* CLOSED -> OPENING */
+            scheduler.schedule(() -> asyncPublish(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevatorNum)),
+                    Integer.toString(ElevatorDoorState.OPENING.ordinal())), CLOSING_OPENING_DURATION, TimeUnit.MILLISECONDS);
+
+            /* OPENING -> OPEN */
+            scheduler.schedule(() -> asyncPublish(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevatorNum)),
+                    Integer.toString(ElevatorDoorState.OPEN.ordinal())), CLOSE_OPEN_DURATION, TimeUnit.MILLISECONDS);
+
+            /* OPEN -> CLOSING */
+            scheduler.schedule(() -> asyncPublish(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevatorNum)),
+                    Integer.toString(ElevatorDoorState.CLOSING.ordinal())), CLOSING_OPENING_DURATION, TimeUnit.MILLISECONDS);
+
+            /* CLOSING -> CLOSED */
+            scheduler.schedule(() -> asyncPublish(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevatorNum)),
+                    Integer.toString(ElevatorDoorState.CLOSED.ordinal())), CLOSE_OPEN_DURATION, TimeUnit.MILLISECONDS);
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error handling door state transitions: {0}", e.getMessage());
+            throw e;
         }
-        handleDoorStateTransition(elevator);
-        elevatorRequests.remove(targetFloor);
     }
 
-    private boolean isElevatorMoving(int elevator, int targetFloor) {
-        int currentFloor = Integer.parseInt(liveMessages.getOrDefault("elevator/" + elevator + "/currentFloor", "-1"));
-        return currentFloor < targetFloor || Integer.parseInt(liveMessages.getOrDefault("elevator/" + elevator + "/speed", "0")) > 0;
+    /**
+     * Handles the countdown of the arrival of the elevator at a floor
+     * @param elevatorNum Elevator number
+     * @param targetFloor Targeted floor
+     * @throws InterruptedException Throws an exception if the process is interrupted
+     */
+    private void awaitElevatorArrival(int elevatorNum, int targetFloor) throws InterruptedException {
+
+        /* Create a countdown latch */
+        CountDownLatch latchAwaitElevatorArrival = new CountDownLatch(1);
+
+        new Thread(()->{
+            try{
+                while(isElevatorMoving(elevatorNum, targetFloor)){
+                    Thread.sleep(SLEEP_DURATION);
+
+                    // Determine real-time direction
+                    int currentFloor = eSystem.getElevatorPosition(elevatorNum); // Method to get the elevator's current floor
+
+                    if (currentFloor < targetFloor) {
+                        currentDirection = ElevatorCommittedDirection.UP;
+                    } else if (currentFloor > targetFloor) {
+                        currentDirection = ElevatorCommittedDirection.DOWN;
+                    } else {
+                        currentDirection = ElevatorCommittedDirection.UNCOMMITTED;
+                    }
+
+                    // Publish direction only if it has changed
+                    if (currentDirection != lastDirection) {
+                        String directionTopic = ElevatorTopics.ELEVATOR_INFO_COMMITTED_DIRECTION.elevatorIndex(String.valueOf(elevatorNum));
+                        asyncPublish(directionTopic, Integer.toString(currentDirection.ordinal()));
+                        lastDirection = currentDirection;
+                        logger.info("Updated direction for Elevator " + elevatorNum + ": " + currentDirection);
+                    }
+                }
+                latchAwaitElevatorArrival.countDown();
+            }catch(InterruptedException e){
+                Thread.currentThread().interrupt();
+                logger.info("Error whilst awaiting Elevator arrival");
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+
+        // Wait for the latch to be counted down and then handle state transition
+        latchAwaitElevatorArrival.await();
+        synchronized (elevatorRequests){
+            handleDoorStateTransition(elevatorNum);
+            elevatorRequests.remove(targetFloor);
+        }
+
     }
 
-    private void handleElevatorMovement(int elevator, int targetFloor) throws InterruptedException {
+    /**
+     * Verifies if the elevator is moving in a certain direction
+     * @param elevatorNum Elevator Number
+     * @param targetFloor Targeted floor
+     * @return true if the elevator is not at the targeted floor
+     */
+    private boolean isElevatorMoving(int elevatorNum, int targetFloor) {
+        int currentFloor = Integer.parseInt(liveMessages.getOrDefault("elevator/" + elevatorNum + "/currentFloor", "-1"));
+        return currentFloor < targetFloor || Integer.parseInt(liveMessages.getOrDefault("elevator/" + elevatorNum + "/speed", "0")) > 0;
+    }
+
+    /**
+     * Verifies if the elevator is at maximum capacity
+     * @param elevatorNum elevator number
+     * @return true if the elevator is a maximum capacity
+     */
+    private boolean isElevatorFull(int elevatorNum) {
+        int currentPassengers = Integer.parseInt(liveMessages.getOrDefault("elevator/" + elevatorNum + "/currentPassengers", "0"));
+        return currentPassengers >= MAXIMUM_PASSENGER_CAPACITY;
+    }
+
+    /**
+     * Handles the elevator moving to the targeted floor
+     * @param elevatorNum Elevator number
+     * @param targetFloor targeted floor
+     * @throws InterruptedException Exception thrown when the elevator
+     */
+    private void handleElevatorMovement(int elevatorNum, int targetFloor) throws InterruptedException {
         // Publish target floor asynchronously
-        publishAsyncTargetFloor(elevator, targetFloor);
+        publishAsyncTargetFloor(elevatorNum, targetFloor);
 
         // Wait until the elevator reaches the target floor
-        awaitElevatorArrival(elevator, targetFloor);
+        awaitElevatorArrival(elevatorNum, targetFloor);
 
         // Handle the door state transitions
-        handleDoorStateTransition(elevator);
+        handleDoorStateTransition(elevatorNum);
 
     }
-
-    private void handleFloorRequests(int numberOfElevators, int numberOfFloors) {
+    /**
+     * Handles the floor requests, ensuring floors are processed
+     * in ascending or descending order based on the elevator's current position.
+     */
+    private void handleFloorRequests() {
         try {
-            List<Integer> sortedFloors = new ArrayList<>(elevatorRequests.keySet());
-            Collections.sort(sortedFloors);
-
             List<Callable<Void>> tasks = new ArrayList<>();
 
             for (int elevatorNumber = 0; elevatorNumber < TOTAL_ELEVATORS; elevatorNumber++) {
-                final int elevatorId = elevatorNumber;
+                final int elevatorIndex = elevatorNumber;
                 tasks.add(() -> {
-                    synchronized (elevatorRequests){
-                        processElevatorRequests(sortedFloors, elevatorId, SLEEP_DURATION);
+                    synchronized (elevatorRequests) {
+                        /* Send the elevator to the lowest floor if no requests remain */
+                        if (elevatorRequests.isEmpty()) {
+                            logger.info("No more requests for Elevator " + elevatorIndex + ". Sending it back to the lowest floor.");
+                            sendElevatorToLowestFloor(elevatorIndex);
+                        }
+                        /* If the maximum capacity of the elevator has been reached */
+                        else if (isElevatorFull(elevatorIndex)) {
+                            logger.info("Elevator " + elevatorIndex + " is full. Skipping new requests.");
+                            return null;
+                        }
+                        else {
+
+                            /* obtain current direction of elevator */
+                            String committedDirection = ElevatorTopics.ELEVATOR_INFO_COMMITTED_DIRECTION.elevatorIndex(String.valueOf(elevatorIndex));
+                            ElevatorCommittedDirection direction = ElevatorCommittedDirection.valueOf(liveMessages.getOrDefault(committedDirection, "UNCOMMITTED"));
+
+                            /* Sort floors into upwards and downwards based on the elevator's current position */
+                            int currentFloor = Integer.parseInt(liveMessages.getOrDefault(
+                                    "elevator/" + elevatorIndex + "/currentFloor", String.valueOf(LOWEST_FLOOR)
+                            ));
+                            List<Integer> sortedFloors = new ArrayList<>(elevatorRequests.keySet());
+
+                            /* Convert into requests in upwards direction */
+                            List<Integer> upRequests = sortedFloors.stream()
+                                    .filter(floor -> floor > currentFloor)
+                                    .sorted()
+                                    .toList();
+
+                            /* Convert into requests in downwards direction */
+                            List<Integer> downRequests = sortedFloors.stream()
+                                    .filter(floor -> floor < currentFloor)
+                                    .sorted(Collections.reverseOrder())
+                                    .toList();
+
+                            /* Process upwards requests first, then downwards */
+                            if (direction == ElevatorCommittedDirection.UP) {
+                                processElevatorRequests(upRequests, elevatorIndex);
+                                processElevatorRequests(downRequests, elevatorIndex);
+                            } else if (direction == ElevatorCommittedDirection.DOWN) {
+                                processElevatorRequests(downRequests, elevatorIndex);
+                                processElevatorRequests(upRequests, elevatorIndex);
+                            } else {
+                                processElevatorRequests(upRequests, elevatorIndex);
+                                processElevatorRequests(downRequests, elevatorIndex);
+                            }
+
+                            /* if the top floor has been reached */
+                            if (upRequests.isEmpty() && currentFloor == HIGHEST_FLOOR) {
+                                logger.info("Elevator " + elevatorIndex + " reached the top floor, transitioning to downwards requests.");
+                                processElevatorRequests(downRequests, elevatorIndex);
+                            }
+                        }
                     }
                     return null;
                 });
             }
 
+            /* Execute all tasks concurrently */
             executorService.invokeAll(tasks);
         } catch (InterruptedException e) {
             logger.log(Level.WARNING, "Error in floor request handling", e);
@@ -266,25 +438,87 @@ public class ElevatorAlgorithm {
         }
     }
 
-    private void processElevatorRequests(List<Integer> sortedFloors, int elevatorId, int sleepDuration) {
+    /**
+     * Handles the movement of the elevator to process the given requests.
+     *
+     * @param sortedFloors    Sorted list of floors to process.
+     * @param indexElevator   The elevator number.
+     */
+    private void processElevatorRequests(List<Integer> sortedFloors, int indexElevator) {
         for (Integer targetFloor : sortedFloors) {
-            if(Thread.currentThread().isInterrupted() || terminateClient){
-                logger.log(Level.WARNING, "Elevator " + elevatorId + " was interrupted, terminating the request processing.");
+            /* If the working thread is interrupted */
+            if (Thread.currentThread().isInterrupted() || terminateClient) {
+                logger.log(Level.WARNING, "Elevator " + indexElevator + " was interrupted, terminating request processing.");
                 return;
             }
 
+            /* Move to the targeted floor */
             try {
                 if (elevatorRequests.containsKey(targetFloor)) {
-                    handleElevatorMovement(elevatorId, targetFloor);
+                    handleElevatorMovement(indexElevator, targetFloor);
+                    elevatorRequests.remove(targetFloor);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                logger.log(Level.WARNING, "Movement interrupted for elevator " + elevatorId, e);
+                logger.log(Level.WARNING, "Movement interrupted for elevator " + indexElevator, e);
                 return;
             }
         }
     }
 
+    /**
+     * Sends the specified elevator to the lowest floor when no requests remain.
+     *
+     * @param indexElevator The elevator number to send to the lowest floor.
+     */
+    private void sendElevatorToLowestFloor(int indexElevator) {
+        try {
+            int currentFloor = Integer.parseInt(liveMessages.getOrDefault(
+                    "elevator/" + indexElevator + "/currentFloor", String.valueOf(LOWEST_FLOOR)
+            ));
+            if (currentFloor != LOWEST_FLOOR) {
+                logger.info("Elevator " + indexElevator + " moving back to the lowest floor.");
+                handleElevatorMovement(indexElevator, LOWEST_FLOOR);
+            }
+        } catch (InterruptedException e) {
+            logger.log(Level.WARNING, "Movement to the lowest floor interrupted for elevator " + indexElevator, e);
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Adds a floor request when a button is pressed outside the elevator.
+     *
+     * @param targetFloor The floor button pressed outside the elevator.
+     */
+    public void addExternalRequest(int targetFloor) {
+        synchronized (elevatorRequests) {
+            if (!elevatorRequests.containsKey(targetFloor)) {
+                elevatorRequests.put(targetFloor, ElevatorRequest.FLOOR_BUTTON);
+                logger.info("External Floor request added for floor " + targetFloor);
+            }
+        }
+    }
+
+    /**
+     * Adds a floor request when a button is pressed inside the elevator.
+     *
+     * @param targetFloor The floor button pressed inside the elevator.
+     */
+    public void addInternalRequest(int targetFloor) {
+        synchronized (elevatorRequests) {
+            if (!elevatorRequests.containsKey(targetFloor)) {
+                elevatorRequests.put(targetFloor, ElevatorRequest.ELEVATOR_BUTTON);
+                logger.info("Button Floor request added for floor " + targetFloor);
+            }
+        }
+    }
+
+    /**
+     * Handles the asynchronous publishing of the MQTT Topics and payload to the MQTT Adapter
+     * @param topic MQTT topics
+     * @param payload MQTT Payload
+     */
     private void asyncPublish(String topic, String payload) {
         mqttClient.publishWith()
                 .topic(topic)
@@ -297,28 +531,5 @@ public class ElevatorAlgorithm {
                         logger.info("Message published successfully: " + topic);
                     }
                 });
-    }
-
-    private void handleDoorStateTransition(int elevator) throws InterruptedException {
-        try {
-            /* CLOSED -> OPENING */
-            asyncPublish(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevator)), Integer.toString(ElevatorDoorState.OPENING.ordinal()));
-            Thread.sleep(CLOSING_OPENING_DURATION);
-
-            /* OPENING -> OPEN */
-            asyncPublish(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevator)), Integer.toString(ElevatorDoorState.OPEN.ordinal()));
-            Thread.sleep(CLOSE_OPEN_DURATION);
-
-            /* OPEN -> CLOSING */
-            asyncPublish(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevator)), Integer.toString(ElevatorDoorState.CLOSING.ordinal()));
-            Thread.sleep(CLOSING_OPENING_DURATION);
-
-            /* CLOSING -> CLOSED */
-            asyncPublish(ElevatorTopics.ELEVATOR_CONTROL_DOOR_STATE.elevatorIndex(String.valueOf(elevator)), Integer.toString(ElevatorDoorState.CLOSED.ordinal()));
-
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error handling door state transition: {0}", e.getMessage());
-            throw e;
-        }
     }
 }
