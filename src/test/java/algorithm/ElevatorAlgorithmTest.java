@@ -54,51 +54,19 @@ class ElevatorAlgorithmTest {
                 .buildBlocking();
         testClient.connect();
 
-
-        // Lenient stubbings
-//        AtomicInteger callCount = new AtomicInteger(0);
-//        lenient(). when(mockElevatorAPI.getElevatorButton(anyInt(), anyInt())).thenAnswer(invocation -> {
-//            if (callCount.getAndIncrement() % 2 == 0) {
-//                return false;
-//            } else {
-//                return true;
-//            }
-//        });
-
-//        lenient().when(mockElevatorAPI.getElevatorNum()).thenReturn(2);
-//        lenient().when(mockElevatorAPI.getFloorNum()).thenReturn(5);
-//        lenient().when(mockElevatorAPI.getFloorHeight()).thenReturn(3);
-//        lenient().when(mockElevatorAPI.getElevatorFloor(anyInt())).thenReturn(0);
-//        lenient().when(mockElevatorAPI.getElevatorAccel(anyInt())).thenReturn(0);
-//        lenient().when(mockElevatorAPI.getElevatorDoorStatus(anyInt())).thenReturn(2);
-//        lenient().when(mockElevatorAPI.getElevatorPosition(anyInt())).thenReturn(0);
-//        lenient().when(mockElevatorAPI.getElevatorSpeed(anyInt())).thenReturn(0);
-//        lenient().when(mockElevatorAPI.getElevatorWeight(anyInt())).thenReturn(0);
-//        lenient().when(mockElevatorAPI.getElevatorCapacity(anyInt())).thenReturn(0);
-//        lenient().when(mockElevatorAPI.getFloorButtonDown(anyInt())).thenReturn(false);
-//        lenient().when(mockElevatorAPI.getFloorButtonUp(anyInt())).thenReturn(false);
-//        lenient().when(mockElevatorAPI.getServicesFloors(anyInt(), anyInt())).thenReturn(false);
-//
-//        // when(elevatorAPI.getTarget(1)).thenReturn(5);
-//        lenient().when(mockElevatorAPI.getClockTick()).thenReturn(1000L);
-//        lenient().when(mockElevatorAPI.getCommittedDirection(1)).thenReturn(1);
-
         algorithm = new ElevatorAlgorithm();
-        algorithm.setupRMIController();
-        algorithm.initialiseMQTTAdapter("tcp:// localhost:1883");
-        algorithm.setupMQTTClient();
-        algorithm.subscribeToTopics();
+
     }
 
     @AfterEach
     public void tearDown() throws InterruptedException {
-        algorithm.shutdown();
         testClient.disconnect();
         hivemqCe.stop();
     }
 
     @Test
-    void testTestContainerStartup() {
+    void testTestContainerStartup() throws Exception {
+        algorithm.initialiseAlgorithm();
         assertTrue(hivemqCe.isRunning());
         assertNotNull(hivemqCe.getHost());
         assertTrue(hivemqCe.getMappedPort(1883) > 0);
@@ -127,8 +95,6 @@ class ElevatorAlgorithmTest {
 
     @Test
     void testConnectionToMQTTBroker() {
-        algorithm.subscribeToTopics();
-        algorithm.runElevatorSimulator();
 
         //assertTrue(algorithm.eMQTTAdapter.getClientState().isConnected());
         assertTrue(hivemqCe.isRunning());
@@ -244,9 +210,6 @@ class ElevatorAlgorithmTest {
 
         assertEquals(1,mockElevatorAPI.getElevatorPosition(0));
         assertTrue(mockElevatorAPI.getElevatorButton(0,2));
-
-        algorithm.subscribeToTopics();
-        algorithm.runElevatorSimulator();
 
 
         assertEquals(2,mockElevatorAPI.getElevatorPosition(0));

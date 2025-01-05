@@ -33,6 +33,8 @@ public class ElevatorAlgorithm {
     private static final int MAXIMUM_PASSENGER_CAPACITY = 4000;
     private static final int FLOOR_HEIGHT = 10;
     private static final int POLLING_INTERVAL = 250;
+    private static final int TOTAL_RETRY_COUNTER = 10;
+    private static final int RETRY_DELAY = 5000;
 
     private static final Logger logger = Logger.getLogger(ElevatorAlgorithm.class.getName());
     private final ExecutorService executorService = Executors.newFixedThreadPool(TOTAL_ELEVATORS);
@@ -56,15 +58,9 @@ public class ElevatorAlgorithm {
     public static void main(String[] args) {
         ElevatorAlgorithm algorithm = new ElevatorAlgorithm();
 
-        logger.info("Initializing the Elevator Algorithm...");
         try {
-            algorithm.setupRMIController();
-            algorithm.initialiseMQTTAdapter(BROKER_URL.getValue());
-            algorithm.setupMQTTClient();
-            algorithm.subscribeToTopics();
+            algorithm.initialiseAlgorithm();
 
-            logger.info("Starting elevator simulator...");
-            algorithm.runElevatorSimulator();
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Critical failure during Algorithm execution: {0}", e.getMessage());
         } finally {
@@ -73,25 +69,53 @@ public class ElevatorAlgorithm {
         }
     }
 
+    public void initialiseAlgorithm() throws Exception {
+        try {
+            setupRMIController();
+            initialiseMQTTAdapter(BROKER_URL.getValue());
+            setupMQTTClient();
+            subscribeToTopics();
+            runElevatorSimulator();
+        } catch (RemoteException e){
+            logger.log(Level.WARNING, "Initialisation failed!");
+        }
+    }
+
     /**
      * Initialise the RMI controller
      * @throws Exception Exception for any errors
      */
-    public void setupRMIController() throws Exception {
-        try {
-            IElevator controller = (IElevator) Naming.lookup(RMI_CONTROLLER.getValue());
-            eSystem = new ElevatorSystem(
-                    TOTAL_ELEVATORS,
-                    LOWEST_FLOOR,
-                    HIGHEST_FLOOR,
-                    MAXIMUM_PASSENGER_CAPACITY,
-                    FLOOR_HEIGHT,
-                    controller
-            );
-            logger.info("RMI Controller initialized successfully.");
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error initializing RMI Controller: {0}", e.getMessage());
-            throw e;
+    private void setupRMIController() throws Exception {
+        int retryCounter = 0;
+        boolean rmiConnected = false;
+
+        while(retryCounter < TOTAL_RETRY_COUNTER && !rmiConnected) {
+            try {
+                IElevator controller = (IElevator) Naming.lookup(RMI_CONTROLLER.getValue());
+                eSystem = new ElevatorSystem(
+                        TOTAL_ELEVATORS,
+                        LOWEST_FLOOR,
+                        HIGHEST_FLOOR,
+                        MAXIMUM_PASSENGER_CAPACITY,
+                        FLOOR_HEIGHT,
+                        controller
+                );
+                logger.info("RMI Controller initialized successfully.");
+                rmiConnected = true;
+                return;
+            } catch (RemoteException e) {
+                logger.log(Level.WARNING, "Connection to RMI controller unsuccessful");
+                retryCounter++;
+                try {
+                    Thread.sleep(RETRY_DELAY);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    logger.log(Level.SEVERE, "Reconnecting to RMI interrupted", ie);
+                }
+            } catch (Exception e) {
+                logger.log(Level.SEVERE, "Error initializing RMI Controller: {0}", e.getMessage());
+                throw e;
+            }
         }
     }
 
@@ -100,7 +124,7 @@ public class ElevatorAlgorithm {
      *
      * @param brokerHost Hostname for the MQTT Broker
      */
-    public void initialiseMQTTAdapter(String brokerHost) {
+    private void initialiseMQTTAdapter(String brokerHost) {
         try {
             eMQTTAdapter = new ElevatorMQTTAdapter(
                     eSystem,
@@ -121,7 +145,7 @@ public class ElevatorAlgorithm {
     /**
      * Set up the connection to the MQTT Broker
      */
-    public void setupMQTTClient() {
+    private void setupMQTTClient() {
         try {
             mqttClient = MqttClient.builder()
                     .useMqttVersion5()
@@ -141,7 +165,7 @@ public class ElevatorAlgorithm {
     /**
      * Terminate the connection of the MQTT Client and MQTT Adapter
      */
-    public void shutdown() {
+    private void shutdown() {
         try {
             terminateClient = true;
 
@@ -171,7 +195,7 @@ public class ElevatorAlgorithm {
     /**
      *  Subscribe to the topics from MQTT Adapter
      */
-    public void subscribeToTopics() {
+    private void subscribeToTopics() {
         try {
             mqttClient.subscribeWith()
                     .topicFilter("building/info/#")
@@ -202,7 +226,7 @@ public class ElevatorAlgorithm {
     /**
      * Execute the elevator Simulator
      */
-    public void runElevatorSimulator() {
+    private void runElevatorSimulator() {
         try {
             scheduler.scheduleAtFixedRate(this::runAlgorithm, 0, 2, TimeUnit.SECONDS);
         } catch (Exception e) {
@@ -215,6 +239,7 @@ public class ElevatorAlgorithm {
      */
     public void runAlgorithm() {
         try {
+
             scheduler.schedule(() -> eMQTTAdapter.run(),3,TimeUnit.SECONDS);
 
             numberOfFloors = Integer.parseInt(retainedMessages.getOrDefault("building/info/numberOfFloors", "0"));
