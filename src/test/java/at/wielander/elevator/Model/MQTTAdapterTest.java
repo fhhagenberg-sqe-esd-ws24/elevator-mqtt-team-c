@@ -75,31 +75,31 @@ public class MQTTAdapterTest {
 
         lenient(). when(elevatorAPI.getElevatorButton(anyInt(), anyInt())).thenAnswer(invocation -> {
             if (callCount.getAndIncrement() % 2 == 0) {
-                return false; // Rückgabewert beim ersten Aufruf
+                return (Object) false; // Rückgabewert beim ersten Aufruf
             } else {
-                return true;  // Rückgabewert bei allen weiteren Aufrufen
+                return (Object) true;  // Rückgabewert bei allen weiteren Aufrufen
             }
         });
         
-        lenient().when(elevatorAPI.getElevatorNum()).thenReturn(2);
-        lenient().when(elevatorAPI.getFloorNum()).thenReturn(5);
-        lenient().when(elevatorAPI.getFloorHeight()).thenReturn(3);
+        lenient().when(elevatorAPI.getElevatorNum()).thenReturn(Integer.valueOf(2));
+        lenient().when(elevatorAPI.getFloorNum()).thenReturn(Integer.valueOf(5));
+        lenient().when(elevatorAPI.getFloorHeight()).thenReturn(Integer.valueOf(3));
         
         
-        lenient().when(elevatorAPI.getElevatorFloor(anyInt())).thenReturn(0);
-        lenient().when(elevatorAPI.getElevatorAccel(anyInt())).thenReturn(0);
-        lenient().when(elevatorAPI.getElevatorDoorStatus(anyInt())).thenReturn(2);
-        lenient().when(elevatorAPI.getElevatorPosition(anyInt())).thenReturn(0);
-        lenient().when(elevatorAPI.getElevatorSpeed(anyInt())).thenReturn(0);
-        lenient().when(elevatorAPI.getElevatorWeight(anyInt())).thenReturn(0);
-        lenient().when(elevatorAPI.getElevatorCapacity(anyInt())).thenReturn(0);
-        lenient().when(elevatorAPI.getFloorButtonDown(anyInt())).thenReturn(false);
-        lenient().when(elevatorAPI.getFloorButtonUp(anyInt())).thenReturn(false);
-        lenient().when(elevatorAPI.getServicesFloors(anyInt(), anyInt())).thenReturn(false);
+        lenient().when(elevatorAPI.getElevatorFloor(anyInt())).thenReturn(Integer.valueOf(0));
+        lenient().when(elevatorAPI.getElevatorAccel(anyInt())).thenReturn(Integer.valueOf(0));
+        lenient().when(elevatorAPI.getElevatorDoorStatus(anyInt())).thenReturn(Integer.valueOf(2));
+        lenient().when(elevatorAPI.getElevatorPosition(anyInt())).thenReturn(Integer.valueOf(0));
+        lenient().when(elevatorAPI.getElevatorSpeed(anyInt())).thenReturn(Integer.valueOf(0));
+        lenient().when(elevatorAPI.getElevatorWeight(anyInt())).thenReturn(Integer.valueOf(0));
+        lenient().when(elevatorAPI.getElevatorCapacity(anyInt())).thenReturn(Integer.valueOf(0));
+        lenient().when(elevatorAPI.getFloorButtonDown(anyInt())).thenReturn(Boolean.valueOf(false));
+        lenient().when(elevatorAPI.getFloorButtonUp(anyInt())).thenReturn(Boolean.valueOf(false));
+        lenient().when(elevatorAPI.getServicesFloors(anyInt(), anyInt())).thenReturn(Boolean.valueOf(false));
       
         // when(elevatorAPI.getTarget(1)).thenReturn(5);
-        lenient().when(elevatorAPI.getClockTick()).thenReturn(1000L);
-        lenient().when(elevatorAPI.getCommittedDirection(1)).thenReturn(1);
+        lenient().when(elevatorAPI.getClockTick()).thenReturn(Long.valueOf(1000L));
+        lenient().when(elevatorAPI.getCommittedDirection(1)).thenReturn(Integer.valueOf(1));
 
         // Create an elevatorSystem
         elevatorSystem = new ElevatorSystem(
