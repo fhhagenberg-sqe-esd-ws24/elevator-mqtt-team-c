@@ -1,5 +1,6 @@
 package algorithm;
 
+import at.wielander.elevator.Algorithm.ElevatorAlgorithm;
 import at.wielander.elevator.Model.ElevatorSystem;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
@@ -23,7 +24,7 @@ import static org.mockito.Mockito.*;
 
 @Testcontainers
 @ExtendWith(MockitoExtension.class)
-class ElevatorAlgorithmOldTest {
+class ElevatorAlgorithmTest {
 
     @Container
     final HiveMQContainer hivemqCe = new HiveMQContainer(DockerImageName.parse("hivemq/hivemq-ce").withTag("2024.3"));
@@ -31,7 +32,7 @@ class ElevatorAlgorithmOldTest {
     @Mock
     private IElevator mockElevatorAPI;
 
-    private ElevatorAlgorithmOld algorithm;
+    private ElevatorAlgorithm algorithm;
 
     private ElevatorSystem elevatorSystem;
 
