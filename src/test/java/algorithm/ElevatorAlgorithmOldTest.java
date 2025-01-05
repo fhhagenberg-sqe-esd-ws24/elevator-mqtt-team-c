@@ -1,6 +1,5 @@
 package algorithm;
 
-import at.wielander.elevator.Algorithm.ElevatorAlgorithm;
 import at.wielander.elevator.Model.ElevatorSystem;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
@@ -14,7 +13,7 @@ import org.testcontainers.hivemq.HiveMQContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
-import at.wielander.elevator.Controller.IElevator;
+import sqelevator.IElevator;
 
 import java.lang.reflect.Field;
 import java.rmi.RemoteException;
@@ -24,7 +23,7 @@ import static org.mockito.Mockito.*;
 
 @Testcontainers
 @ExtendWith(MockitoExtension.class)
-class ElevatorAlgorithmTest {
+class ElevatorAlgorithmOldTest {
 
     @Container
     final HiveMQContainer hivemqCe = new HiveMQContainer(DockerImageName.parse("hivemq/hivemq-ce").withTag("2024.3"));
@@ -32,7 +31,7 @@ class ElevatorAlgorithmTest {
     @Mock
     private IElevator mockElevatorAPI;
 
-    private ElevatorAlgorithm algorithm;
+    private ElevatorAlgorithmOld algorithm;
 
     private ElevatorSystem elevatorSystem;
 
@@ -54,7 +53,7 @@ class ElevatorAlgorithmTest {
                 .buildBlocking();
         testClient.connect();
 
-        algorithm = new ElevatorAlgorithm();
+        algorithm = new ElevatorAlgorithmOld();
 
     }
 
@@ -78,7 +77,7 @@ class ElevatorAlgorithmTest {
     void testSetupRMIController() throws Exception {
 
         /* Use reflection to access private member */
-        Field eSystemField = ElevatorAlgorithm.class.getDeclaredField("eSystem");
+        Field eSystemField = ElevatorAlgorithmOld.class.getDeclaredField("eSystem");
         eSystemField.setAccessible(true);
         ElevatorSystem eSystem = (ElevatorSystem) eSystemField.get(algorithm);
 

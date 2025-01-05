@@ -2,7 +2,7 @@ package at.wielander.elevator.MQTT;
 
 import at.wielander.elevator.Model.Elevator;
 import at.wielander.elevator.Model.ElevatorSystem;
-import at.wielander.elevator.Controller.IElevator;
+import sqelevator.IElevator;
 import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
@@ -35,7 +35,7 @@ public class ElevatorMQTTAdapter {
     private  ElevatorSystem previousElevatorSystem;
     private IElevator elevatorAPI;
 
-    
+
     /**
      * Custom Exception for handling MQTT Adapter errors.
      */

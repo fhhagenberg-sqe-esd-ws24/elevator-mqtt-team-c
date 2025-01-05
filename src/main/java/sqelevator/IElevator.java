@@ -1,4 +1,4 @@
-package at.wielander.elevator.Controller;
+package sqelevator;
 
 import java.rmi.RemoteException;
 

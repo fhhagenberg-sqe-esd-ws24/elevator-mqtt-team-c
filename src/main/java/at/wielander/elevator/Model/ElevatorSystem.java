@@ -1,6 +1,6 @@
 package at.wielander.elevator.Model;
 
-import at.wielander.elevator.Controller.IElevator;
+import sqelevator.IElevator;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
