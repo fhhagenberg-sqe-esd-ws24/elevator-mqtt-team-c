@@ -233,14 +233,14 @@ public class ElevatorMQTTAdapter {
                     }
 
                     // Iterate over all buttons in the elevator
-                    for (int j = 0; j < elevator.buttons.size(); j++) {
+                    for (int j = 1; j < elevator.buttons.size()-1; j++) {
                         if (isFirstRun || !String.valueOf(elevator.buttons.get(j)).equals(String.valueOf(previousElevator != null ? previousElevator.buttons.get(j) : null))) {
                             publish("elevator/" + i + "/button/" + j, String.valueOf(elevator.buttons.get(j)));
                         }
                     }
 
                     // Iterate over all floor buttons
-                    for (int k = 0; k < elevatorSystem.getFloorNum(); k++) {
+                    for (int k = 1; k < elevatorSystem.getFloorNum(); k++) {
                         if (isFirstRun || 
                             elevatorSystem.getFloorButtonDown(k) != (previousElevatorSystem != null && previousElevatorSystem.getFloorButtonDown(k))) {
                             publish("floor/" + k + "/buttonDown", String.valueOf(elevatorSystem.getFloorButtonDown(k)));

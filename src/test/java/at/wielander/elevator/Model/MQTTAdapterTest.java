@@ -56,7 +56,7 @@ public class MQTTAdapterTest {
     private String Host;
 
     @BeforeEach
-    public void setup() throws MqttException, RemoteException {
+    public void setup() throws RemoteException {
 
         hivemqCe.start();
 
