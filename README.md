@@ -38,7 +38,11 @@ netzwerkverbindungsabbrüche können simuliert werden, indem die elevatorsimulat
 |                                         | `building/info/numberOfFloors`    | Anzahl der Etagen      |
 |                                         | `building/info/floorHeight/feet`  | Etagenhöhe            |
 
-
+| **ControlTopics** | **Themen (Topics)**           | **Beschreibung** |
+| --------------------------------------- | ----------------------------------- | ---------------------- |
+| **Empfängt**     | `elevator/{id}/committedDirection`      | Fahrtrichtung auf/ab         |
+|                                         | `elevator/{id}/targetedFloor`     | Ziel-Etage             |
+|                                         | `elevator/{id}/floorService/{floor_id}`             | Stockwerk befahrbar        |
 
 # Produkt Qualität
 
@@ -47,7 +51,7 @@ netzwerkverbindungsabbrüche können simuliert werden, indem die elevatorsimulat
 
 ### Ergebnisse der Automatisierten Tests
 
-![Coverage](./docu/coverage.png)
+![Coverage](./docu/coverage.PNG)
 
 # ElevatorAlgorithm
 
