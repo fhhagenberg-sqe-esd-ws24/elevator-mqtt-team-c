@@ -96,7 +96,7 @@ import java.rmi.RemoteException;
  * </ul>
  * <ul>
  * <i>Elevator target.</i> The current floor target of the elevator as set by
- * the controller. The
+ * the Controller. The
  * elevator will travel to that target and stop until directed to the next
  * target.
  * </ul>
@@ -142,7 +142,7 @@ import java.rmi.RemoteException;
  * the elevator. This
  * is set so that passengers board elevators going in their desired direction.
  * This is indicated by the
- * controller by whether the up or down floor button has been pressed on a given
+ * Controller by whether the up or down floor button has been pressed on a given
  * floor. This is
  * an important concept and it should be recognized that in some cases, an
  * elevator may be
