@@ -1,0 +1,68 @@
+import xml.etree.ElementTree as ET
+
+# Create the root XML structure for Draw.io
+root = ET.Element("mxfile")
+diagram = ET.SubElement(root, "diagram", {"name": "MQTTAdapterStateFlow"})
+mxGraphModel = ET.SubElement(diagram, "mxGraphModel", {"dx": "0", "dy": "0", "grid": "1", "gridSize": "10", "guides": "1"})
+root_element = ET.SubElement(mxGraphModel, "root")
+ET.SubElement(root_element, "mxCell", {"id": "0"})
+ET.SubElement(root_element, "mxCell", {"id": "1", "parent": "0"})
+
+# Define states and their positions
+states = {
+    "Initialize": {"x": 100, "y": 100, "description": "Initialize the MQTT Adapter and set up resources."},
+    "Disconnected": {"x": 300, "y": 100, "description": "Adapter is not connected to the MQTT broker."},
+    "Connecting": {"x": 500, "y": 100, "description": "Attempting to connect to the MQTT broker."},
+    "Connected": {"x": 700, "y": 100, "description": "Successfully connected to the MQTT broker."},
+    "Publishing": {"x": 700, "y": 250, "description": "Publishing data to the broker topics."},
+    "Subscribing": {"x": 700, "y": 400, "description": "Subscribing to control topics."},
+    "Reconnecting": {"x": 500, "y": 250, "description": "Attempting to reconnect after a connection failure."},
+    "Error": {"x": 300, "y": 250, "description": "Error state in case of connection or operation failure."},
+}
+
+# Add state nodes to the XML
+for state, info in states.items():
+    cell = ET.SubElement(root_element, "mxCell", {
+        "id": state,
+        "value": f"<b>{state}</b><br>{info['description']}",
+        "style": "shape=ellipse;whiteSpace=wrap;html=1;",
+        "vertex": "1",
+        "parent": "1"
+    })
+    ET.SubElement(cell, "mxGeometry", {"x": str(info["x"]), "y": str(info["y"]), "width": "140", "height": "80", "as": "geometry"})
+
+# Define transitions
+transitions = [
+    ("Initialize", "Disconnected", "Initialization complete."),
+    ("Disconnected", "Connecting", "Start connection process."),
+    ("Connecting", "Connected", "Connection successful."),
+    ("Connected", "Publishing", "Start periodic publishing."),
+    ("Connected", "Subscribing", "Subscribe to control topics."),
+    ("Publishing", "Connected", "Continue publishing."),
+    ("Subscribing", "Connected", "Subscriptions set up."),
+    ("Connected", "Reconnecting", "Connection lost."),
+    ("Reconnecting", "Connected", "Reconnection successful."),
+    ("Reconnecting", "Error", "Reconnection failed."),
+    ("Error", "Disconnected", "Error handled; disconnecting."),
+]
+
+# Add transitions to the XML
+edge_id = 100
+for source, target, label in transitions:
+    edge = ET.SubElement(root_element, "mxCell", {
+        "id": str(edge_id),
+        "value": label,
+        "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;",
+        "edge": "1",
+        "parent": "1",
+        "source": source,
+        "target": target
+    })
+    ET.SubElement(edge, "mxGeometry", {"relative": "1", "as": "geometry"})
+    edge_id += 1
+
+# Write the diagram to a Draw.io-compatible file
+drawio_path = "/mnt/data/MQTTAdapterStateFlow.drawio"
+tree = ET.ElementTree(root)
+tree.write(drawio_path, encoding="UTF-8", xml_declaration=True)
+drawio_path
