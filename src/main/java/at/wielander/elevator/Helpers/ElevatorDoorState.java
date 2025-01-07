@@ -1,4 +1,4 @@
-package at.wielander.elevator.Helpers.Constants;
+package at.wielander.elevator.Helpers;
 
 /**
  * Enums for Elevator Door State

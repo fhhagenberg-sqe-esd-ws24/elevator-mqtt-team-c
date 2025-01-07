@@ -1,4 +1,4 @@
-package at.wielander.elevator.Helpers.Constants;
+package at.wielander.elevator.Helpers;
 
 /**
  * Enum class for Elevator Direction

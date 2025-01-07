@@ -1,10 +1,10 @@
 package at.wielander.elevator.Algorithm;
 
-import at.wielander.elevator.Helpers.Constants.ElevatorDoorState;
+import at.wielander.elevator.Exception.MQTTClientException;
+import at.wielander.elevator.Helpers.ElevatorCommittedDirection;
+import at.wielander.elevator.Helpers.ElevatorDoorState;
 import at.wielander.elevator.MQTT.ElevatorMQTTAdapter;
 import at.wielander.elevator.Model.ElevatorSystem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import sqelevator.IElevator;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
@@ -18,19 +18,20 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Thread.sleep;
 
 public class ElevatorAlgorithm {
 
-
-    private static final Logger log = LoggerFactory.getLogger(ElevatorAlgorithm.class);
+    /* Datamodel */
     private static IElevator controller;
-    protected Mqtt5AsyncClient mqttClient; // MQTT Client instance variable
-    private ElevatorMQTTAdapter eMQTTAdapter; // Adapter instance variable
+    protected Mqtt5AsyncClient mqttClient;
+    private ElevatorMQTTAdapter eMQTTAdapter;
     private ElevatorSystem eSystem;
 
+    /* Constants */
     private static final int LOWEST_FLOOR = 0;
     private static final int HIGHEST_FLOOR = 11;
     private static final int TOTAL_ELEVATORS = 1;
@@ -40,11 +41,17 @@ public class ElevatorAlgorithm {
     private static final long RETRY_DELAY_MS = 5000;
     private static final String BROKER_URL = "tcp://localhost:1883";
     private static final String RMI_URL = "rmi://localhost/ElevatorSim";
+    private static final int SLEEP_DURATION_S = 5;
 
-    private final Map<String, String> retainedMessages = new ConcurrentHashMap<>();
+    protected final Map<String, String> retainedMessages = new ConcurrentHashMap<>();
     private final Map<String, String> liveMessages = new ConcurrentHashMap<>();
+    protected final PriorityQueue<Integer> upQueue = new PriorityQueue<>();
+    private final PriorityQueue<Integer> downQueue = new PriorityQueue<>(Collections.reverseOrder());
 
-
+    /**
+     * Main function
+     * @throws InterruptedException Throws an exception if process interrupted
+     */
     public static void main() throws InterruptedException {
         ElevatorAlgorithm algorithm = new ElevatorAlgorithm();
         System.out.println("Connecting to MQTT Broker at: " + BROKER_URL);
@@ -59,6 +66,7 @@ public class ElevatorAlgorithm {
             algorithm.subscribeToBuildingInfo();
             algorithm.subscribeToElevatorAndFloorMessages();
 
+            // Run algorithm
             algorithm.runAlgorithm(algorithm);
 
         } catch (Exception e) {
@@ -70,24 +78,30 @@ public class ElevatorAlgorithm {
         }
     }
 
+    /**
+     * Initialise elevator system
+     * @param controller IElevator controller
+     * @throws RemoteException Throws a remote exception if disconnected
+     */
     protected void initialiseElevatorSystem(IElevator controller) throws RemoteException {
         try {
+            // Create Elevator Data model
             eSystem = new ElevatorSystem(
                     TOTAL_ELEVATORS,
                     LOWEST_FLOOR,
                     HIGHEST_FLOOR,
                     TOTAL_CAPACITY,
                     FLOOR_HEIGHT,
-                    controller // RMI-Controller
+                    controller
             );
 
             // Create the MQTT Adapter
             eMQTTAdapter = new ElevatorMQTTAdapter(
                     eSystem,// Elevator System
-                    ElevatorAlgorithm.BROKER_URL,       // MQTT Broker Host
-                    "mqttAdapter",    // Client ID
-                    50,              // Polling Interval (ms)
-                    controller        // RMI-Controller
+                    ElevatorAlgorithm.BROKER_URL,
+                    "mqttAdapter",
+                    50,
+                    controller
             );
 
             // Connect MQTT Adapter to the Broker
@@ -97,13 +111,21 @@ public class ElevatorAlgorithm {
         }
     }
 
+    /**
+     *  Handles the connection of the mqtt client
+     */
     protected void connectMQTTClient() {
         mqttClient = MqttClient.builder()
                 .useMqttVersion5()
                 .serverHost("localhost")
                 .serverPort(1883)
                 .identifier("ElevatorAlgorithmClient")
+                .automaticReconnect()
+                .initialDelay(1, TimeUnit.SECONDS)
+                .maxDelay(10, TimeUnit.SECONDS)
+                .applyAutomaticReconnect()
                 .buildAsync();
+
         mqttClient.connect().whenComplete((ack, throwable) -> {
             if (throwable == null) {
                 System.out.println("Connected to MQTT broker");
@@ -117,17 +139,22 @@ public class ElevatorAlgorithm {
         });
     }
 
+    /**
+     * Handles the connection to the JAVA RMI Elevator Simulator with
+     *
+     * @return IElevator instance
+     */
     protected static IElevator connectToRMI() {
         int retries = 0;
         long retryDelay;
 
+        // Establishes RMI connection. Throws necessary exceptions if connection fails
         while (retries < MAX_RETRIES) {
             try{
                 System.out.println("Attempting to connect to RMI server...");
                 Properties properties = new Properties();
                 String plcUrl = properties.getProperty("plc.url", RMI_URL);
                 controller = (IElevator) Naming.lookup(plcUrl);
-
                 System.out.println("Connected to RMI server");
                 break;
             } catch (MalformedURLException e) {
@@ -139,6 +166,7 @@ public class ElevatorAlgorithm {
                     sleep(retryDelay);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
+                    System.err.println("Interrupted Exception thrown: " + ie.getMessage());
                     break;
                 }
             } catch (NotBoundException e) {
@@ -153,7 +181,7 @@ public class ElevatorAlgorithm {
                     break;
                 }
             } catch (RemoteException e) {
-                System.err.println("RemoteException thrown: " + e.getMessage());
+                System.err.println("Failed to connect to ElevatorSim: " + e.getMessage());
                 retries++;
                 retryDelay = applyExponentialBackoff(retries);
                 System.err.println("Retrying in " + retryDelay + " ms...");
@@ -168,17 +196,28 @@ public class ElevatorAlgorithm {
         return controller;
     }
 
+    /**
+     * Adds a small delay when reconnecting RMI
+     * @param retries retry counter
+     * @return incremented counter
+     */
     private static long applyExponentialBackoff(int retries) {
-        return (long) (RETRY_DELAY_MS * Math.pow(2, retries));  // Exponential backoff
+        return (long) (RETRY_DELAY_MS * Math.pow(2, retries));
     }
 
+    /**
+     * Subscribe to building info retained topics
+     */
     private void subscribeToBuildingInfo() {
         try {
-            String topicFilter = "building/info/#";
+            // Subscribe to all building topics
+            String topicFilter = "building/info/+";
             mqttClient.subscribeWith()
                     .topicFilter(topicFilter)
-                    .qos(MqttQos.AT_LEAST_ONCE)
+                    .qos(MqttQos.AT_MOST_ONCE)
                     .send();
+
+            // Publishes retained elevator messages
             mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -> {
                 String topic = publish.getTopic().toString();
                 if (topic.startsWith("building/info")) {
@@ -192,80 +231,102 @@ public class ElevatorAlgorithm {
         }
     }
 
+    /**
+     * Handles the subcription of floor and elevator topics
+     */
     private void subscribeToElevatorAndFloorMessages() {
         try {
+            // Subscribe to all elevator topics
             for (int elevatorId = 0; elevatorId < TOTAL_ELEVATORS; elevatorId++) {
-                mqttClient.subscribeWith().topicFilter("elevator/" + elevatorId + "/#").qos(MqttQos.AT_LEAST_ONCE).send();
+                mqttClient.subscribeWith().topicFilter("elevator/" + elevatorId + "/+").qos(MqttQos.AT_LEAST_ONCE).send();
             }
+
+            // Subscibe to all floor topics
             for (int floorId = 1; floorId < HIGHEST_FLOOR; floorId++) {
-                mqttClient.subscribeWith().topicFilter("floor/" + floorId + "/#").qos(MqttQos.AT_LEAST_ONCE).send();
+                mqttClient.subscribeWith().topicFilter("floor/" + floorId + "/+").qos(MqttQos.AT_LEAST_ONCE).send();
             }
+            // publishes all the topics and payloads
             mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -> {
                 String topic = publish.getTopic().toString();
                 String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
 
+                // Adds topics to live messages
                 if (topic.startsWith("elevator/") || topic.startsWith("floor/")) {
                     liveMessages.put(topic, payload);
                     System.out.println("Live message received: " + topic + " -> " + payload);
                 }
             });
-        } catch (Exception e) {
+        } catch (MQTTClientException e) {
             System.err.println("Exception thrown during topic subscription: " + e.getMessage());
         }
     }
 
 
-
+    /**
+     * Main elevator algorithm. Executes task of polling and adding requests to queues
+     * @param algorithm algorithm instance
+     * @throws InterruptedException Exception thrown if process is interrupted
+     */
     public void runAlgorithm(ElevatorAlgorithm algorithm) throws InterruptedException {
-        sleep(3000);
+        sleep(2000);
         algorithm.eMQTTAdapter.run();
         sleep(500);
 
         final int numberOfFloors = Integer.parseInt(retainedMessages.get("building/info/numberOfFloors"));
         final int elevator = 0;
-        final int sleepTime = 1;
 
-        // Subscribe to external floor button presses (up/down) for each floor, once
+        // Subscribe to external floor button presses
         subscribeToFloorButtonPresses(algorithm, numberOfFloors);
 
         // Subscribe to inside elevator button presses, once
         subscribeToInsideElevatorButtonPresses(algorithm);
 
         // Handle button presses asynchronously
-        handleButtonPresses(algorithm, elevator, sleepTime);
+        handleButtonPresses(algorithm, elevator);
     }
 
-    // Optimized method to subscribe to floor button presses
+    /**
+     * Subscibe to floor button elevator topics
+      * @param algorithm    algorithm instance
+     * @param numberOfFloors number of floors
+     */
     private void subscribeToFloorButtonPresses(ElevatorAlgorithm algorithm, int numberOfFloors) {
-        for (int floorId = 0; floorId < numberOfFloors; floorId++) {
+        for (int floorId = 1; floorId < numberOfFloors; floorId++) {
             try {
                 String upButtonTopic = "floor/" + floorId + "/buttonUp";
                 String downButtonTopic = "floor/" + floorId + "/buttonDown";
                 // Subscribe once for each button type on all floors
                 algorithm.mqttClient.subscribeWith().topicFilter(upButtonTopic).qos(MqttQos.AT_LEAST_ONCE).send();
                 algorithm.mqttClient.subscribeWith().topicFilter(downButtonTopic).qos(MqttQos.AT_LEAST_ONCE).send();
-            } catch (Exception e) {
+            } catch (MQTTClientException e) {
                 System.err.println("Failed to subscribe to button press topics for floor " + floorId + ": " + e.getMessage());
             }
         }
     }
 
-    // Optimized method to subscribe to internal elevator button presses
+    /**
+     * Subscribe to topics for inside elevator button presses
+      * @param algorithm algorithm instance
+     */
     private void subscribeToInsideElevatorButtonPresses(ElevatorAlgorithm algorithm) {
         for (int elevatorId = 0; elevatorId < TOTAL_ELEVATORS; elevatorId++) {
-            for (int floorId = 0; floorId < HIGHEST_FLOOR; floorId++) {
+            for (int floorId = 1; floorId < HIGHEST_FLOOR; floorId++) {
                 try {
                     String elevatorButtonTopic = "elevator/" + elevatorId + "/button/" + floorId;
                     algorithm.mqttClient.subscribeWith().topicFilter(elevatorButtonTopic).qos(MqttQos.AT_LEAST_ONCE).send();
-                } catch (Exception e) {
+                } catch (MQTTClientException e) {
                     System.err.println("Failed to subscribe to elevator button topic for elevator " + elevatorId + " and floor " + floorId + ": " + e.getMessage());
                 }
             }
         }
     }
 
-    // Optimized method to handle all button presses
-    private void handleButtonPresses(ElevatorAlgorithm algorithm, int elevator, int sleepTime) {
+    /**
+     * Handles all button requests
+     * @param algorithm algorithm instance
+     * @param elevatorNumber elevator number
+     */
+    private void handleButtonPresses(ElevatorAlgorithm algorithm, int elevatorNumber) {
         algorithm.mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -> {
             try {
                 String topic = publish.getTopic().toString();
@@ -274,11 +335,16 @@ public class ElevatorAlgorithm {
                 if (topic.startsWith("floor/")) {
                     int floorRequested = Integer.parseInt(topic.split("/")[1]);
                     if (topic.contains("/buttonUp")) {
-                        // Move elevator up if buttonUp is pressed
-                        moveElevator(elevator, floorRequested, algorithm, 1, sleepTime);
+                        synchronized (upQueue) {
+                            upQueue.add(floorRequested);
+                            System.out.println("Added " + topic +" to queue ");
+                        }
                     } else if (topic.contains("/buttonDown")) {
-                        // Move elevator down if buttonDown is pressed
-                        moveElevator(elevator, floorRequested, algorithm, 2, sleepTime);
+                        synchronized (downQueue) {
+                            downQueue.add(floorRequested);
+                            System.out.println("Added " + topic +" to queue ");
+
+                        }
                     }
                 }
 
@@ -286,110 +352,291 @@ public class ElevatorAlgorithm {
                 if (topic.startsWith("elevator/") && topic.contains("/button/")) {
                     String[] parts = topic.split("/");
                     int requestedFloor = Integer.parseInt(parts[3]);
-                    // Set target floor based on inside button press
-                    setElevatorTargetFloor(Integer.parseInt(parts[1]), requestedFloor, algorithm);
+                    int currentFloor = Integer.parseInt(algorithm.liveMessages.get("elevator/" + elevatorNumber + "/currentFloor"));
+
+                    // adds the requested floor to the up queue if current floor is greater, else downwards queue
+                    if (requestedFloor > currentFloor) {
+                        synchronized (upQueue) {
+                            upQueue.add(requestedFloor);
+                        }
+                    } else if (requestedFloor < currentFloor) {
+                        synchronized (downQueue) {
+                            downQueue.add(requestedFloor);
+                        }
+                    }
                 }
-            } catch (Exception e) {
-                System.err.println("Error processing message: " + e.getMessage());
+
+                // Process requests dynamically
+                processRequestQueue(elevatorNumber, algorithm);
+
+            } catch (MQTTClientException e) {
+                System.err.println("Exception thrown when handling error " + e.getMessage());
             }
         });
     }
 
-    private void waitForElevatorToReachTarget(
-            int elevator,
-            int floorRequested,
-            ElevatorAlgorithm algorithm,
-            int sleepTime) {
-        // Variables to avoid redundant live message lookups
-        String elevatorPrefix = "elevator/" + elevator;
-        String currentFloorKey = elevatorPrefix + "/currentFloor";
-        String doorStateKey = elevatorPrefix + "/doorState";
-
+    /**
+     * Handles the processing for requests based on the current direction
+     * @param elevatorNumber Elevator number
+     * @param algorithm algorithm instance
+     */
+    private void processRequestQueue(int elevatorNumber, ElevatorAlgorithm algorithm) {
         try {
-            // Poll for the elevator to reach the target floor and stop moving
-            while (true) {
-                // Retrieve the current floor
-                String currentFloorStr = algorithm.liveMessages.get(currentFloorKey);
-                int currentFloor = Integer.parseInt(currentFloorStr);
+            String directionKey = "elevator/" + elevatorNumber + "/committedDirection";
+            String currentFloorKey = "elevator/" + elevatorNumber + "/currentFloor";
 
-                if (currentFloor == floorRequested) {
+            // Set committed direction
+            int currentDirectionValue = Integer.parseInt(algorithm.liveMessages.get(directionKey));
+            ElevatorCommittedDirection currentDirection = ElevatorCommittedDirection.getValue(currentDirectionValue);
+            int currentFloor = Integer.parseInt(algorithm.liveMessages.get(currentFloorKey));
+
+            // Process the request based on the current committed direction
+            switch (currentDirection) {
+                case UP:
+                    processUpQueue(elevatorNumber, currentFloor, algorithm);
                     break;
-                }
-                sleep(sleepTime);
-            }
 
-            long timeout = System.currentTimeMillis() + RETRY_DELAY_MS;
-            while (!algorithm.liveMessages.get(doorStateKey).equals(ElevatorDoorState.OPEN.ordinal())) {
-                sleep(sleepTime); // Sleep to avoid busy-waiting
-            }
+                case DOWN:
+                    processDownQueue(elevatorNumber, currentFloor, algorithm);
+                    break;
 
-            // Set the committed direction to UNCOMMITTED after reaching the target and doors open
-            algorithm.mqttClient.publishWith()
-                    .topic(elevatorPrefix + "/committedDirection")
-                    .payload("0".getBytes(StandardCharsets.UTF_8)) // 0 for UNCOMMITTED
-                    .send();
-        } catch (InterruptedException e) {
-            log.error("Elevator reached target floor: {}", elevator);
+                case UNCOMMITTED:
+                    processUncommitted(elevatorNumber, algorithm);
+                    break;
+            }
+        } catch (Exception e) {
+            System.err.println("Error while processing request queue: " + e.getMessage());
         }
     }
 
+    /**
+     * Handles the floor request going up
+     * @param elevatorNumber Elevator number
+     * @param currentFloor current floor
+     * @param algorithm algorithm instance
+     */
+    private void processUpQueue(int elevatorNumber, int currentFloor, ElevatorAlgorithm algorithm) {
+        synchronized (upQueue) {
+            // Remove old requestss
+            while (!upQueue.isEmpty() && upQueue.peek() < currentFloor) {
+                upQueue.poll();
+            }
+            // Poll for new request heading up
+            if (!upQueue.isEmpty()) {
+                int nextFloor = upQueue.poll();
+                moveElevator(elevatorNumber, nextFloor, algorithm, ElevatorCommittedDirection.UP);
+            } else if (!downQueue.isEmpty()) {
+                // Switch to DOWN committed direction
+                moveElevator(elevatorNumber, downQueue.peek(), algorithm, ElevatorCommittedDirection.DOWN);
+            }
+        }
+    }
+
+    /**
+     * Handles the floor request heading downwards
+     * @param elevatorNumber elevator number
+     * @param currentFloor current floor
+     * @param algorithm algorithm instance
+     */
+    private void processDownQueue(int elevatorNumber, int currentFloor, ElevatorAlgorithm algorithm) {
+        synchronized (downQueue) {
+            // Remove old requestss
+            while (!downQueue.isEmpty() && downQueue.peek() > currentFloor) {
+                downQueue.poll();
+            }
+            if (!downQueue.isEmpty()) {
+                int nextFloor = downQueue.poll();
+                moveElevator(elevatorNumber, nextFloor, algorithm, ElevatorCommittedDirection.DOWN);
+            } else if (!upQueue.isEmpty()) {
+                // Switch to UP direction if no downward requests
+                moveElevator(elevatorNumber, upQueue.peek(), algorithm, ElevatorCommittedDirection.UP);
+            }
+        }
+    }
+
+    /**
+     * Handles requests by processing request upwards before heading downwards
+     * @param elevatorNumber elevator number
+     * @param algorithm algorithm instance
+     */
+    private void processUncommitted(int elevatorNumber, ElevatorAlgorithm algorithm) {
+        if (!upQueue.isEmpty()) {
+            moveElevator(elevatorNumber, upQueue.peek(), algorithm, ElevatorCommittedDirection.UP);
+        } else if (!downQueue.isEmpty()) {
+            moveElevator(elevatorNumber, downQueue.peek(), algorithm, ElevatorCommittedDirection.DOWN);
+        }
+    }
+
+    /**
+     * Handles the movement of the elevator
+     * @param elevatorNumber elevator number
+     * @param floorRequested requested floor
+     * @param algorithm algorithm instance
+     * @param direction direction (either up/ down or uncommitted)
+     */
+    private void moveElevator(int elevatorNumber, int floorRequested, ElevatorAlgorithm algorithm, ElevatorCommittedDirection direction) {
+        try {
+            // create the direction and target topics
+            String directionTopic = "elevator/" + elevatorNumber + "/committedDirection";
+            String targetTopic = "elevator/" + elevatorNumber + "/targetFloor";
+
+            // Publish the direction
+            algorithm.publishWithRetry(directionTopic, Integer.toString(direction.ordinal()).getBytes(StandardCharsets.UTF_8));
+
+            // Publish the target floor
+            algorithm.publishWithRetry(targetTopic, Integer.toString(floorRequested).getBytes(StandardCharsets.UTF_8));
+
+            // Set elevator target floor
+            setElevatorTargetFloor(elevatorNumber, floorRequested, algorithm);
+
+            // Wait for elevator to reach the target floor
+            waitForElevatorToReachTarget(elevatorNumber, floorRequested, algorithm);
+        } catch (Exception e) {
+            System.err.println("Error while moving elevator to target");
+        }
+    }
+
+    /**
+     * Adds a delay to wait for the elevator to reach the requested floor
+     * @param elevatorNumber elevator number
+     * @param floorRequested requested floor
+     * @param algorithm algorithm instance
+     */
+    private void waitForElevatorToReachTarget(
+            int elevatorNumber,
+            int floorRequested,
+            ElevatorAlgorithm algorithm) {
+
+        try {
+            while (true) {
+                // get the current floor
+                String currentFloorKey = "elevator/" + elevatorNumber + "/currentFloor";
+                int currentFloor = Integer.parseInt(algorithm.liveMessages.get(currentFloorKey));
+
+                // Removes current floor from the up queue
+                synchronized (upQueue) {
+                    if (upQueue.contains(currentFloor)) {
+                        upQueue.remove(currentFloor);
+                        doorsStateTransition(elevatorNumber, algorithm);
+                    }
+                }
+
+                // remove current floor from the down queue
+                synchronized (downQueue) {
+                    if (downQueue.contains(currentFloor)) {
+                        downQueue.remove(currentFloor);
+                        doorsStateTransition(elevatorNumber, algorithm);
+                    }
+                }
+
+                if (currentFloor == floorRequested) {
+                    doorsStateTransition(elevatorNumber, algorithm);
+                    break;
+                }
+                sleep(SLEEP_DURATION_S);
+            }
+        } catch (InterruptedException e) {
+            System.err.println("Failed to wait for elevator to reach target");
+        }
+    }
+
+    /**
+     * Handles the publishing of messages for the door state transitions
+     * @param elevatorNumber elevatorNumber
+     * @param algorithm algorithm instance
+     */
+    private void doorsStateTransition(int elevatorNumber, ElevatorAlgorithm algorithm) {
+        String doorStateTopic = "elevator/" + elevatorNumber + "/doorState";
+        algorithm.publishWithRetry(doorStateTopic, Integer.toString(ElevatorDoorState.OPEN.ordinal()).getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Verify if the client is connected before publishing
+     * @return true if client is connected, false otherwise
+     */
+    private boolean isClientConnected() {
+        return mqttClient.getState().isConnected();
+    }
+
+    /**
+     * Publishes the topic and payload, retries if fails
+     * @param topic elevator topic
+     * @param payload elevator payload
+     */
     private void publishWithRetry(String topic, byte[] payload) {
         int attempts = 0;
-        boolean success = false;
+        AtomicBoolean success = new AtomicBoolean(false);
 
-        while (attempts < ElevatorAlgorithm.MAX_RETRIES && !success) {
+        // Reconnects the mqtt client if disconnected
+        while (attempts < ElevatorAlgorithm.MAX_RETRIES && !success.get()) {
+            if (!isClientConnected()) {
+                System.err.println("MQTT client not connected. Attempting to reconnect...");
+                mqttClient.connect();
+                try {
+                    sleep(ElevatorAlgorithm.RETRY_DELAY_MS);
+                } catch (InterruptedException ie) {
+                    System.err.println("Failed to reconnect after " + attempts + " attempts.");
+                    mqttClient.connect();
+                    break;
+                }
+                continue;
+            }
+
             try {
                 mqttClient.publishWith()
                         .topic(topic)
                         .payload(payload)
-                        .send();
-                success = true;
-                log.info("Message published to {}", topic);
+                        .send()
+                        .whenComplete((ack, throwable) -> {
+                            if (throwable == null) {
+                                System.out.println("Successfully published to topic " + topic);
+                                success.set(true); // Update success flag here in the callback
+                            } else {
+                                System.err.println("Publish failed: " + throwable.getMessage());
+                            }
+                        });
+
+                // Block the current thread until the publishing is complete
+                while (!success.get()) {
+                    try {
+                        Thread.sleep(100); // Small delay to wait for the callback
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
             } catch (Exception e) {
                 attempts++;
-                log.error("Error publishing message to {}: {}", topic, e.getMessage());
+                System.err.println("Failed to publish on attempt " + attempts + ": " + e.getMessage());
                 if (attempts < ElevatorAlgorithm.MAX_RETRIES) {
-                    log.info("Retrying ({}/" + ElevatorAlgorithm.MAX_RETRIES + ") in " + ElevatorAlgorithm.RETRY_DELAY_MS + "ms...", attempts);
                     try {
                         sleep(ElevatorAlgorithm.RETRY_DELAY_MS);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
-                        System.err.println("Interrupted while waiting for retry");
                         break;
                     }
                 }
             }
         }
-        if (!success) {
-            log.error("Failed to publish message to {} after " + ElevatorAlgorithm.MAX_RETRIES + " attempts.", topic);
+
+        if (!success.get()) {
+            System.err.println("Failed to publish to topic " + topic + " after " + ElevatorAlgorithm.MAX_RETRIES + " attempts");
         }
     }
 
-
-    private void setElevatorTargetFloor(int elevatorId, int floorRequested, ElevatorAlgorithm algorithm) {
+    /**
+     * Sets the target floor of the elevator
+     * @param elevatorNumber Elevator number
+     * @param floorRequested Requested floor
+     * @param algorithm Algorithm instance
+     */
+    private void setElevatorTargetFloor(int elevatorNumber, int floorRequested, ElevatorAlgorithm algorithm) {
         try {
-            String targetTopic = "elevator/" + elevatorId + "/targetFloor";
+            // Publishes the desired target floor
+            String targetTopic = "elevator/" + elevatorNumber + "/targetFloor";
             algorithm.publishWithRetry(targetTopic, Integer.toString(floorRequested).getBytes(StandardCharsets.UTF_8));
-        } catch (Exception e) {
-            log.error("Failed to set target floor for elevator {}: {}", elevatorId, e.getMessage());
-        }
-    }
-
-    private void moveElevator(int elevator, int floorRequested, ElevatorAlgorithm algorithm, int direction, int sleepTime) {
-        try {
-            String directionTopic = "elevator/" + elevator + "/committedDirection";
-            String targetTopic = "elevator/" + elevator + "/targetFloor";
-
-            // Publish the direction
-            algorithm.publishWithRetry(directionTopic, Integer.toString(direction).getBytes(StandardCharsets.UTF_8));
-
-            // Publish the target floor
-            algorithm.publishWithRetry(targetTopic, Integer.toString(floorRequested).getBytes(StandardCharsets.UTF_8));
-
-            // Wait for elevator to reach the target floor
-            waitForElevatorToReachTarget(elevator, floorRequested, algorithm, sleepTime);
-        } catch (Exception e) {
-            log.error("Error while moving elevator: {}", e.getMessage());
+        } catch (MQTTClientException e) {
+            System.err.println("Failed to publish to elevator " + elevatorNumber);
         }
     }
 }

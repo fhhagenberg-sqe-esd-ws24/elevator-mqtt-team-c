@@ -15,9 +15,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-
-
-
 public class ElevatorMQTTAdapter {
     private static final String topicBase = "building/";
     public static final String infoTopic = topicBase + "info/";
