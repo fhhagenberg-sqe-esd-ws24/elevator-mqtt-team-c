@@ -1,8 +1,8 @@
-package at.wielander.elevator.Algorithm;
+package at.wielander.elevator.algorithm;
 
-import at.wielander.elevator.Exception.MQTTClientException;
-import at.wielander.elevator.MQTT.ElevatorMQTTAdapter;
-import at.wielander.elevator.Model.ElevatorSystem;
+import at.wielander.elevator.exception.MQTTClientException;
+import at.wielander.elevator.adapter.ElevatorMQTTAdapter;
+import at.wielander.elevator.model.ElevatorSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sqelevator.IElevator;
@@ -49,7 +49,7 @@ public class ElevatorAlgorithm {
     public static void main(String[] args) throws InterruptedException {
         ElevatorAlgorithm algorithm = new ElevatorAlgorithm();
         String brokerHost = "tcp://localhost:1883"; // Lokaler Mosquitto Broker
-        log.info("Connecting to MQTT Broker at: {}", brokerHost);
+        log.info("Connecting to adapter Broker at: {}", brokerHost);
 
         try {
             // RMI setup
@@ -67,19 +67,19 @@ public class ElevatorAlgorithm {
                     controller // RMI-Controller
             );
 
-            // Create the MQTT Adapter
+            // Create the adapter Adapter
             algorithm.eMQTTAdapter = new ElevatorMQTTAdapter(
                     algorithm.eSystem,// Elevator System
-                    brokerHost,       // MQTT Broker Host
+                    brokerHost,       // adapter Broker Host
                     "mqttAdapter",    // Client ID
                     50,              // Polling Interval (ms)
                     controller        // RMI-Controller
             );
 
-            // Connect MQTT Adapter to the Broker
+            // Connect adapter Adapter to the Broker
             algorithm.eMQTTAdapter.connect();
 
-            // Connect to MQTT Broker
+            // Connect to adapter Broker
             algorithm.mqttClient = MqttClient.builder()
                     .useMqttVersion5()
                     .serverHost("localhost")
@@ -135,9 +135,9 @@ public class ElevatorAlgorithm {
 
             algorithm.mqttClient.connect().whenComplete((ack, throwable) -> {
                 if (throwable == null) {
-                    System.out.println("Connected to MQTT broker");
+                    log.info("Connected to adapter broker");
                 } else {
-                    log.error("Failed to connect to MQTT broker: {}", throwable.getMessage());
+                    log.error("Failed to connect to adapter broker: {}", throwable.getMessage());
                 }
             });
 

@@ -10,8 +10,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import at.wielander.elevator.model.ElevatorSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sqelevator.IElevator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,12 +35,13 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 
-import at.wielander.elevator.MQTT.ElevatorMQTTAdapter;
+import at.wielander.elevator.adapter.ElevatorMQTTAdapter;
 
 @ExtendWith(MockitoExtension.class)
 @Testcontainers
-public class MQTTAdapterTest {
+class MQTTAdapterTest {
 
+    private static final Logger log = LoggerFactory.getLogger(MQTTAdapterTest.class);
     @Container
     final HiveMQContainer hivemqCe = new HiveMQContainer(DockerImageName.parse("hivemq/hivemq-ce").withTag("2024.3"));
 
@@ -60,7 +63,7 @@ public class MQTTAdapterTest {
 
         Host = "tcp://" + hivemqCe.getHost() + ":" + hivemqCe.getMappedPort(1883);
 
-        System.out.println("Host addresse: " + Host);
+        log.info("Host addresse: {}", Host);
         testClient = Mqtt5Client.builder()
                 .identifier("testClient")
                 .serverPort(hivemqCe.getMappedPort(1883)) // Verwenden Sie den dynamisch gemappten Port
@@ -69,9 +72,8 @@ public class MQTTAdapterTest {
 
         testClient.connect();
         elevatorAPI = mock(IElevator.class);
-        AtomicInteger callCount = new AtomicInteger(0);
 
-        
+
         lenient().when(elevatorAPI.getElevatorNum()).thenReturn(2);
         lenient().when(elevatorAPI.getFloorNum()).thenReturn(5);
         lenient().when(elevatorAPI.getFloorHeight()).thenReturn(3);
@@ -102,7 +104,7 @@ public class MQTTAdapterTest {
                 elevatorAPI // Pass the mocked interface
         );
 
-        // Create the MQTT adapter
+        // Create the adapter adapter
         MQTTAdapter = new ElevatorMQTTAdapter(
                 elevatorSystem,
                 Host,
@@ -118,17 +120,17 @@ public class MQTTAdapterTest {
     }
 
     @Test
-    public void testContainerStartup() {
+    void testContainerStartup() {
         assertTrue(hivemqCe.isRunning(), "HiveMQ container should be running.");
         assertNotNull(hivemqCe.getHost(), "Container host should not be null.");
-        assertTrue(hivemqCe.getMappedPort(1883) > 0, "MQTT port should be greater than 0.");
+        assertTrue(hivemqCe.getMappedPort(1883) > 0, "adapter port should be greater than 0.");
     }
 
     @Test
     void testConnect() {
         assertDoesNotThrow(() -> {
             MQTTAdapter.connect();
-            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "MQTT client should be connected.");
+            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "adapter client should be connected.");
         });
     }
 
@@ -136,11 +138,11 @@ public class MQTTAdapterTest {
     void testDisconnect() {
         assertDoesNotThrow(() -> {
             MQTTAdapter.connect();
-            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "MQTT client should be connected.");
+            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "adapter client should be connected.");
 
             // Disconnect
             MQTTAdapter.disconnect();
-            assertNotEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "MQTT client should be disconnected.");
+            assertNotEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "adapter client should be disconnected.");
         });
     }
     
@@ -149,9 +151,9 @@ public class MQTTAdapterTest {
         assertDoesNotThrow(() -> {
             // Reconnect
             MQTTAdapter.reconnect();
-            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "MQTT client should be reconnected.");
+            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "adapter client should be reconnected.");
             MQTTAdapter.reconnect();
-            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "MQTT client should be reconnected.");
+            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "adapter client should be reconnected.");
         });
     }
 
@@ -161,7 +163,7 @@ public class MQTTAdapterTest {
         // Ensure client is connected
         assertTrue(testClient.getState().isConnected(), "Client is not connected");
 
-        // Verbinde den MQTT
+        // Verbinde den adapter
         MQTTAdapter.connect();
 
         // Erwartete Werte basierend auf dem ElevatorSystem-Konstruktor
@@ -190,7 +192,7 @@ public class MQTTAdapterTest {
                         latch.countDown(); // Zähle herunter, wenn die Nachricht erfolgreich überprüft wurde
                     })
                     .send()
-                    .whenComplete((subAck, throwable) -> {
+                    .whenComplete((_, throwable) -> {
                         if (throwable != null) {
                             System.err.println("Subscription failed for topic " + topic + ": " + throwable.getMessage());
                         } else {
@@ -214,7 +216,7 @@ public class MQTTAdapterTest {
         }
         assertTrue(testClient.getState().isConnected(), "Client ist nicht verbunden");
 
-        // MQTT starten
+        // adapter starten
         MQTTAdapter.connect();
         MQTTAdapter.run();
 
@@ -272,7 +274,7 @@ public class MQTTAdapterTest {
                     }
                 })
                 .send()
-                .whenComplete((subAck, throwable) -> {
+                .whenComplete((_, throwable) -> {
                     if (throwable != null) {
                         System.err.println("Subscription fehlgeschlagen für Topic " + topic + ": " + throwable.getMessage());
                     } else {
@@ -315,7 +317,7 @@ public class MQTTAdapterTest {
                     .topic(topic)
                     .payload(payload.getBytes(StandardCharsets.UTF_8))
                     .send()
-                    .whenComplete((publishAck, throwable) -> {
+                    .whenComplete((_, throwable) -> {
                         if (throwable != null) {
                             System.err.println("Publishing failed for topic " + topic + ": " + throwable.getMessage());
                         } else {

@@ -1,4 +1,4 @@
-package at.wielander.elevator.Model;
+package at.wielander.elevator.model;
 
 import sqelevator.IElevator;
 
@@ -11,7 +11,7 @@ import java.util.List;
  * <p>
  * This class manages both Load and Passenger elevators in multiple configurations as required for any building. Various
  * elevator physical and behavioural attributes inherited from the Elevator class can be controlled as well as accessed
- * via the methods of MQTT Broker as well as the Controller, to be implemented in the later stages of this assignment.
+ * via the methods of adapter Broker as well as the Controller, to be implemented in the later stages of this assignment.
  *</p>
  * @version 1.0
  */

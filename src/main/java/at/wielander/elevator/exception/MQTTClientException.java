@@ -1,4 +1,4 @@
-package at.wielander.elevator.Exception;
+package at.wielander.elevator.exception;
 
 /**
  * Exception for Elevator Algorithmm

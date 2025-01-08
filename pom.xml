@@ -57,14 +57,14 @@
         </dependency>
 
 
-        <!-- Eclipse Paho MQTT -->
+        <!-- Eclipse Paho adapter -->
         <dependency>
             <groupId>org.eclipse.paho</groupId>
             <artifactId>org.eclipse.paho.mqttv5.client</artifactId>
             <version>1.2.5</version>
         </dependency>
 
-        <!-- HiveMQ MQTT Client -->
+        <!-- HiveMQ adapter Client -->
         <dependency>
             <groupId>com.hivemq</groupId>
             <artifactId>hivemq-mqtt-client</artifactId>
@@ -187,7 +187,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>at.wielander.elevator.Algorithm.ElevatorAlgorithm</mainClass>
+                            <mainClass>at.wielander.elevator.algorithm.ElevatorAlgorithm</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
