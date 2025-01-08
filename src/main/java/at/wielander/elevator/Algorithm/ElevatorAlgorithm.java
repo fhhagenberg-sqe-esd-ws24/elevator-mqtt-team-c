@@ -206,7 +206,6 @@ public class ElevatorAlgorithm {
         algorithm.mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -> {
             try {
                 String topic = publish.getTopic().toString();
-                String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
 
                 // Handle external floor button press
                 if (topic.startsWith(FLOOR_TOPIC)) {
