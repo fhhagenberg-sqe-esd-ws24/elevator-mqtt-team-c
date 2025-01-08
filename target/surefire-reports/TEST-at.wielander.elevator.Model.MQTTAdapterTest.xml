@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="at.wielander.elevator.Model.MQTTAdapterTest" time="17.823" tests="7" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="at.wielander.elevator.Model.MQTTAdapterTest" time="17.701" tests="7" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -13,7 +13,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="/usr/lib/jvm/java-21-openjdk-amd64/lib"/>
-    <property name="sun.java.command" value="/home/leed/Documents/ESD/3/SQE/target/surefire/surefirebooter-20250108205400425_3.jar /home/leed/Documents/ESD/3/SQE/target/surefire 2025-01-08T20-54-00_381-jvmRun1 surefire-20250108205400425_1tmp surefire_0-20250108205400425_2tmp"/>
+    <property name="sun.java.command" value="/home/leed/Documents/ESD/3/SQE/target/surefire/surefirebooter-20250108210656119_3.jar /home/leed/Documents/ESD/3/SQE/target/surefire 2025-01-08T21-06-56_072-jvmRun1 surefire-20250108210656119_1tmp surefire_0-20250108210656119_2tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="/home/leed/Documents/ESD/3/SQE/target/test-classes:/home/leed/Documents/ESD/3/SQE/target/classes:/home/leed/.m2/repository/org/jetbrains/annotations/24.1.0/annotations-24.1.0.jar:/home/leed/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/home/leed/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.1/junit-jupiter-api-5.10.1.jar:/home/leed/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/leed/.m2/repository/org/junit/platform/junit-platform-commons/1.10.1/junit-platform-commons-1.10.1.jar:/home/leed/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/leed/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.1/junit-jupiter-params-5.10.1.jar:/home/leed/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.1/junit-jupiter-engine-5.10.1.jar:/home/leed/.m2/repository/org/junit/platform/junit-platform-engine/1.10.1/junit-platform-engine-1.10.1.jar:/home/leed/.m2/repository/org/eclipse/paho/org.eclipse.paho.mqttv5.client/1.2.5/org.eclipse.paho.mqttv5.client-1.2.5.jar:/home/leed/.m2/repository/com/hivemq/hivemq-mqtt-client/1.3.0/hivemq-mqtt-client-1.3.0.jar:/home/leed/.m2/repository/io/reactivex/rxjava2/rxjava/2.2.19/rxjava-2.2.19.jar:/home/leed/.m2/repository/org/reactivestreams/reactive-streams/1.0.3/reactive-streams-1.0.3.jar:/home/leed/.m2/repository/io/netty/netty-buffer/4.1.48.Final/netty-buffer-4.1.48.Final.jar:/home/leed/.m2/repository/io/netty/netty-codec/4.1.48.Final/netty-codec-4.1.48.Final.jar:/home/leed/.m2/repository/io/netty/netty-common/4.1.48.Final/netty-common-4.1.48.Final.jar:/home/leed/.m2/repository/io/netty/netty-handler/4.1.48.Final/netty-handler-4.1.48.Final.jar:/home/leed/.m2/repository/io/netty/netty-resolver/4.1.48.Final/netty-resolver-4.1.48.Final.jar:/home/leed/.m2/repository/io/netty/netty-transport/4.1.48.Final/netty-transport-4.1.48.Final.jar:/home/leed/.m2/repository/org/jctools/jctools-core/2.1.2/jctools-core-2.1.2.jar:/home/leed/.m2/repository/com/google/dagger/dagger/2.27/dagger-2.27.jar:/home/leed/.m2/repository/javax/inject/javax.inject/1/javax.inject-1.jar:/home/leed/.m2/repository/org/testcontainers/hivemq/1.19.7/hivemq-1.19.7.jar:/home/leed/.m2/repository/org/testcontainers/testcontainers/1.20.4/testcontainers-1.20.4.jar:/home/leed/.m2/repository/junit/junit/4.13.2/junit-4.13.2.jar:/home/leed/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar:/home/leed/.m2/repository/org/apache/commons/commons-compress/1.24.0/commons-compress-1.24.0.jar:/home/leed/.m2/repository/org/rnorth/duct-tape/duct-tape/1.0.8/duct-tape-1.0.8.jar:/home/leed/.m2/repository/com/github/docker-java/docker-java-api/3.4.0/docker-java-api-3.4.0.jar:/home/leed/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.10.3/jackson-annotations-2.10.3.jar:/home/leed/.m2/repository/com/github/docker-java/docker-java-transport-zerodep/3.4.0/docker-java-transport-zerodep-3.4.0.jar:/home/leed/.m2/repository/com/github/docker-java/docker-java-transport/3.4.0/docker-java-transport-3.4.0.jar:/home/leed/.m2/repository/net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar:/home/leed/.m2/repository/org/testcontainers/junit-jupiter/1.19.7/junit-jupiter-1.19.7.jar:/home/leed/.m2/repository/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar:/home/leed/.m2/repository/org/slf4j/slf4j-simple/2.0.16/slf4j-simple-2.0.16.jar:/home/leed/.m2/repository/org/mockito/mockito-core/5.12.0/mockito-core-5.12.0.jar:/home/leed/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.15/byte-buddy-agent-1.14.15.jar:/home/leed/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/home/leed/.m2/repository/org/mockito/mockito-junit-jupiter/5.12.0/mockito-junit-jupiter-5.12.0.jar:/home/leed/.m2/repository/net/bytebuddy/byte-buddy/1.14.15/byte-buddy-1.14.15.jar:"/>
     <property name="sun.cpu.endian" value="little"/>
@@ -28,7 +28,7 @@
     <property name="line.separator" value="&#10;"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
-    <property name="surefire.real.class.path" value="/home/leed/Documents/ESD/3/SQE/target/surefire/surefirebooter-20250108205400425_3.jar"/>
+    <property name="surefire.real.class.path" value="/home/leed/Documents/ESD/3/SQE/target/surefire/surefirebooter-20250108210656119_3.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="21.0.5+11-Ubuntu-1ubuntu124.04"/>
     <property name="user.name" value="leed"/>
@@ -55,8 +55,8 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="testMQTTAdapterWithMockedElevatorAPI" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="3.154">
-    <system-out><![CDATA[Host addresse: tcp://localhost:33993
+  <testcase name="testMQTTAdapterWithMockedElevatorAPI" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="3.123">
+    <system-out><![CDATA[Host addresse: tcp://localhost:34002
 Connected to MQTT broker: CONNACK
 MQTT Adapter running
 Nachricht veröffentlicht: true für Topic: elevator/0/floorService/2
@@ -83,38 +83,38 @@ Disconnected from MQTT broker.
   Total Memory: 31196 MB
 [main] INFO tc.testcontainers/ryuk:0.11.0 - Creating container for image: testcontainers/ryuk:0.11.0
 [main] INFO org.testcontainers.utility.RegistryAuthLocator - Credential helper/store (docker-credential-desktop) does not have credentials for https://index.docker.io/v1/
-[main] INFO tc.testcontainers/ryuk:0.11.0 - Container testcontainers/ryuk:0.11.0 is starting: dc536381af60b6b90c3ba271acff11015eabd1aeca0124e5115ff64406f0b1ca
-[main] INFO tc.testcontainers/ryuk:0.11.0 - Container testcontainers/ryuk:0.11.0 started in PT0.276409484S
+[main] INFO tc.testcontainers/ryuk:0.11.0 - Container testcontainers/ryuk:0.11.0 is starting: ec38464935323a06f2fc494d8f069feed8e6dc095d5f5dab0a96f3048aa3155b
+[main] INFO tc.testcontainers/ryuk:0.11.0 - Container testcontainers/ryuk:0.11.0 started in PT0.262018113S
 [main] INFO org.testcontainers.utility.RyukResourceReaper - Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
 [main] INFO org.testcontainers.DockerClientFactory - Checking the system...
 [main] INFO org.testcontainers.DockerClientFactory - ✔︎ Docker server version should be at least 1.6.0
 [main] INFO tc.hivemq/hivemq-ce:2024.3 - Creating container for image: hivemq/hivemq-ce:2024.3
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: 4a7bf1d95c07fe3a6591d59cab5e6d774acde4d49f3bc5235bb75a2c0d36c487
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.076262413S
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: db319fafcdf9ad9f945d34417111324b735352f2d7f3efaab0f39c993763a448
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.089312582S
 ]]></system-err>
   </testcase>
-  <testcase name="testContainerStartup" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="1.406">
-    <system-out><![CDATA[Host addresse: tcp://localhost:33994
+  <testcase name="testContainerStartup" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="1.368">
+    <system-out><![CDATA[Host addresse: tcp://localhost:34003
 ]]></system-out>
     <system-err><![CDATA[[main] INFO tc.hivemq/hivemq-ce:2024.3 - Creating container for image: hivemq/hivemq-ce:2024.3
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: b0c21cdf0e2a884fb10189e25fbda54965b50cb3ba63ad99674d9bfe6f4bfa01
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.103711984S
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: d8a59398bb7475f8999918c448c7968d75bf358ebcf6b37d9e6a1c9bad31e6c1
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.078447348S
 Failed to disconnect: MQTT client is not connected.
 ]]></system-err>
   </testcase>
-  <testcase name="testDisconnect" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="1.609">
-    <system-out><![CDATA[Host addresse: tcp://localhost:33995
+  <testcase name="testDisconnect" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="1.616">
+    <system-out><![CDATA[Host addresse: tcp://localhost:34004
 Connected to MQTT broker: CONNACK
 Disconnected from MQTT broker.
 ]]></system-out>
     <system-err><![CDATA[[main] INFO tc.hivemq/hivemq-ce:2024.3 - Creating container for image: hivemq/hivemq-ce:2024.3
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: 416c8b7e5eae70b4e44a973c439cad779bf2b0a037041ad3ea70391beb14fc65
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.104701308S
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: 82ff7c0a0e050b4092d0ac2fb3d610d610fb655ec8380d987e5e783ee80d8c80
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.109867376S
 Failed to disconnect: MQTT client is not connected.
 ]]></system-err>
   </testcase>
-  <testcase name="testPeriodicUpdates" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="6.707">
-    <system-out><![CDATA[Host addresse: tcp://localhost:33996
+  <testcase name="testPeriodicUpdates" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="6.706">
+    <system-out><![CDATA[Host addresse: tcp://localhost:34005
 Connected to MQTT broker: CONNACK
 MQTT Adapter running
 Subscription erfolgreich für Topic: elevator/0/currentFloor
@@ -158,43 +158,43 @@ MQTT Adapter running
 Disconnected from MQTT broker.
 ]]></system-out>
     <system-err><![CDATA[[main] INFO tc.hivemq/hivemq-ce:2024.3 - Creating container for image: hivemq/hivemq-ce:2024.3
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: 2dff49ac2cdd3156ccc7b301fdb8fcc37272b53b74137c2f9caf97c8e7b295c4
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.084279132S
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: f53c5eaa311dbccde930efc7797192b1a3fb326fbe148ed2b3426433882e8295
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.089785489S
 ]]></system-err>
   </testcase>
-  <testcase name="testConnect" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="1.686">
-    <system-out><![CDATA[Host addresse: tcp://localhost:33997
+  <testcase name="testConnect" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="1.611">
+    <system-out><![CDATA[Host addresse: tcp://localhost:34006
 Connected to MQTT broker: CONNACK
 Disconnected from MQTT broker.
 ]]></system-out>
     <system-err><![CDATA[[main] INFO tc.hivemq/hivemq-ce:2024.3 - Creating container for image: hivemq/hivemq-ce:2024.3
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: 3a4b663a393756d8bb743c1bdb4410f11dda24dc3a2b58e9f5a4e6cece470c76
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.185701482S
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: 5a0e601ca0f8ed5ac01edf41ce0969f2652ff933cb642401b452876fa9ffac2b
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.114565021S
 ]]></system-err>
   </testcase>
-  <testcase name="testReconnect" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="1.568">
-    <system-out><![CDATA[Host addresse: tcp://localhost:33998
+  <testcase name="testReconnect" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="1.59">
+    <system-out><![CDATA[Host addresse: tcp://localhost:34007
 Reconnected to MQTT broker.
 Disconnected from MQTT broker.
 ]]></system-out>
     <system-err><![CDATA[[main] INFO tc.hivemq/hivemq-ce:2024.3 - Creating container for image: hivemq/hivemq-ce:2024.3
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: 84806f3547f26ddae77e8e0fdb1d73c9b7c78fcfe75ce8d439d08f31da45ea86
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.067228647S
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: 721f876d2db11fdf593f43e7433dd70d04f8049626a46251b4c2ce9a7aac080e
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.085966129S
 ]]></system-err>
   </testcase>
-  <testcase name="testPublishRetainedTopics" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="1.635">
-    <system-out><![CDATA[Host addresse: tcp://localhost:33999
+  <testcase name="testPublishRetainedTopics" classname="at.wielander.elevator.Model.MQTTAdapterTest" time="1.627">
+    <system-out><![CDATA[Host addresse: tcp://localhost:34008
 Connected to MQTT broker: CONNACK
+Subscription erfolgreich für Topic: building/info/numberOfFloors
 Subscription erfolgreich für Topic: building/info/numberOfElevators
 Subscription erfolgreich für Topic: building/info/floorHeight/feet
-Subscription erfolgreich für Topic: building/info/numberOfFloors
 MQTT Adapter running
 Disconnected from MQTT broker.
 Error publishing messages
 ]]></system-out>
     <system-err><![CDATA[[main] INFO tc.hivemq/hivemq-ce:2024.3 - Creating container for image: hivemq/hivemq-ce:2024.3
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: 7c6225399177f8b2b2f1e96ce939c4f563329d1efa30362732dfb5926fd926cd
-[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.09633003S
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 is starting: 505481881f9c9e77092481f29030944cadcb9d55d48cf74a3e004d7807be0ffc
+[main] INFO tc.hivemq/hivemq-ce:2024.3 - Container hivemq/hivemq-ce:2024.3 started in PT1.091062897S
 ]]></system-err>
   </testcase>
 </testsuite>
