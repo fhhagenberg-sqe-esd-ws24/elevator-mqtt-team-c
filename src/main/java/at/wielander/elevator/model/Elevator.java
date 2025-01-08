@@ -1,5 +1,7 @@
 package at.wielander.elevator.model;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sqelevator.IElevator;
 
 import java.rmi.RemoteException;
@@ -55,6 +57,7 @@ public class Elevator {
 
     /** Constant state variable for the initial capacity in lbs */
     private static final int INITIAL_WEIGHT = 0;
+    private static final Logger log = LoggerFactory.getLogger(Elevator.class);
 
     /** Variable for the direction of the elevator */
     private int commitedDirection;
@@ -279,7 +282,7 @@ public class Elevator {
             }
 
         } catch (RemoteException e) {
-            System.out.println("RemoteException: " + e.getMessage());
+            log.info("RemoteException: {}", e.getMessage());
         }
     }
     
