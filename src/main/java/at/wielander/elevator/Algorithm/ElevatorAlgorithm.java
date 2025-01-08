@@ -125,7 +125,7 @@ public class ElevatorAlgorithm {
                 }
             });
 
-            algorithm.mqttClient.connect().whenComplete((_, throwable) -> {
+            algorithm.mqttClient.connect().whenComplete((acks, throwable) -> {
                 if (throwable == null) {
                     log.info("Connected to MQTT broker");
                 } else {

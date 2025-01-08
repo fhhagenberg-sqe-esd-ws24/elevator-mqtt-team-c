@@ -6,8 +6,8 @@
     <FloorHeight>10</FloorHeight>
     <Elevators>1</Elevators>
     <ElevatorCapacity>10</ElevatorCapacity>
-    <ElevatorSpeed>20</ElevatorSpeed>
-    <ElevatorAccel>3</ElevatorAccel>
+    <ElevatorSpeed>5</ElevatorSpeed>
+    <ElevatorAccel>1</ElevatorAccel>
     <Stages>1</Stages>
     <Repeats>1</Repeats>
     <StageTime0>10</StageTime0>
