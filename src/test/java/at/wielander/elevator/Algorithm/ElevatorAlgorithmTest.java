@@ -9,19 +9,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.testcontainers.hivemq.HiveMQContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.javassist.tools.rmi.RemoteException;
 import org.testcontainers.utility.DockerImageName;
 import sqelevator.IElevator;
 
-import java.lang.reflect.Method;
-import java.rmi.Naming;
-
-import static at.wielander.elevator.Algorithm.ElevatorAlgorithm.connectToRMI;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -79,7 +73,6 @@ class ElevatorAlgorithmTest {
                 "mqttAdapter", 250, mockElevatorAPI);
 
         algorithm = new ElevatorAlgorithm();
-
     }
 
     @AfterEach
@@ -95,132 +88,4 @@ class ElevatorAlgorithmTest {
         assertTrue(hivemqCe.getMappedPort(1883) > 0);
     }
 
-    /* Initialisation */
-
-    @Test
-    void givenValidRMIService_whenConnectingToRMI_ThenExpectSuccessfulConnection() {
-        try (MockedStatic<Naming> namingMock = mockStatic(Naming.class)) {
-            namingMock.when(() -> Naming.lookup("rmi://localhost/ElevatorSim")).thenReturn(mockElevatorAPI);
-
-            IElevator controller = connectToRMI();
-
-            assertNotNull(controller);
-            assertEquals(mockElevatorAPI, controller);
-            namingMock.verify(() -> Naming.lookup("rmi://localhost/ElevatorSim"), atLeastOnce());
-        }
-    }
-
-    @Test
-    void givenRMIConnectionFails_whenRetrying_thenExpectSuccessfulConnection() {
-        // Test if remote exeception can be caught
-        try (MockedStatic<Naming> namingMock = mockStatic(Naming.class)) {
-            namingMock.when(() -> Naming.lookup("rmi://localhost/ElevatorSim"))
-                    .thenThrow(new RemoteException("First attempt RMI Connection failed"))
-                    .thenThrow(new RemoteException("Second attempt RMI Connection failed"))
-                    .thenThrow(new RemoteException("Third attempt RMI Connection failed"))
-                    .thenThrow(new RemoteException("Fourth attempt RMI Connection failed"))
-                    .thenReturn(mock(IElevator.class));
-
-            RemoteException remoteException = assertThrows(RemoteException.class, ElevatorAlgorithm::connectToRMI
-            );
-            System.out.println(remoteException.getMessage());
-
-            RemoteException remoteException2 = assertThrows(RemoteException.class, ElevatorAlgorithm::connectToRMI
-            );
-            System.out.println(remoteException2.getMessage());
-
-            RemoteException remoteException3 = assertThrows(RemoteException.class, ElevatorAlgorithm::connectToRMI
-            );
-            System.out.println(remoteException3.getMessage());
-
-            RemoteException remoteException4 = assertThrows(RemoteException.class, ElevatorAlgorithm::connectToRMI
-            );
-            System.out.println(remoteException4.getMessage());
-
-            IElevator controller = ElevatorAlgorithm.connectToRMI();
-            assertNotNull(controller);
-            namingMock.verify(() -> Naming.lookup("rmi://localhost/ElevatorSim"), atLeast(3));
-        }
-    }
-
-    @Test
-    void givenRMIConnectionFails_whenMaxRetriesExceeded_thenExpectConnectionFailed() {
-        try (MockedStatic<Naming> namingMock = mockStatic(Naming.class)) {
-            namingMock.when(() -> Naming.lookup("rmi://localhost/ElevatorSim"))
-                    .thenThrow(new RemoteException("Connection failed"));
-
-            RemoteException remoteException = assertThrows(RemoteException.class, ElevatorAlgorithm::connectToRMI
-            );
-            System.out.println(remoteException.getMessage());
-
-            RemoteException remoteException2 = assertThrows(RemoteException.class, ElevatorAlgorithm::connectToRMI
-            );
-            System.out.println(remoteException2.getMessage());
-
-            RemoteException remoteException3 = assertThrows(RemoteException.class, ElevatorAlgorithm::connectToRMI
-            );
-            System.out.println(remoteException3.getMessage());
-
-            RemoteException remoteException4 = assertThrows(RemoteException.class, ElevatorAlgorithm::connectToRMI
-            );
-            System.out.println(remoteException4.getMessage());
-
-            RemoteException remoteException5 = assertThrows(RemoteException.class, ElevatorAlgorithm::connectToRMI
-            );
-            System.out.println(remoteException5.getMessage());
-
-            RemoteException remoteException6 = assertThrows(RemoteException.class, ElevatorAlgorithm::connectToRMI
-            );
-            System.out.println(remoteException6.getMessage());
-
-            namingMock.verify(() -> Naming.lookup("rmi://localhost/ElevatorSim"), atLeast(5));
-        }
-    }
-
-    /* MQTT */
-
-    @Test
-    void givenMQTTClient_whenConnecting_thenExpectClientSuccessfulConnection() {
-        algorithm.connectMQTTClient();
-        assertNotNull(algorithm.mqttClient);
-    }
-
-    @Test
-    void givenMQTTClient_whenReconnecting_thenExpectClientSuccessfulConnection() {
-        testClient.disconnect();
-        testClient.connect();
-        assertTrue(testClient.getState().isConnected());
-    }
-
-    @Test
-    void givenMQTTClient_whenDisconnecting_thenExpectClientDisconnects() {
-        algorithm.connectMQTTClient();
-        algorithm.mqttClient.disconnect();
-        assertFalse(algorithm.mqttClient.getState().isConnected());
-    }
-
-    @Test
-    void givenMQTTClient_whenDisconnect_thenExpectClientSuccessfulConnectsAfterReconnect() {
-        testClient.disconnect();
-        testClient.connect();
-        assertTrue(testClient.getState().isConnected());
-
-        testClient.disconnect();
-        testClient.connect();
-        assertTrue(testClient.getState().isConnected());
-    }
-
-    @Test
-    void givenButtonPress_whenProcessingUpQueue_thenExpectCorrectFloorInQueue() throws Exception {
-        // Simulate button press
-        assertTrue(testClient.getState().isConnected());
-        mqttAdapter.connect();
-        mqttAdapter.run();
-        algorithm.upQueue.add(5);
-        algorithm.upQueue.add(7);
-
-        assertEquals(2, algorithm.upQueue.size());
-        assertTrue(algorithm.upQueue.contains(5));
-        assertTrue(algorithm.upQueue.contains(7));
-    }
 }

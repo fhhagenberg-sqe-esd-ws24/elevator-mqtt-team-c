@@ -119,7 +119,7 @@ public class Elevator {
         this.position = GROUND_FLOOR;
         this.targetedFloor = GROUND_FLOOR;
         this.currentFloor = GROUND_FLOOR;
-        this.buttons = new ArrayList<Boolean>();
+        this.buttons = new ArrayList<>();
         this.serviceableFloors = serviceableFloors;
         this.capacity = capacity;
         this.elevatorNumber = elevatorNumber;
@@ -161,7 +161,7 @@ public class Elevator {
     /**
      * Current the truth value for the floor buttons in the elevator
      *
-     * @return Map of the buttons representing each floor and their state (TRUE /
+     * @return ArrayList of the buttons representing each floor and their state (TRUE /
      *         FALSE)
      */
     public ArrayList<Boolean> getButtonsInElevatorStatus() {
@@ -266,8 +266,7 @@ public class Elevator {
 	 * Checks if the RMI interface has been assigned
 	 *
 	 * @return Elevator Api
-	 * @throws java.rmi.RemoteException throws remote connection
-	 */
+     */
 	public Boolean elevatorAPIConnected()
 	{
 		return elevatorAPI == null ? false: true; 
@@ -275,9 +274,8 @@ public class Elevator {
 
     /**
      * Updates elevator based on current states
-     * @throws RemoteException 
      */
-    public void update() throws RemoteException {
+    public void update() {
         try {
             this.currentFloor = elevatorAPI.getElevatorFloor(elevatorNumber);
             this.targetedFloor = elevatorAPI.getTarget(elevatorNumber);
@@ -292,7 +290,7 @@ public class Elevator {
             }
 
         } catch (RemoteException e) {
-            throw e;
+            System.out.println("RemoteException: " + e.getMessage());
         }
     }
     

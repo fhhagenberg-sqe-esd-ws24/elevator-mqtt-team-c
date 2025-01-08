@@ -373,10 +373,7 @@ public class ElevatorSystem implements IElevator {
     public int getNumberOfFloors() {
         return serviceableFloors.size();
     }
-    
-    public Boolean getRMIConnection(int elevatorNumber) {
-        return elevators.get(elevatorNumber).elevatorAPIConnected();
-    }
+
 
     /**
      * Updates all elevators based on current states

@@ -7,14 +7,14 @@
 
     <groupId>at.fhhagenberg.sqelevator</groupId>
     <artifactId>mqtt-elevator-team-c</artifactId>
-    <version>0.4</version>
-    <name>MQTT Elevator Team C</name>
+    <version>1.0</version>
+    <name>elevator-simulator-team-c</name>
 
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <sonar.organization>fhhagenberg-sqe-esd-ws24</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
@@ -128,8 +128,6 @@
     <build>
         <plugins>
 
-            <!-- Maven Compiler Plugin -->
-
             <!-- JaCoCo Plugin -->
             <plugin>
                 <groupId>org.jacoco</groupId>
@@ -162,7 +160,7 @@
                                         <limit>
                                             <counter>COMPLEXITY</counter>
                                             <value>COVEREDRATIO</value>
-                                            <!--<minimum>0.60</minimum>-->
+                                            <minimum>0.30</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
@@ -187,6 +185,11 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
+                    <archive>
+                        <manifest>
+                            <mainClass>at.wielander.elevator.Algorithm.ElevatorAlgorithm</mainClass>
+                        </manifest>
+                    </archive>
                 </configuration>
                 <executions>
                     <execution>
@@ -196,7 +199,6 @@
                             <goal>single</goal>
                         </goals>
                     </execution>
-
                 </executions>
             </plugin>
 
@@ -210,9 +212,11 @@
                     <failOnError>false</failOnError>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
                 <configuration>
                     <source>21</source>
                     <target>21</target>
