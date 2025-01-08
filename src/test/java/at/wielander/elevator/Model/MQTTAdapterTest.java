@@ -192,7 +192,7 @@ class MQTTAdapterTest {
                         latch.countDown(); // Zähle herunter, wenn die Nachricht erfolgreich überprüft wurde
                     })
                     .send()
-                    .whenComplete((_, throwable) -> {
+                    .whenComplete((subAck, throwable) -> {
                         if (throwable != null) {
                             System.err.println("Subscription failed for topic " + topic + ": " + throwable.getMessage());
                         } else {
@@ -274,7 +274,7 @@ class MQTTAdapterTest {
                     }
                 })
                 .send()
-                .whenComplete((_, throwable) -> {
+                .whenComplete((subAck, throwable) -> {
                     if (throwable != null) {
                         System.err.println("Subscription fehlgeschlagen für Topic " + topic + ": " + throwable.getMessage());
                     } else {
@@ -317,7 +317,7 @@ class MQTTAdapterTest {
                     .topic(topic)
                     .payload(payload.getBytes(StandardCharsets.UTF_8))
                     .send()
-                    .whenComplete((_, throwable) -> {
+                    .whenComplete((ack, throwable) -> {
                         if (throwable != null) {
                             System.err.println("Publishing failed for topic " + topic + ": " + throwable.getMessage());
                         } else {
