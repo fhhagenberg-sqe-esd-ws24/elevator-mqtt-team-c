@@ -1,40 +1,39 @@
 package at.wielander.elevator.Algorithm;
 
+import at.wielander.elevator.Exception.MQTTClientException;
 import at.wielander.elevator.MQTT.ElevatorMQTTAdapter;
 import at.wielander.elevator.Model.ElevatorSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sqelevator.IElevator;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 
+import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.util.*;
 
 public class ElevatorAlgorithm {
 
 
+    private static final Logger log = LoggerFactory.getLogger(ElevatorAlgorithm.class);
     private Mqtt5AsyncClient mqttClient; // MQTT Client instance variable
     private ElevatorMQTTAdapter eMQTTAdapter; // Adapter instance variable
     private ElevatorSystem eSystem;
-    private IElevator controller;
     private static Properties properties;
-    private Timer timer;
-
-    private static final int MAX_RETRIES = 5;
-    private static final int THREAD_SLEEP = 10000;
-    private static final int GROUND_FLOOR = 0;
 
     private int totalElevator = -1;
-    private int totalFloor = -1;
-    private Vector<Integer> totalPassengers = new Vector<>();
 
-    private Map<String, String> retainedMessages = new HashMap<>();
-    private Map<String, String> liveMessages = new HashMap<>();
+    private final Map<String, String> retainedMessages = new HashMap<>();
+    private final Map<String, String> liveMessages = new HashMap<>();
 
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main() throws InterruptedException {
         ElevatorAlgorithm algorithm = new ElevatorAlgorithm();
         String brokerHost = "tcp://localhost:1883"; // Lokaler Mosquitto Broker
         System.out.println("Connecting to MQTT Broker at: " + brokerHost);
@@ -124,7 +123,7 @@ public class ElevatorAlgorithm {
                 }
             });
 
-            algorithm.mqttClient.connect().whenComplete((ack, throwable) -> {
+            algorithm.mqttClient.connect().whenComplete((_, throwable) -> {
                 if (throwable == null) {
                     System.out.println("Connected to MQTT broker");
                 } else {
@@ -132,23 +131,24 @@ public class ElevatorAlgorithm {
                 }
             });
 
-            algorithm.runAlgorithm(algorithm, algorithm.eMQTTAdapter);
+            algorithm.runAlgorithm(algorithm);
 
-        } catch (Exception e) {
-
+        } catch (MQTTClientException e) {
+            log.error("Failed to connect to MQTT broker: {}", e.getMessage());
             algorithm.eMQTTAdapter.disconnect();
-
+        } catch (RemoteException | NotBoundException e) {
+            System.err.println("Failed to connect to MQTT broker: " + e.getMessage());
+        } catch (MalformedURLException e) {
+            System.err.println("Malformed URL: " + e.getMessage());
         }
     }
 
-    public void runAlgorithm(ElevatorAlgorithm algorithm, ElevatorMQTTAdapter eMQTTAdapter) throws InterruptedException {
+    public void runAlgorithm(ElevatorAlgorithm algorithm) throws InterruptedException {
         Thread.sleep(3000);
         algorithm.eMQTTAdapter.run();
         Thread.sleep(500);
 
         final int numberOfFloors = Integer.parseInt(retainedMessages.get("building/info/numberOfFloors"));
-        final int elevator = 0;
-        final int sleepTime = 1;
 
         // Subscribe to external floor button presses (up/down) for each floor, once
         subscribeToFloorButtonPresses(algorithm, numberOfFloors);
@@ -157,7 +157,7 @@ public class ElevatorAlgorithm {
         subscribeToInsideElevatorButtonPresses(algorithm);
 
         // Handle button presses asynchronously
-        handleButtonPresses(algorithm, elevator, sleepTime);
+        handleButtonPresses(algorithm);
     }
 
     // Optimized method to subscribe to floor button presses
@@ -178,6 +178,7 @@ public class ElevatorAlgorithm {
     // Optimized method to subscribe to internal elevator button presses
     private void subscribeToInsideElevatorButtonPresses(ElevatorAlgorithm algorithm) {
         for (int elevatorId = 0; elevatorId < totalElevator; elevatorId++) {
+            int totalFloor = -1;
             for (int floorId = 0; floorId < totalFloor; floorId++) {
                 try {
                     String elevatorButtonTopic = "elevator/" + elevatorId + "/button/" + floorId;
@@ -190,21 +191,20 @@ public class ElevatorAlgorithm {
     }
 
     // Optimized method to handle all button presses
-    private void handleButtonPresses(ElevatorAlgorithm algorithm, int elevator, int sleepTime) {
+    private void handleButtonPresses(ElevatorAlgorithm algorithm) {
         algorithm.mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -> {
             try {
                 String topic = publish.getTopic().toString();
-                String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
 
                 // Handle external floor button press
                 if (topic.startsWith("floor/")) {
                     int floorRequested = Integer.parseInt(topic.split("/")[1]);
                     if (topic.contains("/buttonUp")) {
                         // Move elevator up if buttonUp is pressed
-                        moveElevator(elevator, floorRequested, algorithm, 1, sleepTime);
+                        moveElevator(floorRequested, algorithm, 1);
                     } else if (topic.contains("/buttonDown")) {
                         // Move elevator down if buttonDown is pressed
-                        moveElevator(elevator, floorRequested, algorithm, 2, sleepTime);
+                        moveElevator(floorRequested, algorithm, 2);
                     }
                 }
 
@@ -222,10 +222,10 @@ public class ElevatorAlgorithm {
     }
 
     // Optimized moveElevator method (generic for both up/down)
-    private void moveElevator(int elevator, int floorRequested, ElevatorAlgorithm algorithm, int direction, int sleepTime) throws InterruptedException {
+    private void moveElevator(int floorRequested, ElevatorAlgorithm algorithm, int direction) {
         try {
-            String directionTopic = "elevator/" + elevator + "/committedDirection";
-            String targetTopic = "elevator/" + elevator + "/targetFloor";
+            String directionTopic = "elevator/" + 0 + "/committedDirection";
+            String targetTopic = "elevator/" + 0 + "/targetFloor";
 
             // Set direction (1 = UP, 2 = DOWN)
             algorithm.mqttClient.publishWith()
@@ -240,27 +240,27 @@ public class ElevatorAlgorithm {
                     .send();
 
             // Wait for elevator to reach the target floor
-            waitForElevatorToReachTarget(elevator, floorRequested, algorithm, sleepTime);
+            waitForElevatorToReachTarget(floorRequested, algorithm);
         } catch (Exception e) {
             System.err.println("Error while moving elevator: " + e.getMessage());
         }
     }
 
     // Optimized method to wait for elevator to reach the target floor
-    private void waitForElevatorToReachTarget(int elevator, int floorRequested, ElevatorAlgorithm algorithm, int sleepTime) throws InterruptedException {
-        while (Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/currentFloor", "-1")) != floorRequested
-                || Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/speed", "1")) > 0) {
-            Thread.sleep(sleepTime);
+    private void waitForElevatorToReachTarget(int floorRequested, ElevatorAlgorithm algorithm) throws InterruptedException {
+        while (Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + 0 + "/currentFloor", "-1")) != floorRequested
+                || Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + 0 + "/speed", "1")) > 0) {
+            Thread.sleep(1);
         }
 
         // Wait for doors to open
-        while (!"1".equals(algorithm.liveMessages.getOrDefault("elevator/" + elevator + "/doorState", ""))) {
-            Thread.sleep(sleepTime);
+        while (!"1".equals(algorithm.liveMessages.getOrDefault("elevator/" + 0 + "/doorState", ""))) {
+            Thread.sleep(1);
         }
 
         // Set committed direction to UNCOMMITTED after reaching the target
         algorithm.mqttClient.publishWith()
-                .topic("elevator/" + elevator + "/committedDirection")
+                .topic("elevator/" + 0 + "/committedDirection")
                 .payload("0".getBytes(StandardCharsets.UTF_8)) // 0 for UNCOMMITTED
                 .send();
     }
