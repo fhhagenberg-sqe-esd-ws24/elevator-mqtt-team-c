@@ -2,6 +2,8 @@ package at.wielander.elevator.adapter;
 
 import at.wielander.elevator.model.Elevator;
 import at.wielander.elevator.model.ElevatorSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sqelevator.IElevator;
 import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
@@ -17,12 +19,18 @@ import java.util.concurrent.TimeUnit;
 
 public class ElevatorMQTTAdapter {
     private static final String TOPIC_BASE = "building/";
-    public static final String INFO_TOPIC = TOPIC_BASE + "info/";
-    private static final String STATUS_TOPIC = TOPIC_BASE + "status/";
-    private static final String CONTROL_TOPIC = TOPIC_BASE + "control/";
-    public static final String STATUS_ELEVATOR_TOPIC = STATUS_TOPIC + "elevator/";
-    public static final String CONTROL_ELEVATOR_TOPIC = CONTROL_TOPIC + "elevator/";
+    public static final String INFO = "info/";
+    public static final String INFO_TOPIC = TOPIC_BASE + INFO;
+    public static final String STATUS = "status/";
+    private static final String STATUS_TOPIC = TOPIC_BASE + STATUS;
+    public static final String CONTROL = "control/";
+    private static final String CONTROL_TOPIC = TOPIC_BASE + CONTROL;
+    public static final String ELEVATOR_TOPIC = "elevator/";
+    public static final String STATUS_ELEVATOR_TOPIC = STATUS_TOPIC + ELEVATOR_TOPIC;
+    public static final String CONTROL_ELEVATOR_TOPIC = CONTROL_TOPIC + ELEVATOR_TOPIC;
     private static final int TIMEOUT_DURATION = 10;
+    public static final String ELEVATOR = "Elevator ";
+    private static final Logger log = LoggerFactory.getLogger(ElevatorMQTTAdapter.class);
     private Mqtt5AsyncClient client;
     private ElevatorSystem elevatorSystem;
     private final ScheduledExecutorService scheduler;
@@ -91,9 +99,9 @@ public class ElevatorMQTTAdapter {
                   .send()
                   .whenComplete((connAck, throwable) -> {
                       if (throwable != null) {
-                          System.err.println("Connection failed: " + throwable.getMessage());
+                          log.error("Connection failed: {}", throwable.getMessage());
                       } else {
-                          System.out.println("Connected to adapter broker: " + connAck.getType());
+                          log.info("Connected to adapter broker: {}", connAck.getType());
                       }
                   });
 
@@ -135,7 +143,7 @@ public class ElevatorMQTTAdapter {
                           if (throwable != null) {
                               handleConnectionError();
                           } else {
-                              System.out.println("Reconnected to adapter broker.");
+                              log.info("Reconnected to adapter broker.");
                           }
                       });
 
@@ -165,9 +173,9 @@ public class ElevatorMQTTAdapter {
             client.disconnect()
                   .whenComplete((ack, throwable) -> {
                       if (throwable != null) {
-                          System.err.println("Failed to disconnect: " + throwable.getMessage());
+                          log.error("Failed to disconnect: {}", throwable.getMessage());
                       } else {
-                          System.out.println("Disconnected from adapter broker.");
+                          log.info("Disconnected from adapter broker.");
                       }
                   });
 
@@ -215,22 +223,22 @@ public class ElevatorMQTTAdapter {
 
                     // First run or change in elevator state
                     if (isFirstRun || !String.valueOf(elevator.getCurrentFloor()).equals(String.valueOf(previousElevator != null ? previousElevator.getCurrentFloor() : null))) {
-                        publish("elevator/" + i + "/currentFloor", String.valueOf(elevator.getCurrentFloor()));
+                        publish(ELEVATOR_TOPIC + i + "/currentFloor", String.valueOf(elevator.getCurrentFloor()));
                     }
                     if (isFirstRun || !String.valueOf(elevator.getCurrentSpeed()).equals(String.valueOf(previousElevator != null ? previousElevator.getCurrentSpeed() : null))) {
-                        publish("elevator/" + i + "/speed", String.valueOf(elevator.getCurrentSpeed()));
+                        publish(ELEVATOR_TOPIC + i + "/speed", String.valueOf(elevator.getCurrentSpeed()));
                     }
                     if (isFirstRun || !String.valueOf(elevator.getCurrentWeight()).equals(String.valueOf(previousElevator != null ? previousElevator.getCurrentWeight() : null))) {
-                        publish("elevator/" + i + "/weight", String.valueOf(elevator.getCurrentWeight()));
+                        publish(ELEVATOR_TOPIC + i + "/weight", String.valueOf(elevator.getCurrentWeight()));
                     }
                     if (isFirstRun || !String.valueOf(elevator.getElevatorDoorStatus()).equals(String.valueOf(previousElevator != null ? previousElevator.getElevatorDoorStatus() : null))) {
-                        publish("elevator/" + i + "/doorState", String.valueOf(elevator.getElevatorDoorStatus()));
+                        publish(ELEVATOR_TOPIC + i + "/doorState", String.valueOf(elevator.getElevatorDoorStatus()));
                     }
 
                     // Iterate over all buttons in the elevator
                     for (int j = 1; j < elevator.buttons.size()-1; j++) {
                         if (isFirstRun || !String.valueOf(elevator.buttons.get(j)).equals(String.valueOf(previousElevator != null ? previousElevator.buttons.get(j) : null))) {
-                            publish("elevator/" + i + "/button/" + j, String.valueOf(elevator.buttons.get(j)));
+                            publish(ELEVATOR_TOPIC + i + "/button/" + j, String.valueOf(elevator.buttons.get(j)));
                         }
                     }
 
@@ -251,7 +259,7 @@ public class ElevatorMQTTAdapter {
                 previousElevatorSystem = elevatorSystem.copy(); // Assuming copy() method is available
 
             } catch (Exception e) {
-                System.out.println("Error publishing messages");
+                log.info("Error publishing messages");
                 throw new RuntimeException("Error while publishing elevator states", e);
             }
 
@@ -301,14 +309,14 @@ public class ElevatorMQTTAdapter {
         try {
             for (int id = 0; id < elevatorSystem.getTotalElevators(); id++) {
                 // Subscribe to the committed direction control topic
-                subscribe("elevator/" + id + "/committedDirection");
+                subscribe(ELEVATOR_TOPIC + id + "/committedDirection");
 
                 // Subscribe to the target floor control topic
-                subscribe("elevator/" + id + "/targetFloor");
+                subscribe(ELEVATOR_TOPIC + id + "/targetFloor");
 
                 // Subscribe to the floor services control topics
                 for (int num = 0; num < elevatorSystem.getNumberOfFloors(); num++) {
-                    subscribe("elevator/" + id + "/floorService/" + num);
+                    subscribe(ELEVATOR_TOPIC + id + "/floorService/" + num);
                 }
             }
             // Set callback to handle incoming messages
@@ -343,18 +351,18 @@ public class ElevatorMQTTAdapter {
             if (topic.contains("committedDirection")) {
                 int elevatorNumber = Integer.parseInt(parts[1]);
                 int committedDirection = Integer.parseInt(payload);
-                System.out.println("Elevator " + elevatorNumber + " committed direction: " + committedDirection);
+                System.out.println(ELEVATOR + elevatorNumber + " committed direction: " + committedDirection);
                 elevatorAPI.setCommittedDirection(elevatorNumber, committedDirection);
             } else if (topic.contains("targetFloor")) {
                 int elevatorNumber = Integer.parseInt(parts[1]);
                 int targetFloor = Integer.parseInt(payload);
-                System.out.println("Elevator " + elevatorNumber + " target floor: " + targetFloor);
+                System.out.println(ELEVATOR + elevatorNumber + " target floor: " + targetFloor);
                 elevatorAPI.setTarget(elevatorNumber, targetFloor);
             } else if (topic.contains("floorService")) {
                 int elevatorNumber = Integer.parseInt(parts[1]);
                 int floorNumber = Integer.parseInt(parts[3]);
                 boolean floorService = Boolean.parseBoolean(payload);
-                System.out.println("Elevator " + elevatorNumber + " floor " + floorNumber + " service: " + floorService);
+                System.out.println(ELEVATOR + elevatorNumber + " floor " + floorNumber + " service: " + floorService);
                 elevatorAPI.setServicesFloors(elevatorNumber, floorNumber, floorService);
             }
         } 
