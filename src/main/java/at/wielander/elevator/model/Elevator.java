@@ -93,7 +93,7 @@ public class Elevator {
     protected IElevator elevatorAPI;
 
     /** Variable for the elevator number */
-    private final int elevatorNumber;
+    public final int elevatorNumber;
 
     /**
      * Constructor for internal Data Model based on IElevator interface

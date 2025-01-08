@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ElevatorMQTTAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">elevator-simulator-team-c</a> &gt; <a href="index.source.html" class="el_package">at.wielander.elevator.adapter</a> &gt; <span class="el_source">ElevatorMQTTAdapter.java</span></div><h1>ElevatorMQTTAdapter.java</h1><pre class="source lang-java linenums">package at.wielander.elevator.adapter;
+
+import at.wielander.elevator.model.Elevator;
+import at.wielander.elevator.model.ElevatorSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sqelevator.IElevator;
+import com.hivemq.client.mqtt.MqttClientState;
+import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
+import com.hivemq.client.mqtt.datatypes.MqttQos;
+import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
+import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
+import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
+
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+public class ElevatorMQTTAdapter {
+    private static final String TOPIC_BASE = &quot;building/&quot;;
+    public static final String INFO = &quot;info/&quot;;
+    public static final String INFO_TOPIC = TOPIC_BASE + INFO;
+    public static final String STATUS = &quot;status/&quot;;
+    private static final String STATUS_TOPIC = TOPIC_BASE + STATUS;
+    public static final String CONTROL = &quot;control/&quot;;
+    private static final String CONTROL_TOPIC = TOPIC_BASE + CONTROL;
+    public static final String ELEVATOR_TOPIC = &quot;elevator/&quot;;
+    public static final String STATUS_ELEVATOR_TOPIC = STATUS_TOPIC + ELEVATOR_TOPIC;
+    public static final String CONTROL_ELEVATOR_TOPIC = CONTROL_TOPIC + ELEVATOR_TOPIC;
+    private static final int TIMEOUT_DURATION = 10;
+    public static final String ELEVATOR = &quot;Elevator &quot;;
+<span class="fc" id="L33">    private static final Logger log = LoggerFactory.getLogger(ElevatorMQTTAdapter.class);</span>
+    private Mqtt5AsyncClient client;
+    private ElevatorSystem elevatorSystem;
+    private final ScheduledExecutorService scheduler;
+    private int pollingInterval;
+    private  ElevatorSystem previousElevatorSystem;
+    private IElevator elevatorAPI;
+
+
+    /**
+     * Custom Exception for handling adapter Adapter errors.
+     */
+    public static class MQTTAdapterException extends RuntimeException {
+      
+    	private static final long serialVersionUID = 1L;
+
+    	public MQTTAdapterException(String message, Throwable cause) {
+<span class="fc" id="L50">            super(message, cause);</span>
+<span class="fc" id="L51">        }</span>
+    }
+    /**
+     * Returns the current state of the adapter client.
+     *
+     * @return the state of the adapter client.
+     */
+    public MqttClientState getClientState() {
+<span class="fc" id="L59">        return client.getState();</span>
+    }
+    
+    /**
+     * Establishes connection between the adapter Broker and the Elevator Data Model
+     *
+     * @param elevatorSystem Data Model for Elevator system
+     * @param brokerUrl      URL for adapter Broker
+     * @param clientId       Client ID for adapter Broker
+     */
+<span class="fc" id="L69">    public ElevatorMQTTAdapter(ElevatorSystem elevatorSystem, String brokerUrl, String clientId, int pollingInterval, IElevator elevatorAPI) {</span>
+<span class="fc" id="L70">        this.elevatorAPI = elevatorAPI;</span>
+<span class="fc" id="L71">    	this.elevatorSystem = elevatorSystem;</span>
+<span class="fc" id="L72">        this.pollingInterval = pollingInterval;</span>
+        
+        try {
+<span class="fc" id="L75">        String[] urlParts = brokerUrl.replace(&quot;tcp://&quot;, &quot;&quot;).split(&quot;:&quot;);</span>
+<span class="fc" id="L76">        String host = urlParts[0];</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        int port = urlParts.length &gt; 1 ? Integer.parseInt(urlParts[1]) : 1883; // Standard-Port 1883 für adapter</span>
+
+<span class="fc" id="L79">        this.client = Mqtt5Client.builder() // Use Mqtt5Client instead of MqttClient</span>
+<span class="fc" id="L80">                .serverHost(host)</span>
+<span class="fc" id="L81">                .serverPort(port)</span>
+<span class="fc" id="L82">                .identifier(clientId)</span>
+<span class="fc" id="L83">                .buildAsync();</span>
+
+<span class="fc" id="L85">        this.scheduler = Executors.newScheduledThreadPool(1);</span>
+<span class="nc" id="L86">        } catch (Exception e) {</span>
+<span class="nc" id="L87">            throw new MQTTAdapterException(&quot;Failed to initialize adapter client.&quot;, e);</span>
+<span class="fc" id="L88">        }</span>
+<span class="fc" id="L89">    }</span>
+
+    /**
+     * Establish connection to adapter Broker and waits until fully connected
+     * @throws InterruptedException When the thread is interrupted
+     */
+    public void connect() throws InterruptedException {
+        try {
+<span class="fc" id="L97">            client.connectWith()</span>
+<span class="fc" id="L98">                  .cleanStart(true)</span>
+<span class="fc" id="L99">                  .send()</span>
+<span class="fc" id="L100">                  .whenComplete((connAck, throwable) -&gt; {</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">                      if (throwable != null) {</span>
+<span class="nc" id="L102">                          log.error(&quot;Connection failed: {}&quot;, throwable.getMessage());</span>
+                      } else {
+<span class="fc" id="L104">                          log.info(&quot;Connected to adapter broker: {}&quot;, connAck.getType());</span>
+                      }
+<span class="fc" id="L106">                  });</span>
+
+            // Warten, bis der Zustand CONNECTED erreicht ist
+<span class="fc" id="L109">            long startTime = System.currentTimeMillis();</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">            while (client.getState() != MqttClientState.CONNECTED) {</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">                if (System.currentTimeMillis() - startTime &gt; 5000) { // Timeout nach 5 Sekunden</span>
+<span class="nc" id="L112">                    throw new MQTTAdapterException(&quot;Timeout while waiting for adapter client to connect&quot;, null);</span>
+                }
+<span class="fc" id="L114">                Thread.sleep(100);</span>
+            }
+<span class="nc" id="L116">        }catch (InterruptedException e) {</span>
+<span class="nc" id="L117">            throw e; // Rethrow the InterruptedException</span>
+<span class="nc" id="L118">        } catch (Exception e) {</span>
+<span class="nc" id="L119">            throw new MQTTAdapterException(&quot;Error during adapter client connection.&quot;, e);</span>
+<span class="fc" id="L120">        }</span>
+<span class="fc" id="L121">    }</span>
+    
+    
+    private void handleConnectionError() {
+<span class="nc" id="L125">        scheduler.schedule(() -&gt; {</span>
+			try {
+<span class="nc" id="L127">				reconnect();</span>
+<span class="nc" id="L128">			} catch (InterruptedException e) {</span>
+<span class="nc" id="L129">				 Thread.currentThread().interrupt();</span>
+<span class="nc" id="L130">			}</span>
+<span class="nc" id="L131">		}, TIMEOUT_DURATION, TimeUnit.SECONDS);</span>
+<span class="nc" id="L132">    }</span>
+
+    /**
+     * Reconnect to adapter Broker
+     * @throws InterruptedException When the thread is interrupted
+     */
+    public void reconnect() throws InterruptedException {
+<span class="pc bpc" id="L139" title="1 of 4 branches missed.">        if (client != null &amp;&amp; !client.getState().isConnected()) {</span>
+            try {
+<span class="fc" id="L141">                client.toAsync().connect()</span>
+<span class="fc" id="L142">                      .whenComplete((connAck, throwable) -&gt; {</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">                          if (throwable != null) {</span>
+<span class="nc" id="L144">                              handleConnectionError();</span>
+                          } else {
+<span class="fc" id="L146">                              log.info(&quot;Reconnected to adapter broker.&quot;);</span>
+                          }
+<span class="fc" id="L148">                      });</span>
+
+                // Warten, bis der Zustand CONNECTED erreicht ist
+<span class="fc" id="L151">                long startTime = System.currentTimeMillis();</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">                while (client.getState() != MqttClientState.CONNECTED) {</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">                    if (System.currentTimeMillis() - startTime &gt; 5000) { // Timeout nach 5 Sekunden</span>
+<span class="nc" id="L154">                        throw new MQTTAdapterException(&quot;Timeout while waiting for adapter client to reconnect&quot;, null);</span>
+                    }
+<span class="fc" id="L156">                    Thread.sleep(100);</span>
+                }
+            } 
+<span class="nc" id="L159">            catch (InterruptedException e) {</span>
+<span class="nc" id="L160">                throw e; // Rethrow the InterruptedException</span>
+<span class="nc" id="L161">            }catch (Exception e) {</span>
+<span class="nc" id="L162">                throw new MQTTAdapterException(&quot;Error during adapter client reconnection.&quot;, e);</span>
+<span class="fc" id="L163">            }</span>
+        }
+<span class="fc" id="L165">    }</span>
+
+    /**
+     * Disconnect from adapter Broker
+     * @throws InterruptedException 
+     */
+    public void disconnect() throws InterruptedException {
+        try {
+<span class="fc" id="L173">            client.disconnect()</span>
+<span class="fc" id="L174">                  .whenComplete((ack, throwable) -&gt; {</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">                      if (throwable != null) {</span>
+<span class="fc" id="L176">                          log.error(&quot;Failed to disconnect: {}&quot;, throwable.getMessage());</span>
+                      } else {
+<span class="fc" id="L178">                          log.info(&quot;Disconnected from adapter broker.&quot;);</span>
+                      }
+<span class="fc" id="L180">                  });</span>
+
+            // Warten, bis der Zustand nicht mehr CONNECTED ist
+<span class="fc" id="L183">            long startTime = System.currentTimeMillis();</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">            while (client.getState() != MqttClientState.DISCONNECTED) {</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">                if (System.currentTimeMillis() - startTime &gt; 5000) { // Timeout nach 5 Sekunden</span>
+<span class="nc" id="L186">                    throw new MQTTAdapterException(&quot;Timeout while waiting for adapter client to disconnect&quot;, null);</span>
+                }
+<span class="fc" id="L188">                Thread.sleep(100);</span>
+            }
+        } 
+<span class="nc" id="L191">        catch (InterruptedException e) {</span>
+<span class="nc" id="L192">            throw e; // Rethrow the InterruptedException</span>
+<span class="nc" id="L193">        }catch (Exception e) {</span>
+<span class="nc" id="L194">            throw new MQTTAdapterException(&quot;Error during adapter client disconnection.&quot;, e);</span>
+<span class="fc" id="L195">        }</span>
+<span class="fc" id="L196">    }</span>
+   
+    /**
+     * Starts publishing elevator states at regular intervals.
+     *
+     *        This function starts a scheduled task that polls the elevator states
+     *        at regular intervals and publishes the states to the adapter broker.
+     *        If there are changes in the elevator states, the new states are
+     *        published.
+     */
+    private void startPublishingElevatorStates() {
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">        if (client.getState() != MqttClientState.CONNECTED) {</span>
+<span class="nc" id="L208">            throw new RuntimeException(&quot;adapter client must be connected before publishing messages&quot;);</span>
+        }
+
+       
+<span class="fc" id="L212">        scheduler.scheduleAtFixedRate(() -&gt; {</span>
+            try {
+                // Updates all elevators
+<span class="fc" id="L215">                elevatorSystem.updateAll();</span>
+                
+                // Check if previousElevatorSystem is null (first run)
+<span class="fc bfc" id="L218" title="All 2 branches covered.">                boolean isFirstRun = previousElevatorSystem == null;</span>
+
+<span class="fc bfc" id="L220" title="All 2 branches covered.">                for (int i = 0; i &lt; elevatorSystem.getTotalElevators(); i++) {</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">                    Elevator previousElevator = previousElevatorSystem != null ? previousElevatorSystem.getElevator(i) : null;</span>
+<span class="fc" id="L222">                    Elevator elevator = elevatorSystem.getElevator(i);</span>
+
+                    // First run or change in elevator state
+<span class="pc bpc" id="L225" title="2 of 6 branches missed.">                    if (isFirstRun || !String.valueOf(elevator.getCurrentFloor()).equals(String.valueOf(previousElevator != null ? previousElevator.getCurrentFloor() : null))) {</span>
+<span class="fc" id="L226">                        publish(ELEVATOR_TOPIC + i + &quot;/currentFloor&quot;, String.valueOf(elevator.getCurrentFloor()));</span>
+                    }
+<span class="pc bpc" id="L228" title="2 of 6 branches missed.">                    if (isFirstRun || !String.valueOf(elevator.getCurrentSpeed()).equals(String.valueOf(previousElevator != null ? previousElevator.getCurrentSpeed() : null))) {</span>
+<span class="fc" id="L229">                        publish(ELEVATOR_TOPIC + i + &quot;/speed&quot;, String.valueOf(elevator.getCurrentSpeed()));</span>
+                    }
+<span class="pc bpc" id="L231" title="2 of 6 branches missed.">                    if (isFirstRun || !String.valueOf(elevator.getCurrentWeight()).equals(String.valueOf(previousElevator != null ? previousElevator.getCurrentWeight() : null))) {</span>
+<span class="fc" id="L232">                        publish(ELEVATOR_TOPIC + i + &quot;/weight&quot;, String.valueOf(elevator.getCurrentWeight()));</span>
+                    }
+<span class="pc bpc" id="L234" title="2 of 6 branches missed.">                    if (isFirstRun || !String.valueOf(elevator.getElevatorDoorStatus()).equals(String.valueOf(previousElevator != null ? previousElevator.getElevatorDoorStatus() : null))) {</span>
+<span class="fc" id="L235">                        publish(ELEVATOR_TOPIC + i + &quot;/doorState&quot;, String.valueOf(elevator.getElevatorDoorStatus()));</span>
+                    }
+
+                    // Iterate over all buttons in the elevator
+<span class="fc bfc" id="L239" title="All 2 branches covered.">                    for (int j = 1; j &lt; elevator.buttons.size()-1; j++) {</span>
+<span class="pc bpc" id="L240" title="2 of 6 branches missed.">                        if (isFirstRun || !String.valueOf(elevator.buttons.get(j)).equals(String.valueOf(previousElevator != null ? previousElevator.buttons.get(j) : null))) {</span>
+<span class="fc" id="L241">                            publish(ELEVATOR_TOPIC + i + &quot;/button/&quot; + j, String.valueOf(elevator.buttons.get(j)));</span>
+                        }
+                    }
+
+                    // Iterate over all floor buttons
+<span class="fc bfc" id="L246" title="All 2 branches covered.">                    for (int k = 1; k &lt; elevatorSystem.getFloorNum(); k++) {</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">                        if (isFirstRun || </span>
+<span class="pc bpc" id="L248" title="3 of 6 branches missed.">                            elevatorSystem.getFloorButtonDown(k) != (previousElevatorSystem != null &amp;&amp; previousElevatorSystem.getFloorButtonDown(k))) {</span>
+<span class="fc" id="L249">                            publish(&quot;floor/&quot; + k + &quot;/buttonDown&quot;, String.valueOf(elevatorSystem.getFloorButtonDown(k)));</span>
+                        }
+<span class="fc bfc" id="L251" title="All 2 branches covered.">                        if (isFirstRun || </span>
+<span class="pc bpc" id="L252" title="3 of 6 branches missed.">                            elevatorSystem.getFloorButtonUp(k) != (previousElevatorSystem != null &amp;&amp; previousElevatorSystem.getFloorButtonUp(k))) {</span>
+<span class="fc" id="L253">                            publish(&quot;floor/&quot; + k + &quot;/buttonUp&quot;, String.valueOf(elevatorSystem.getFloorButtonUp(k)));</span>
+                        }
+                    }
+                }
+
+                // Update the previous state for the next comparison
+<span class="fc" id="L259">                previousElevatorSystem = elevatorSystem.copy(); // Assuming copy() method is available</span>
+
+<span class="fc" id="L261">            } catch (Exception e) {</span>
+<span class="fc" id="L262">                log.info(&quot;Error publishing messages&quot;);</span>
+<span class="fc" id="L263">                throw new RuntimeException(&quot;Error while publishing elevator states&quot;, e);</span>
+<span class="fc" id="L264">            }</span>
+
+<span class="fc" id="L266">        }, 0, pollingInterval, TimeUnit.MILLISECONDS);</span>
+
+<span class="fc" id="L268">    }</span>
+
+    /**
+     *  Publishes a message to the specified adapter topic.
+     *
+     *        This function publishes a message to the specified adapter topic with the
+     *        given message content.
+     *        The message is set as retained to ensure that the notification is not
+     *        lost.
+     *
+     * @param topic          The adapter topic to publish the message to.
+     * @param payload The content of the message to be published.
+     */
+    private void publish(String topic, String payload) {
+        try {
+<span class="fc" id="L283">            Mqtt5Publish publishMessage = Mqtt5Publish.builder()</span>
+<span class="fc" id="L284">                    .topic(topic)</span>
+<span class="fc" id="L285">                    .payload(payload.getBytes(StandardCharsets.UTF_8))</span>
+<span class="fc" id="L286">                    .retain(false) // Nachrichten werden nicht retained</span>
+<span class="fc" id="L287">                    .qos(MqttQos.AT_LEAST_ONCE) // QoS Level 1 (AT_LEAST_ONCE)</span>
+<span class="fc" id="L288">                    .build();</span>
+
+<span class="fc" id="L290">            client.publish(publishMessage).get(200, TimeUnit.MILLISECONDS);</span>
+<span class="nc" id="L291">        } catch (InterruptedException e) {</span>
+<span class="nc" id="L292">            Thread.currentThread().interrupt();</span>
+<span class="nc" id="L293">            throw new MQTTAdapterException(&quot;Publishing interrupted for topic: &quot; + topic, e);</span>
+<span class="fc" id="L294">        } catch (Exception e) {</span>
+<span class="fc" id="L295">            throw new MQTTAdapterException(&quot;Failed to publish message to topic: &quot; + topic, e);</span>
+<span class="fc" id="L296">        }</span>
+<span class="fc" id="L297">    }</span>
+
+    /**
+     * Subscribes to control topics for setting targeted floors and committed
+     *        directions.
+     *
+     *        This function subscribes to the control topics for setting targeted
+     *        floors and committed directions.
+     *        When a message is received on these topics, the corresponding elevator
+     *        is updated with the new targeted floor or committed direction.
+     */
+    private void subscribeToControlTopics() {
+        try {
+<span class="fc bfc" id="L310" title="All 2 branches covered.">            for (int id = 0; id &lt; elevatorSystem.getTotalElevators(); id++) {</span>
+                // Subscribe to the committed direction control topic
+<span class="fc" id="L312">                subscribe(ELEVATOR_TOPIC + id + &quot;/committedDirection&quot;);</span>
+
+                // Subscribe to the target floor control topic
+<span class="fc" id="L315">                subscribe(ELEVATOR_TOPIC + id + &quot;/targetFloor&quot;);</span>
+
+                // Subscribe to the floor services control topics
+<span class="fc bfc" id="L318" title="All 2 branches covered.">                for (int num = 0; num &lt; elevatorSystem.getNumberOfFloors(); num++) {</span>
+<span class="fc" id="L319">                    subscribe(ELEVATOR_TOPIC + id + &quot;/floorService/&quot; + num);</span>
+                }
+            }
+            // Set callback to handle incoming messages
+<span class="fc" id="L323">            client.toAsync().publishes(MqttGlobalPublishFilter.ALL, this::handleIncomingMessage);</span>
+<span class="nc" id="L324">        } catch (Exception e) {</span>
+<span class="nc" id="L325">            throw new RuntimeException(&quot;Error while subscribing to control topics&quot;, e);</span>
+<span class="fc" id="L326">        }</span>
+<span class="fc" id="L327">    }</span>
+    private void subscribe(String topic) {
+        try {
+<span class="fc" id="L330">            client.subscribeWith()</span>
+<span class="fc" id="L331">                  .topicFilter(topic)</span>
+<span class="fc" id="L332">                  .qos(MqttQos.AT_LEAST_ONCE) // QoS Level 1 (AT_LEAST_ONCE)</span>
+<span class="fc" id="L333">                  .send()</span>
+<span class="fc" id="L334">                  .get(pollingInterval, TimeUnit.MILLISECONDS);</span>
+<span class="nc" id="L335">        } catch (InterruptedException e) {</span>
+<span class="nc" id="L336">            Thread.currentThread().interrupt();</span>
+<span class="nc" id="L337">            throw new MQTTAdapterException(&quot;Subscription interrupted for topic: &quot; + topic, e);</span>
+<span class="nc" id="L338">        } catch (Exception e) {</span>
+<span class="nc" id="L339">            throw new MQTTAdapterException(&quot;Failed to subscribe to topic: &quot; + topic, e);</span>
+<span class="fc" id="L340">        }</span>
+<span class="fc" id="L341">    }</span>
+
+    private void handleIncomingMessage(Mqtt5Publish publish){
+<span class="fc" id="L344">        String topic = publish.getTopic().toString();</span>
+<span class="fc" id="L345">        String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);</span>
+
+<span class="fc" id="L347">        log.info(&quot;Received message on topic: {} with payload: {}&quot;, topic, payload);</span>
+
+        try {
+<span class="fc" id="L350">            String[] parts = topic.split(&quot;/&quot;);</span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">            if (topic.contains(&quot;committedDirection&quot;)) {</span>
+<span class="fc" id="L352">                int elevatorNumber = Integer.parseInt(parts[1]);</span>
+<span class="fc" id="L353">                int committedDirection = Integer.parseInt(payload);</span>
+<span class="fc" id="L354">                log.info(ELEVATOR + &quot;{} committed direction: {}&quot;, elevatorNumber, committedDirection);</span>
+<span class="fc" id="L355">                elevatorAPI.setCommittedDirection(elevatorNumber, committedDirection);</span>
+<span class="fc bfc" id="L356" title="All 2 branches covered.">            } else if (topic.contains(&quot;targetFloor&quot;)) {</span>
+<span class="fc" id="L357">                int elevatorNumber = Integer.parseInt(parts[1]);</span>
+<span class="fc" id="L358">                int targetFloor = Integer.parseInt(payload);</span>
+<span class="fc" id="L359">                log.info(ELEVATOR + &quot;{} target floor: {}&quot;, elevatorNumber, targetFloor);</span>
+<span class="fc" id="L360">                elevatorAPI.setTarget(elevatorNumber, targetFloor);</span>
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">            } else if (topic.contains(&quot;floorService&quot;)) {</span>
+<span class="fc" id="L362">                int elevatorNumber = Integer.parseInt(parts[1]);</span>
+<span class="fc" id="L363">                int floorNumber = Integer.parseInt(parts[3]);</span>
+<span class="fc" id="L364">                boolean floorService = Boolean.parseBoolean(payload);</span>
+<span class="fc" id="L365">                log.info(ELEVATOR + &quot;{} floor {} service: {}&quot;, elevatorNumber, floorNumber, floorService);</span>
+<span class="fc" id="L366">                elevatorAPI.setServicesFloors(elevatorNumber, floorNumber, floorService);</span>
+            }
+        } 
+<span class="nc" id="L369">        catch (Exception e) {</span>
+<span class="nc" id="L370">            log.error(&quot;Failed to process message on topic: {} - Error: {}&quot;, topic, e.getMessage());</span>
+<span class="fc" id="L371">        }</span>
+<span class="fc" id="L372">    } </span>
+
+    /**
+     * Connects to broker, subscribes to all control topics,
+     * publishes all retained topics and runs the update loop.
+     * 
+     * @throws MQTTAdapterException When adapter disconnects
+     */
+    public void run() {
+    	try {
+        // Überprüfen, ob der adapter-Client verbunden ist
+<span class="pc bpc" id="L383" title="1 of 2 branches missed.">        if (client.getState() != MqttClientState.CONNECTED) {</span>
+<span class="nc" id="L384">            log.error(&quot;adapter client is not connected.&quot;);</span>
+<span class="nc" id="L385">            return; // Beende die Methode, wenn der adapter-Client nicht verbunden ist</span>
+        }
+        
+<span class="fc" id="L388">        subscribeToControlTopics();</span>
+
+        // Beide Verbindungen sind in Ordnung, also publish die retained topics
+<span class="fc" id="L391">        publishRetainedTopics();</span>
+        
+        // start the scheduler
+<span class="fc" id="L394">        startPublishingElevatorStates();</span>
+<span class="fc" id="L395">        log.info(&quot;adapter Adapter running&quot;);</span>
+<span class="nc" id="L396">    	 } catch (Exception e) {</span>
+<span class="nc" id="L397">             throw new MQTTAdapterException(&quot;Error during adapter adapter operation.&quot;, e);</span>
+<span class="fc" id="L398">         }</span>
+<span class="fc" id="L399">    }</span>
+
+    /**
+     * Publishes the retained (static) building information topics
+     * 
+     * @throws RuntimeException
+     */
+    public void publishRetainedTopics() {
+        String payload;
+        // Sicherstellen, dass der Client verbunden ist
+<span class="pc bpc" id="L409" title="1 of 2 branches missed.">        if (client.getState() != MqttClientState.CONNECTED) {</span>
+<span class="nc" id="L410">            throw new RuntimeException(&quot;adapter client must be connected before publishing messages&quot;);</span>
+        }
+
+        try {
+            // Anzahl der Aufzüge
+<span class="fc" id="L415">            payload = String.valueOf(elevatorSystem.getTotalElevators());</span>
+<span class="fc" id="L416">            Mqtt5Publish publishMessage = Mqtt5Publish.builder()</span>
+<span class="fc" id="L417">                    .topic(INFO_TOPIC + &quot;numberOfElevators&quot;)</span>
+<span class="fc" id="L418">                    .payload(payload.getBytes(StandardCharsets.UTF_8))</span>
+<span class="fc" id="L419">                    .retain(true) // Nachricht als retained markieren</span>
+<span class="fc" id="L420">                    .qos(MqttQos.AT_LEAST_ONCE) // QoS Level 1 (AT_LEAST_ONCE)</span>
+<span class="fc" id="L421">                    .build();</span>
+<span class="fc" id="L422">            client.publish(publishMessage).get(100, TimeUnit.MILLISECONDS);</span>
+            
+
+            // Anzahl der Stockwerke
+<span class="fc" id="L426">            payload = String.valueOf(elevatorSystem.getNumberOfFloors());</span>
+<span class="fc" id="L427">            publishMessage = Mqtt5Publish.builder()</span>
+<span class="fc" id="L428">                    .topic(INFO_TOPIC + &quot;numberOfFloors&quot;)</span>
+<span class="fc" id="L429">                    .payload(payload.getBytes(StandardCharsets.UTF_8))</span>
+<span class="fc" id="L430">                    .retain(true)</span>
+<span class="fc" id="L431">                    .qos(MqttQos.AT_LEAST_ONCE) // QoS Level 1 (AT_LEAST_ONCE)</span>
+<span class="fc" id="L432">                    .build();</span>
+<span class="fc" id="L433">            client.publish(publishMessage).get(100, TimeUnit.MILLISECONDS);</span>
+
+            // Stockwerkhöhe in Fuß
+<span class="fc" id="L436">            payload = String.valueOf(elevatorSystem.getFloorHeight());</span>
+<span class="fc" id="L437">            publishMessage = Mqtt5Publish.builder()</span>
+<span class="fc" id="L438">                    .topic(INFO_TOPIC + &quot;floorHeight/feet&quot;)</span>
+<span class="fc" id="L439">                    .payload(payload.getBytes(StandardCharsets.UTF_8))</span>
+<span class="fc" id="L440">                    .retain(true)</span>
+<span class="fc" id="L441">                    .qos(MqttQos.AT_LEAST_ONCE) // QoS Level 1 (AT_LEAST_ONCE)</span>
+<span class="fc" id="L442">                    .build();</span>
+<span class="fc" id="L443">            client.publish(publishMessage).get(100, TimeUnit.MILLISECONDS);</span>
+<span class="nc" id="L444">        } catch (InterruptedException e) {</span>
+<span class="nc" id="L445">            Thread.currentThread().interrupt(); // Thread-Unterbrechung wiederherstellen</span>
+<span class="nc" id="L446">            throw new RuntimeException(&quot;Thread was interrupted while publishing retained topics&quot;, e);</span>
+<span class="nc" id="L447">        } catch (Exception exc) {</span>
+<span class="nc" id="L448">            throw new RuntimeException(&quot;Error while publishing retained topics: &quot; + exc.getMessage(), exc);</span>
+<span class="fc" id="L449">        }</span>
+<span class="fc" id="L450">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
