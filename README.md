@@ -1,34 +1,37 @@
-# sqelevator-proj
-Group assignment SQElevator
+# Klassendiagramm
 
+![Klassendiagramm](./docu/Elevator.png)
 
-package at.fhhagenberg.sqelevator ist der full qualified name vom IElevator und darf nicht verändert werden.
-im repo ist ein codeexample von Elevator auf sqelevator zu finden.
-wichtig ist, das erst eine neue target, oder committed direction gesetzten werden darf, wenn der elevator die türen geoffnet hat.!!!!
-bei rmiexception, oder nach langer zeit ein timeout ist, dann ist die verbindung abgelaufen. was auch sein kann ist, das der simulator stehen geblieben ist.
+# MQTT-Topics
 
-das elevatorsystem muss nicht zwingend mit mehreren liften funktionieren. es reicht, wenn einer entsprechend des git examples hoch und runterfahren kann, entsprechend seiner ziele.
-aufgrund dessen das Felix nicht macht wurde der elevatoralgorithm vereinfach.
+| **Veröffentlichungshäufigkeit** | **Themen (Topics)**           | **Beschreibung** |
+| --------------------------------------- | ----------------------------------- | ---------------------- |
+| **Regelmäßig (periodisch)**     | `elevator/{id}/currentFloor`      | Aktuelle Etage         |
+|                                         | `elevator/{id}/targetedFloor`     | Ziel-Etage             |
+|                                         | `elevator/{id}/speed`             | Geschwindigkeit        |
+|                                         | `elevator/{id}/weight`            | Gewicht                |
+|                                         | `elevator/{id}/doorState`         | Türstatus             |
+|                                         | `elevator/{id}/button/{floor_id}` | Lift Knopf             |
+|                                         | `floor/{id}/buttonUp`             | Stock Knopf nach oben  |
+|                                         | `floor/{id}/buttonUp`             | Stock Knopf nach unten |
+| **Einmalig (retained)**           | `building/info/numberOfElevators` | Anzahl der Aufzüge    |
+|                                         | `building/info/numberOfFloors`    | Anzahl der Etagen      |
+|                                         | `building/info/floorHeight/feet`  | Etagenhöhe            |
 
-IElevator lässt seinen clocktick abfragen. wenn man immer alles abfragt kann es sein, das unter den calls das rmi interface geupdated wird. hier ist dann wichtig, dass am anfang und ende die clockticks abgefragt werden, dann kann man
-dies überprüfen und darauf reagieren.
+| **ControlTopics** | **Themen (Topics)**           | **Beschreibung** |
+| --------------------------------------- | ----------------------------------- | ---------------------- |
+| **Empfängt**     | `elevator/{id}/committedDirection`      | Fahrtrichtung auf/ab         |
+|                                         | `elevator/{id}/targetedFloor`     | Ziel-Etage             |
+|                                         | `elevator/{id}/floorService/{floor_id}`             | Stockwerk befahrbar        |
 
+# Produkt Qualität
 
-netzwerkverbindungsabbrüche können simuliert werden, indem die elevatorsimulation gestoppt wird und das simulationsfenster (aber nicht das programm) geschlossen wird.
+**Statische Code Analyse:** Durch SonarCloud bei jedem merge auf GitHub
+**Automatisierte Tests:** Durch GitHub Actions
 
-# MQTT-Adapter
-| **Veröffentlichungshäufigkeit** | **Themen (Topics)**                          | **Beschreibung**                      |
-|----------------------------------|---------------------------------------------|---------------------------------------|
-| **Regelmäßig (periodisch)**     | `elevator/{id}/currentFloor`                | Aktuelle Etage                        |
-|                                  | `elevator/{id}/targetedFloor`               | Ziel-Etage                            |
-|                                  | `elevator/{id}/speed`                       | Geschwindigkeit                       |
-|                                  | `elevator/{id}/weight`                      | Gewicht                               |
-|                                  | `elevator/{id}/doorState`                   | Türstatus                             |
-| **Einmalig (retained)**          | `building/info/numberOfElevators`           | Anzahl der Aufzüge                    |
-|                                  | `building/info/numberOfFloors`              | Anzahl der Etagen                     |
-|                                  | `building/info/floorHeight/feet`            | Etagenhöhe                            |
-|                                  | `building/info/systemClockTick`             | System-Takt                           |
-|                                  | `building/info/rmiConnected`                | RMI-Verbindungsstatus                 |
+### Ergebnisse der Automatisierten Tests
+
+![Coverage](./docu/coverage.PNG)
 
 # Installation 
 ## Simulator
