@@ -166,7 +166,7 @@ public class ElevatorMQTTAdapter {
 
     /**
      * Disconnect from adapter Broker
-     * @throws InterruptedException 
+     * @throws InterruptedException When thread is interrupted
      */
     public void disconnect() throws InterruptedException {
         try {

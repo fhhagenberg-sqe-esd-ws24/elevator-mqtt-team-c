@@ -90,7 +90,6 @@ class MQTTAdapterTest {
         lenient().when(elevatorAPI.getFloorButtonUp(anyInt())).thenReturn(Boolean.FALSE);
         lenient().when(elevatorAPI.getServicesFloors(anyInt(), anyInt())).thenReturn(Boolean.FALSE);
       
-        // when(elevatorAPI.getTarget(1)).thenReturn(5);
         lenient().when(elevatorAPI.getClockTick()).thenReturn(1000L);
         lenient().when(elevatorAPI.getCommittedDirection(1)).thenReturn(1);
 
@@ -254,23 +253,15 @@ class MQTTAdapterTest {
                     String topicName = publish.getTopic().toString();
 
                     // Speicherung der empfangenen Werte
-                    if (topicName.equals("elevator/0/currentFloor") || topicName.equals("elevator/1/currentFloor")) {
-                        receivedValues.add(receivedMessage);
-                    } else if (topicName.equals("elevator/0/speed") || topicName.equals("elevator/1/speed")) {
-                        receivedValues.add(receivedMessage);
-                    } else if (topicName.equals("elevator/0/weight") || topicName.equals("elevator/1/weight")) {
-                        receivedValues.add(receivedMessage);
-                    } else if (topicName.equals("elevator/0/doorState") || topicName.equals("elevator/1/doorState")) {
-                        receivedValues.add(receivedMessage);
-                    } else if (topicName.equals("elevator/0/button/0") || topicName.equals("elevator/0/button/1") ||
-                             topicName.equals("elevator/0/button/2") || topicName.equals("elevator/0/button/3") ||
-                             topicName.equals("elevator/1/button/0") || topicName.equals("elevator/1/button/1") ||
-                             topicName.equals("elevator/1/button/2") || topicName.equals("elevator/1/button/3") ||
-                             topicName.equals("floor/0/buttonDown") || topicName.equals("floor/0/buttonUp") ||
-                             topicName.equals("floor/1/buttonDown") || topicName.equals("floor/1/buttonUp") ||
-                             topicName.equals("floor/2/buttonDown") || topicName.equals("floor/2/buttonUp") ||
-                             topicName.equals("floor/3/buttonDown") || topicName.equals("floor/3/buttonUp")) {
-                        receivedValues.add(receivedMessage);
+                    switch (topicName) {
+                        case "elevator/0/currentFloor", "elevator/1/currentFloor", "elevator/0/button/0",
+                             "elevator/0/button/1", "elevator/0/button/2", "elevator/0/button/3", "elevator/1/button/0",
+                             "elevator/1/button/1", "elevator/1/button/2", "elevator/1/button/3", "floor/0/buttonDown",
+                             "floor/0/buttonUp", "floor/1/buttonDown", "floor/1/buttonUp", "floor/2/buttonDown",
+                             "floor/2/buttonUp", "floor/3/buttonDown", "floor/3/buttonUp", "elevator/0/speed",
+                             "elevator/1/speed", "elevator/0/weight", "elevator/1/weight", "elevator/0/doorState",
+                             "elevator/1/doorState" ->
+                                receivedValues.add(receivedMessage);
                     }
                 })
                 .send()

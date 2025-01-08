@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: at.wielander.elevator.Model.MQTTAdapterTest
 -------------------------------------------------------------------------------
-Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 17.59 s -- in at.wielander.elevator.Model.MQTTAdapterTest
+Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 17.77 s -- in at.wielander.elevator.Model.MQTTAdapterTest

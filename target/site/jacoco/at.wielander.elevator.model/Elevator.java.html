@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Elevator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">elevator-simulator-team-c</a> &gt; <a href="index.source.html" class="el_package">at.wielander.elevator.model</a> &gt; <span class="el_source">Elevator.java</span></div><h1>Elevator.java</h1><pre class="source lang-java linenums">package at.wielander.elevator.model;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sqelevator.IElevator;
 
 import java.rmi.RemoteException;
@@ -55,6 +57,7 @@ public class Elevator {
 
     /** Constant state variable for the initial capacity in lbs */
     private static final int INITIAL_WEIGHT = 0;
+<span class="fc" id="L60">    private static final Logger log = LoggerFactory.getLogger(Elevator.class);</span>
 
     /** Variable for the direction of the elevator */
     private int commitedDirection;
@@ -106,30 +109,30 @@ public class Elevator {
     public Elevator(ArrayList&lt;Boolean&gt; serviceableFloors,
             int capacity,
             IElevator elevatorAPI,
-<span class="fc" id="L109">            int elevatorNumber) {</span>
-<span class="pc bpc" id="L110" title="2 of 4 branches missed.">        if (serviceableFloors == null || capacity &lt;= 0) {</span>
-<span class="nc" id="L111">            throw new IllegalArgumentException(&quot;Invalid Arguments&quot;);</span>
+<span class="fc" id="L112">            int elevatorNumber) {</span>
+<span class="pc bpc" id="L113" title="2 of 4 branches missed.">        if (serviceableFloors == null || capacity &lt;= 0) {</span>
+<span class="nc" id="L114">            throw new IllegalArgumentException(&quot;Invalid Arguments&quot;);</span>
         }
 
-<span class="fc" id="L114">        this.commitedDirection = IElevator.ELEVATOR_DIRECTION_UNCOMMITTED;</span>
-<span class="fc" id="L115">        this.doorStatus = IElevator.ELEVATOR_DOORS_CLOSED;</span>
-<span class="fc" id="L116">        this.acceleration = INITIAL_ACCELERATION;</span>
-<span class="fc" id="L117">        this.speed = INITIAL_SPEED;</span>
-<span class="fc" id="L118">        this.weight = INITIAL_WEIGHT;</span>
-<span class="fc" id="L119">        this.position = GROUND_FLOOR;</span>
-<span class="fc" id="L120">        this.targetedFloor = GROUND_FLOOR;</span>
-<span class="fc" id="L121">        this.currentFloor = GROUND_FLOOR;</span>
-<span class="fc" id="L122">        this.buttons = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L123">        this.serviceableFloors = serviceableFloors;</span>
-<span class="fc" id="L124">        this.capacity = capacity;</span>
-<span class="fc" id="L125">        this.elevatorNumber = elevatorNumber;</span>
-<span class="fc" id="L126">        this.elevatorAPI = elevatorAPI;</span>
+<span class="fc" id="L117">        this.commitedDirection = IElevator.ELEVATOR_DIRECTION_UNCOMMITTED;</span>
+<span class="fc" id="L118">        this.doorStatus = IElevator.ELEVATOR_DOORS_CLOSED;</span>
+<span class="fc" id="L119">        this.acceleration = INITIAL_ACCELERATION;</span>
+<span class="fc" id="L120">        this.speed = INITIAL_SPEED;</span>
+<span class="fc" id="L121">        this.weight = INITIAL_WEIGHT;</span>
+<span class="fc" id="L122">        this.position = GROUND_FLOOR;</span>
+<span class="fc" id="L123">        this.targetedFloor = GROUND_FLOOR;</span>
+<span class="fc" id="L124">        this.currentFloor = GROUND_FLOOR;</span>
+<span class="fc" id="L125">        this.buttons = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L126">        this.serviceableFloors = serviceableFloors;</span>
+<span class="fc" id="L127">        this.capacity = capacity;</span>
+<span class="fc" id="L128">        this.elevatorNumber = elevatorNumber;</span>
+<span class="fc" id="L129">        this.elevatorAPI = elevatorAPI;</span>
 
         // set all buttons to false within the serviceable floor range
-<span class="fc bfc" id="L129" title="All 2 branches covered.">        for (int id = 0; id &lt; serviceableFloors.size(); id++) {</span>
-<span class="fc" id="L130">            this.buttons.add(false);</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        for (int id = 0; id &lt; serviceableFloors.size(); id++) {</span>
+<span class="fc" id="L133">            this.buttons.add(false);</span>
         }
-<span class="fc" id="L132">    }</span>
+<span class="fc" id="L135">    }</span>
 
     /**
      * Direction in which the elevator in currently moving towards
@@ -137,7 +140,7 @@ public class Elevator {
      * @return Direction of current elevator
      */
     public int getCommitedDirection() {
-<span class="fc" id="L140">        return commitedDirection;</span>
+<span class="fc" id="L143">        return commitedDirection;</span>
     }
 
     /**
@@ -146,8 +149,8 @@ public class Elevator {
      * @param committedDirection Sets the direction (UP/ DOWN /UNCOMMITTED)
      */
     public void setCommittedDirection(int committedDirection) {
-<span class="fc" id="L149">        this.commitedDirection = committedDirection;</span>
-<span class="fc" id="L150">    }</span>
+<span class="fc" id="L152">        this.commitedDirection = committedDirection;</span>
+<span class="fc" id="L153">    }</span>
 
     /**
      * Current acceleration of the lift in ft/s²
@@ -155,7 +158,7 @@ public class Elevator {
      * @return acceleration of the elevator in ft/s²
      */
     public int getAcceleration() {
-<span class="fc" id="L158">        return acceleration;</span>
+<span class="fc" id="L161">        return acceleration;</span>
     }
 
     /**
@@ -165,7 +168,7 @@ public class Elevator {
      *         FALSE)
      */
     public ArrayList&lt;Boolean&gt; getButtonsInElevatorStatus() {
-<span class="fc" id="L168">        return buttons;</span>
+<span class="fc" id="L171">        return buttons;</span>
     }
 
     /**
@@ -174,7 +177,7 @@ public class Elevator {
      * @return current state of the doors(OPEN = 1 / CLOSED / OPENING / CLOSING)
      */
     public int getElevatorDoorStatus() {
-<span class="fc" id="L177">        return doorStatus;</span>
+<span class="fc" id="L180">        return doorStatus;</span>
     }
 
     /**
@@ -183,7 +186,7 @@ public class Elevator {
      * @return current floor of the elevator
      */
     public int getCurrentFloor() {
-<span class="fc" id="L186">        return currentFloor;</span>
+<span class="fc" id="L189">        return currentFloor;</span>
     }
 
     /**
@@ -193,7 +196,7 @@ public class Elevator {
      *         serviced
      */
     public int getCurrentPosition() {
-<span class="fc" id="L196">        return position;</span>
+<span class="fc" id="L199">        return position;</span>
     }
 
     /**
@@ -202,7 +205,7 @@ public class Elevator {
      * @return speed of the elevator in ft/s
      */
     public int getCurrentSpeed() {
-<span class="fc" id="L205">        return speed;</span>
+<span class="fc" id="L208">        return speed;</span>
     }
 
     /**
@@ -211,7 +214,7 @@ public class Elevator {
      * @return The current weight of the passengers in lbs
      */
     public int getCurrentWeight() {
-<span class="fc" id="L214">        return weight;</span>
+<span class="fc" id="L217">        return weight;</span>
     }
 
     /**
@@ -220,7 +223,7 @@ public class Elevator {
      * @return returns the maximum load the elevator can handle in lbs
      */
     public int getElevatorCapacity() {
-<span class="fc" id="L223">        return capacity;</span>
+<span class="fc" id="L226">        return capacity;</span>
     }
 
     /**
@@ -229,7 +232,7 @@ public class Elevator {
      * @return Floors as an integer mapped to a logical state (TRUE / FALSE)
      */
     public ArrayList&lt;Boolean&gt; getServiceableFloors() {
-<span class="fc" id="L232">        return serviceableFloors;</span>
+<span class="fc" id="L235">        return serviceableFloors;</span>
     }
 
     /**
@@ -240,8 +243,8 @@ public class Elevator {
      *                FALSE)
      */
     public void setServiceableFloors(int floor, boolean service) {
-<span class="fc" id="L243">        this.serviceableFloors.set(floor, service);</span>
-<span class="fc" id="L244">    }</span>
+<span class="fc" id="L246">        this.serviceableFloors.set(floor, service);</span>
+<span class="fc" id="L247">    }</span>
 
     /**
      * Current targeted floor
@@ -249,7 +252,7 @@ public class Elevator {
      * @return current targeted floors
      */
     public int getTargetedFloor() {
-<span class="fc" id="L252">        return targetedFloor;</span>
+<span class="fc" id="L255">        return targetedFloor;</span>
     }
 
     /**
@@ -258,49 +261,49 @@ public class Elevator {
      * @param targetedFloor Sets the current targeted floor as integer
      */
     public void setTargetedFloor(int targetedFloor) {
-<span class="fc" id="L261">        this.targetedFloor = targetedFloor;</span>
-<span class="fc" id="L262">    }</span>
+<span class="fc" id="L264">        this.targetedFloor = targetedFloor;</span>
+<span class="fc" id="L265">    }</span>
 
     /**
      * Updates elevator based on current states
      */
     public void update() {
         try {
-<span class="fc" id="L269">            this.currentFloor = elevatorAPI.getElevatorFloor(elevatorNumber);</span>
-<span class="fc" id="L270">            this.targetedFloor = elevatorAPI.getTarget(elevatorNumber);</span>
-<span class="fc" id="L271">            this.position = elevatorAPI.getElevatorPosition(elevatorNumber);</span>
-<span class="fc" id="L272">            this.speed = elevatorAPI.getElevatorSpeed(elevatorNumber);</span>
-<span class="fc" id="L273">            this.acceleration = elevatorAPI.getElevatorAccel(elevatorNumber);</span>
-<span class="fc" id="L274">            this.weight = elevatorAPI.getElevatorWeight(elevatorNumber);</span>
-<span class="fc" id="L275">            this.doorStatus = elevatorAPI.getElevatorDoorStatus(elevatorNumber);</span>
-<span class="fc" id="L276">            this.commitedDirection = elevatorAPI.getCommittedDirection(elevatorNumber);</span>
-<span class="fc bfc" id="L277" title="All 2 branches covered.">            for (int floor = 0; floor &lt; buttons.size(); floor++) {</span>
-<span class="fc" id="L278">                buttons.set(floor, elevatorAPI.getElevatorButton(elevatorNumber, floor));</span>
+<span class="fc" id="L272">            this.currentFloor = elevatorAPI.getElevatorFloor(elevatorNumber);</span>
+<span class="fc" id="L273">            this.targetedFloor = elevatorAPI.getTarget(elevatorNumber);</span>
+<span class="fc" id="L274">            this.position = elevatorAPI.getElevatorPosition(elevatorNumber);</span>
+<span class="fc" id="L275">            this.speed = elevatorAPI.getElevatorSpeed(elevatorNumber);</span>
+<span class="fc" id="L276">            this.acceleration = elevatorAPI.getElevatorAccel(elevatorNumber);</span>
+<span class="fc" id="L277">            this.weight = elevatorAPI.getElevatorWeight(elevatorNumber);</span>
+<span class="fc" id="L278">            this.doorStatus = elevatorAPI.getElevatorDoorStatus(elevatorNumber);</span>
+<span class="fc" id="L279">            this.commitedDirection = elevatorAPI.getCommittedDirection(elevatorNumber);</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">            for (int floor = 0; floor &lt; buttons.size(); floor++) {</span>
+<span class="fc" id="L281">                buttons.set(floor, elevatorAPI.getElevatorButton(elevatorNumber, floor));</span>
             }
 
-<span class="nc" id="L281">        } catch (RemoteException e) {</span>
-<span class="nc" id="L282">            System.out.println(&quot;RemoteException: &quot; + e.getMessage());</span>
-<span class="fc" id="L283">        }</span>
-<span class="fc" id="L284">    }</span>
+<span class="nc" id="L284">        } catch (RemoteException e) {</span>
+<span class="nc" id="L285">            log.info(&quot;RemoteException: {}&quot;, e.getMessage());</span>
+<span class="fc" id="L286">        }</span>
+<span class="fc" id="L287">    }</span>
     
     protected Elevator copy() {
         // Erstellen einer neuen ArrayList für die serviceableFloors und Buttons
-<span class="fc" id="L288">        ArrayList&lt;Boolean&gt; copiedServiceableFloors = new ArrayList&lt;&gt;(this.serviceableFloors);</span>
+<span class="fc" id="L291">        ArrayList&lt;Boolean&gt; copiedServiceableFloors = new ArrayList&lt;&gt;(this.serviceableFloors);</span>
 
         // Erstellen einer neuen Elevator-Instanz mit den gleichen Attributen
-<span class="fc" id="L291">        Elevator copiedElevator = new Elevator(copiedServiceableFloors, this.capacity, this.elevatorAPI, this.elevatorNumber);</span>
+<span class="fc" id="L294">        Elevator copiedElevator = new Elevator(copiedServiceableFloors, this.capacity, this.elevatorAPI, this.elevatorNumber);</span>
 
         // Setzen der restlichen Felder
-<span class="fc" id="L294">        copiedElevator.setCommittedDirection(this.commitedDirection);</span>
-<span class="fc" id="L295">        copiedElevator.doorStatus = this.doorStatus;</span>
-<span class="fc" id="L296">        copiedElevator.acceleration = this.acceleration;</span>
-<span class="fc" id="L297">        copiedElevator.speed = this.speed;</span>
-<span class="fc" id="L298">        copiedElevator.position = this.position;</span>
-<span class="fc" id="L299">        copiedElevator.weight = this.weight;</span>
-<span class="fc" id="L300">        copiedElevator.targetedFloor = this.targetedFloor;</span>
-<span class="fc" id="L301">        copiedElevator.currentFloor = this.currentFloor;</span>
+<span class="fc" id="L297">        copiedElevator.setCommittedDirection(this.commitedDirection);</span>
+<span class="fc" id="L298">        copiedElevator.doorStatus = this.doorStatus;</span>
+<span class="fc" id="L299">        copiedElevator.acceleration = this.acceleration;</span>
+<span class="fc" id="L300">        copiedElevator.speed = this.speed;</span>
+<span class="fc" id="L301">        copiedElevator.position = this.position;</span>
+<span class="fc" id="L302">        copiedElevator.weight = this.weight;</span>
+<span class="fc" id="L303">        copiedElevator.targetedFloor = this.targetedFloor;</span>
+<span class="fc" id="L304">        copiedElevator.currentFloor = this.currentFloor;</span>
 
-<span class="fc" id="L303">        return copiedElevator;</span>
+<span class="fc" id="L306">        return copiedElevator;</span>
     }
 
 }

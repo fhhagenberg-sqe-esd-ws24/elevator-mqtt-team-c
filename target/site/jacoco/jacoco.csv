@@ -1,6 +1,6 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
 elevator-simulator-team-c,at.wielander.elevator.model,ElevatorSystem,41,326,5,15,9,56,9,27,4,22
-elevator-simulator-team-c,at.wielander.elevator.model,Elevator,11,240,2,6,3,58,2,19,0,17
+elevator-simulator-team-c,at.wielander.elevator.model,Elevator,11,244,2,6,3,59,2,20,0,18
 elevator-simulator-team-c,at.wielander.elevator.helpers,ElevatorCommittedDirection,0,60,0,4,0,11,0,5,0,3
 elevator-simulator-team-c,at.wielander.elevator.helpers,ElevatorDoorState,0,67,0,4,0,12,0,5,0,3
 elevator-simulator-team-c,at.wielander.elevator.exception,MQTTClientException,0,5,0,0,0,2,0,1,0,1

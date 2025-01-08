@@ -95,6 +95,8 @@ class ElevatorSystemTest {
 
         @Test
         void testElevatorDoorStatus() throws RemoteException {
+
+
                 when(mockIElevator.getElevatorDoorStatus(anyInt()))
                                 .thenReturn(1, 2, 3, 4);
 
@@ -108,6 +110,7 @@ class ElevatorSystemTest {
 
         @Test
         void testGetElevatorPosition() throws RemoteException {
+
 
                 when(mockIElevator.getElevatorPosition(0))
                                 .thenReturn(1);
@@ -124,7 +127,7 @@ class ElevatorSystemTest {
 
         @Test
         void testServicesFloors() throws RemoteException {
-                ElevatorSystem elevatorSystem = new ElevatorSystem(
+                 elevatorSystem = new ElevatorSystem(
                                 2,
                                 0,
                                 4,
@@ -150,7 +153,7 @@ class ElevatorSystemTest {
 
         @Test
         void testGetELElevatorFloor() throws RemoteException {
-                ElevatorSystem elevatorSystem = new ElevatorSystem(
+                 elevatorSystem = new ElevatorSystem(
                                 3,
                                 0,
                                 4,
@@ -179,7 +182,7 @@ class ElevatorSystemTest {
 
         @Test
         void testSetTargetFloor() throws RemoteException {
-                ElevatorSystem elevatorSystem = new ElevatorSystem(
+                 elevatorSystem = new ElevatorSystem(
                                 3,
                                 0,
                                 4,
@@ -210,7 +213,7 @@ class ElevatorSystemTest {
 
         @Test
         void testGetFloorHeight() throws RemoteException {
-                ElevatorSystem elevatorSystem = new ElevatorSystem(
+                 elevatorSystem = new ElevatorSystem(
                                 3,
                                 0,
                                 4,
@@ -224,7 +227,7 @@ class ElevatorSystemTest {
 
         @Test
         void testGetFloorNum() throws RemoteException {
-                ElevatorSystem elevatorSystem = new ElevatorSystem(
+                 elevatorSystem = new ElevatorSystem(
                                 3,
                                 0,
                                 4,
@@ -238,7 +241,7 @@ class ElevatorSystemTest {
 
         @Test
         void testGetCurrentSpeed() throws RemoteException {
-                ElevatorSystem elevatorSystem = new ElevatorSystem(
+                 elevatorSystem = new ElevatorSystem(
                                 3,
                                 0,
                                 4,
@@ -272,7 +275,7 @@ class ElevatorSystemTest {
 
         @Test
         void testGetElevatorWeight() throws RemoteException {
-                ElevatorSystem elevatorSystem = new ElevatorSystem(
+                 elevatorSystem = new ElevatorSystem(
                                 3,
                                 0,
                                 4,
@@ -308,7 +311,7 @@ class ElevatorSystemTest {
 
         @Test
         void testGetElevatorCapacity() throws RemoteException {
-                ElevatorSystem elevatorSystem = new ElevatorSystem(
+                 elevatorSystem = new ElevatorSystem(
                                 3,
                                 0,
                                 4,
@@ -329,7 +332,7 @@ class ElevatorSystemTest {
 
         @Test
         void testGetFloorButtonDown() throws RemoteException {
-                ElevatorSystem elevatorSystem = new ElevatorSystem(
+                 elevatorSystem = new ElevatorSystem(
                                 3,
                                 0,
                                 4,
@@ -368,7 +371,7 @@ class ElevatorSystemTest {
 
         @Test
         void testGetFloorButtonUp() throws RemoteException {
-                ElevatorSystem elevatorSystem = new ElevatorSystem(
+                 elevatorSystem = new ElevatorSystem(
                                 3,
                                 0,
                                 4,
@@ -408,7 +411,7 @@ class ElevatorSystemTest {
 
         @Test
         void testSetServicesFloors() throws RemoteException {
-                ElevatorSystem elevatorSystem = new ElevatorSystem(
+                elevatorSystem = new ElevatorSystem(
                                 2,
                                 0,
                                 2,
@@ -424,7 +427,7 @@ class ElevatorSystemTest {
 
         @Test
         void testSetTarget() throws RemoteException {
-                ElevatorSystem elevatorSystem = new ElevatorSystem(
+                elevatorSystem = new ElevatorSystem(
                                 3,
                                 0,
                                 4,
