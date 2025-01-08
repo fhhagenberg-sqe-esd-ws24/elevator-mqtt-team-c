@@ -7,14 +7,14 @@
 
     <groupId>at.fhhagenberg.sqelevator</groupId>
     <artifactId>mqtt-elevator-team-c</artifactId>
-    <version>1.0</version>
+    <version>1.0.1</version>
     <name>elevator-simulator-team-c</name>
 
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <sonar.organization>fhhagenberg-sqe-esd-ws24</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
@@ -57,14 +57,14 @@
         </dependency>
 
 
-        <!-- Eclipse Paho MQTT -->
+        <!-- Eclipse Paho adapter -->
         <dependency>
             <groupId>org.eclipse.paho</groupId>
             <artifactId>org.eclipse.paho.mqttv5.client</artifactId>
             <version>1.2.5</version>
         </dependency>
 
-        <!-- HiveMQ MQTT Client -->
+        <!-- HiveMQ adapter Client -->
         <dependency>
             <groupId>com.hivemq</groupId>
             <artifactId>hivemq-mqtt-client</artifactId>
@@ -187,7 +187,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>at.wielander.elevator.Algorithm.ElevatorAlgorithm</mainClass>
+                            <mainClass>at.wielander.elevator.algorithm.ElevatorAlgorithm</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -218,9 +218,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
-                    <compilerArgs>--enable-preview</compilerArgs>
+                    <source>17</source>
+                    <target>17</target>
                 </configuration>
             </plugin>
         </plugins>

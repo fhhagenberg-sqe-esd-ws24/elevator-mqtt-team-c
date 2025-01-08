@@ -1,4 +1,4 @@
-package at.wielander.elevator.Model;
+package at.wielander.elevator.model;
 
 import sqelevator.IElevator;
 

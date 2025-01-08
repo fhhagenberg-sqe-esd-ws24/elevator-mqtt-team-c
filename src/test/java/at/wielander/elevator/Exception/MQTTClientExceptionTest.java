@@ -1,5 +1,6 @@
 package at.wielander.elevator.Exception;
 
+import at.wielander.elevator.exception.MQTTClientException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -7,11 +8,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class MQTTClientExceptionTest {
 
     @Test
-    public void testMQTTClientException() {
+    void testMQTTClientException() {
         Throwable throwable = new IllegalArgumentException("Invalid argument");
-        MQTTClientException exception = new MQTTClientException("MQTT Client Exception Thrown", throwable);
+        MQTTClientException exception = new MQTTClientException("adapter Client Exception Thrown", throwable);
 
-        assertEquals("MQTT Client Exception Thrown", exception.getMessage());
+        assertEquals("adapter Client Exception Thrown", exception.getMessage());
         assertEquals(throwable, exception.getCause());
         assertInstanceOf(IllegalArgumentException.class, exception.getCause());
         assertEquals("Invalid argument", exception.getCause().getMessage());

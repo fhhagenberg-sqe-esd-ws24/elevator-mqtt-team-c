@@ -1,5 +1,6 @@
 package at.wielander.elevator.Helpers;
 
+import at.wielander.elevator.helpers.ElevatorCommittedDirection;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

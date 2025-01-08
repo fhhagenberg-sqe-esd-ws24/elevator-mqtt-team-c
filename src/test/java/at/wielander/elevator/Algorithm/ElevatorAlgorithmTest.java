@@ -1,7 +1,8 @@
 package at.wielander.elevator.Algorithm;
 
-import at.wielander.elevator.MQTT.ElevatorMQTTAdapter;
-import at.wielander.elevator.Model.ElevatorSystem;
+import at.wielander.elevator.adapter.ElevatorMQTTAdapter;
+import at.wielander.elevator.model.ElevatorSystem;
+import at.wielander.elevator.algorithm.ElevatorAlgorithm;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import org.junit.jupiter.api.AfterEach;
@@ -66,7 +67,7 @@ class ElevatorAlgorithmTest {
                 mockElevatorAPI // Pass the mocked interface
         );
 
-        // Create the MQTT adapter
+        // Create the adapter adapter
         mqttAdapter = new ElevatorMQTTAdapter(
                 elevatorSystem,
                 Host,

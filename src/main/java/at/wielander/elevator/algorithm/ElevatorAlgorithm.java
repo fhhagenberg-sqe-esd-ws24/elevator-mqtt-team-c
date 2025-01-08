@@ -1,8 +1,8 @@
-package at.wielander.elevator.Algorithm;
+package at.wielander.elevator.algorithm;
 
-import at.wielander.elevator.Exception.MQTTClientException;
-import at.wielander.elevator.MQTT.ElevatorMQTTAdapter;
-import at.wielander.elevator.Model.ElevatorSystem;
+import at.wielander.elevator.exception.MQTTClientException;
+import at.wielander.elevator.adapter.ElevatorMQTTAdapter;
+import at.wielander.elevator.model.ElevatorSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sqelevator.IElevator;
@@ -49,7 +49,7 @@ public class ElevatorAlgorithm {
     public static void main(String[] args) throws InterruptedException {
         ElevatorAlgorithm algorithm = new ElevatorAlgorithm();
         String brokerHost = "tcp://localhost:1883"; // Lokaler Mosquitto Broker
-        log.info("Connecting to MQTT Broker at: {}", brokerHost);
+        log.info("Connecting to adapter Broker at: {}", brokerHost);
 
         try {
             // RMI setup
@@ -67,19 +67,19 @@ public class ElevatorAlgorithm {
                     controller // RMI-Controller
             );
 
-            // Create the MQTT Adapter
+            // Create the adapter Adapter
             algorithm.eMQTTAdapter = new ElevatorMQTTAdapter(
                     algorithm.eSystem,// Elevator System
-                    brokerHost,       // MQTT Broker Host
+                    brokerHost,       // adapter Broker Host
                     "mqttAdapter",    // Client ID
                     50,              // Polling Interval (ms)
                     controller        // RMI-Controller
             );
 
-            // Connect MQTT Adapter to the Broker
+            // Connect adapter Adapter to the Broker
             algorithm.eMQTTAdapter.connect();
 
-            // Connect to MQTT Broker
+            // Connect to adapter Broker
             algorithm.mqttClient = MqttClient.builder()
                     .useMqttVersion5()
                     .serverHost("localhost")
@@ -135,9 +135,9 @@ public class ElevatorAlgorithm {
 
             algorithm.mqttClient.connect().whenComplete((ack, throwable) -> {
                 if (throwable == null) {
-                    System.out.println("Connected to MQTT broker");
+                    log.info("Connected to adapter broker");
                 } else {
-                    log.error("Failed to connect to MQTT broker: {}", throwable.getMessage());
+                    log.error("Failed to connect to adapter broker: {}", throwable.getMessage());
                 }
             });
 
@@ -194,7 +194,7 @@ public class ElevatorAlgorithm {
                 try {
                     String elevatorButtonTopic = ELEVATOR_TOPIC + elevatorId + BUTTON_TOPIC + floorId;
                     algorithm.mqttClient.subscribeWith().topicFilter(elevatorButtonTopic).qos(MqttQos.AT_LEAST_ONCE).send();
-                } catch (Exception e) {
+                } catch (MQTTClientException e) {
                     log.error("Failed to subscribe to elevator button topic for elevator {} and floor {}: {}", elevatorId, floorId, e.getMessage());
                 }
             }
@@ -226,7 +226,7 @@ public class ElevatorAlgorithm {
                     // Set target floor based on inside button press
                     setElevatorTargetFloor(Integer.parseInt(parts[1]), requestedFloor, algorithm);
                 }
-            } catch (Exception e) {
+            } catch (MQTTClientException e) {
                 log.error("Error processing message: {}", e.getMessage());
             }
         });
@@ -251,27 +251,27 @@ public class ElevatorAlgorithm {
                     .send();
 
             // Wait for elevator to reach the target floor
-            waitForElevatorToReachTarget(ElevatorAlgorithm.TOTAL_ELEVATORS, floorRequested, algorithm, sleepTime);
+            waitForElevatorToReachTarget(floorRequested, algorithm, sleepTime);
         } catch (Exception e) {
             log.error("Error while moving elevator: {}", e.getMessage());
         }
     }
 
     // Optimized method to wait for elevator to reach the target floor
-    private void waitForElevatorToReachTarget(int elevator, int floorRequested, ElevatorAlgorithm algorithm, int sleepTime) throws InterruptedException {
-        while (Integer.parseInt(algorithm.liveMessages.getOrDefault(ELEVATOR_TOPIC + elevator + CURRENT_FLOOR_TOPIC, "-1")) != floorRequested
-                || Integer.parseInt(algorithm.liveMessages.getOrDefault(ELEVATOR_TOPIC + elevator + SPEED_TOPIC, "1")) > LOWEST_FLOOR) {
+    private void waitForElevatorToReachTarget(int floorRequested, ElevatorAlgorithm algorithm, int sleepTime) throws InterruptedException {
+        while (Integer.parseInt(algorithm.liveMessages.getOrDefault(ELEVATOR_TOPIC + ElevatorAlgorithm.TOTAL_ELEVATORS + CURRENT_FLOOR_TOPIC, "-1")) != floorRequested
+                || Integer.parseInt(algorithm.liveMessages.getOrDefault(ELEVATOR_TOPIC + ElevatorAlgorithm.TOTAL_ELEVATORS + SPEED_TOPIC, "1")) > LOWEST_FLOOR) {
             Thread.sleep(sleepTime);
         }
 
         // Wait for doors to open
-        while (!"1".equals(algorithm.liveMessages.getOrDefault(ELEVATOR_TOPIC + elevator + DOOR_STATE_TOPIC, ""))) {
+        while (!"1".equals(algorithm.liveMessages.getOrDefault(ELEVATOR_TOPIC + ElevatorAlgorithm.TOTAL_ELEVATORS + DOOR_STATE_TOPIC, ""))) {
             Thread.sleep(sleepTime);
         }
 
         // Set committed direction to UNCOMMITTED after reaching the target
         algorithm.mqttClient.publishWith()
-                .topic(ELEVATOR_TOPIC + elevator + COMMITTED_DIRECTION_TOPIC)
+                .topic(ELEVATOR_TOPIC + ElevatorAlgorithm.TOTAL_ELEVATORS + COMMITTED_DIRECTION_TOPIC)
                 .payload("0".getBytes(StandardCharsets.UTF_8)) // 0 for UNCOMMITTED
                 .send();
     }
@@ -284,7 +284,7 @@ public class ElevatorAlgorithm {
                     .topic(targetTopic)
                     .payload(Integer.toString(floorRequested).getBytes(StandardCharsets.UTF_8))
                     .send();
-        } catch (Exception e) {
+        } catch (MQTTClientException e) {
             log.error("Failed to set target floor for elevator {}: {}", elevatorId, e.getMessage());
         }
     }

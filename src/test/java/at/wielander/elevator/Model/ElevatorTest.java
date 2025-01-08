@@ -1,5 +1,6 @@
 package at.wielander.elevator.Model;
 
+import at.wielander.elevator.model.Elevator;
 import sqelevator.IElevator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
