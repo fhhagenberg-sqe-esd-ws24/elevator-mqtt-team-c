@@ -54,4 +54,8 @@ Das Java JAR Datei befindet sich in dem selben Ordner und kann mit dem folgenden
 java -jar ElevatorSimulator/mqtt-elevator-team-c-1.0-jar-with-dependencies.jar
 ```
 
+# Klassendiagram
+
+![alt text](image.png)
+
 
