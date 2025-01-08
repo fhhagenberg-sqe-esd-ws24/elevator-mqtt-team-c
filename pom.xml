@@ -7,7 +7,7 @@
 
     <groupId>at.fhhagenberg.sqelevator</groupId>
     <artifactId>mqtt-elevator-team-c</artifactId>
-    <version>1.0</version>
+    <version>1.0.1</version>
     <name>elevator-simulator-team-c</name>
 
 
