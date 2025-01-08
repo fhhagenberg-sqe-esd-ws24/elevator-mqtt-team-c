@@ -185,6 +185,11 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
+                    <archive>
+                        <manifest>
+                            <mainClass>at.wielander.elevator.Algorithm.ElevatorAlgorithm</mainClass>
+                        </manifest>
+                    </archive>
                 </configuration>
                 <executions>
                     <execution>
@@ -194,7 +199,6 @@
                             <goal>single</goal>
                         </goals>
                     </execution>
-
                 </executions>
             </plugin>
 
@@ -216,7 +220,6 @@
                 <configuration>
                     <source>21</source>
                     <target>21</target>
-                    <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
             </plugin>
         </plugins>

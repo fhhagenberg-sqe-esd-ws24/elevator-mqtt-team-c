@@ -30,3 +30,5 @@ netzwerkverbindungsabbrüche können simuliert werden, indem die elevatorsimulat
 |                                  | `building/info/systemClockTick`             | System-Takt                           |
 |                                  | `building/info/rmiConnected`                | RMI-Verbindungsstatus                 |
 
+# Simulator
+

@@ -16,7 +16,7 @@ public enum ElevatorDoorState {
      * Set the elevator Door state
      * @param value Index value
      */
-    private ElevatorDoorState(int value) {
+    ElevatorDoorState(int value) {
         this.value = value;
     }
 
@@ -30,6 +30,7 @@ public enum ElevatorDoorState {
                 return doorState;
             }
         }
-        throw new IllegalArgumentException("Invalid door state value: " + value);    }
+        throw new IllegalArgumentException("Invalid door state value: " + value);
+    }
 }
 
