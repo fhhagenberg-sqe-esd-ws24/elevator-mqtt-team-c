@@ -50,20 +50,20 @@ class MQTTAdapterTest {
   
     private ElevatorSystem elevatorSystem;
 
-    private ElevatorMQTTAdapter MQTTAdapter;
+    private ElevatorMQTTAdapter mqttAdapter;
 
     private Mqtt5BlockingClient testClient;
 
-    private String Host;
+    private String host;
 
     @BeforeEach
     public void setup() throws RemoteException {
 
         hivemqCe.start();
 
-        Host = "tcp://" + hivemqCe.getHost() + ":" + hivemqCe.getMappedPort(1883);
+        host = "tcp://" + hivemqCe.getHost() + ":" + hivemqCe.getMappedPort(1883);
 
-        log.info("Host addresse: {}", Host);
+        log.info("Host addresse: {}", host);
         testClient = Mqtt5Client.builder()
                 .identifier("testClient")
                 .serverPort(hivemqCe.getMappedPort(1883)) // Verwenden Sie den dynamisch gemappten Port
@@ -105,16 +105,16 @@ class MQTTAdapterTest {
         );
 
         // Create the adapter adapter
-        MQTTAdapter = new ElevatorMQTTAdapter(
+        mqttAdapter = new ElevatorMQTTAdapter(
                 elevatorSystem,
-                Host,
+                host,
                 "mqttAdapter", 250, elevatorAPI);
 
     }
 
     @AfterEach
     public void tearDown() throws InterruptedException {
-    	MQTTAdapter.disconnect();
+    	mqttAdapter.disconnect();
     	testClient.disconnect();
         hivemqCe.stop();
     }
@@ -129,20 +129,20 @@ class MQTTAdapterTest {
     @Test
     void testConnect() {
         assertDoesNotThrow(() -> {
-            MQTTAdapter.connect();
-            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "adapter client should be connected.");
+            mqttAdapter.connect();
+            assertEquals(MqttClientState.CONNECTED, mqttAdapter.getClientState(), "adapter client should be connected.");
         });
     }
 
     @Test
     void testDisconnect() {
         assertDoesNotThrow(() -> {
-            MQTTAdapter.connect();
-            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "adapter client should be connected.");
+            mqttAdapter.connect();
+            assertEquals(MqttClientState.CONNECTED, mqttAdapter.getClientState(), "adapter client should be connected.");
 
             // Disconnect
-            MQTTAdapter.disconnect();
-            assertNotEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "adapter client should be disconnected.");
+            mqttAdapter.disconnect();
+            assertNotEquals(MqttClientState.CONNECTED, mqttAdapter.getClientState(), "adapter client should be disconnected.");
         });
     }
     
@@ -150,10 +150,10 @@ class MQTTAdapterTest {
     void testReconnect() {
         assertDoesNotThrow(() -> {
             // Reconnect
-            MQTTAdapter.reconnect();
-            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "adapter client should be reconnected.");
-            MQTTAdapter.reconnect();
-            assertEquals(MqttClientState.CONNECTED, MQTTAdapter.getClientState(), "adapter client should be reconnected.");
+            mqttAdapter.reconnect();
+            assertEquals(MqttClientState.CONNECTED, mqttAdapter.getClientState(), "adapter client should be reconnected.");
+            mqttAdapter.reconnect();
+            assertEquals(MqttClientState.CONNECTED, mqttAdapter.getClientState(), "adapter client should be reconnected.");
         });
     }
 
@@ -164,7 +164,7 @@ class MQTTAdapterTest {
         assertTrue(testClient.getState().isConnected(), "Client is not connected");
 
         // Verbinde den adapter
-        MQTTAdapter.connect();
+        mqttAdapter.connect();
 
         // Erwartete Werte basierend auf dem ElevatorSystem-Konstruktor
         Map<String, String> expectedMessages = Map.of(
@@ -202,7 +202,7 @@ class MQTTAdapterTest {
         }
 
         // Starte die Methode, die die retained Nachrichten veröffentlicht
-        MQTTAdapter.run();
+        mqttAdapter.run();
 
         // Warte, bis alle Nachrichten empfangen und geprüft wurden
        assertTrue(latch.await(5, TimeUnit.SECONDS), "Nicht alle Nachrichten wurden rechtzeitig empfangen");
@@ -217,8 +217,8 @@ class MQTTAdapterTest {
         assertTrue(testClient.getState().isConnected(), "Client ist nicht verbunden");
 
         // adapter starten
-        MQTTAdapter.connect();
-        MQTTAdapter.run();
+        mqttAdapter.connect();
+        mqttAdapter.run();
 
         // Set für empfangene Nachrichten (für jedes Thema)
         Set<String> receivedValues = new HashSet<>();
@@ -284,7 +284,7 @@ class MQTTAdapterTest {
         }
         Thread.sleep(3000);
         //wait until everything is subscribed so changes in the @BeforeEach stubbing can be received
-        MQTTAdapter.run();
+        mqttAdapter.run();
 
      // Warten, um sicherzustellen, dass alle Nachrichten empfangen wurden
         Thread.sleep(2000);
@@ -299,8 +299,8 @@ class MQTTAdapterTest {
     void testMQTTAdapterWithMockedElevatorAPI() throws InterruptedException, RemoteException {
         assertTrue(testClient.getState().isConnected(), "TestClient is not connected");
 
-        MQTTAdapter.connect();
-        MQTTAdapter.run();
+        mqttAdapter.connect();
+        mqttAdapter.run();
 
         // Testnachrichten und Topics
         Map<String, String> testMessages = Map.of(

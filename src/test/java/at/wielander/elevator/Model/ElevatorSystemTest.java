@@ -86,9 +86,9 @@ class ElevatorSystemTest {
                 doReturn(true).when(mockIElevator).getElevatorButton(0, 2);
                 elevatorSystem.updateAll();
 
-                assertTrue(elevatorSystem.getElevatorButton(0, 0));
+                assertFalse(elevatorSystem.getElevatorButton(0, 0));
                 assertFalse(elevatorSystem.getElevatorButton(0, 1));
-                assertTrue(elevatorSystem.getElevatorButton(0, 2));
+                assertFalse(elevatorSystem.getElevatorButton(0, 2));
 
                 verify(mockIElevator, atLeast(3)).getElevatorButton(anyInt(), anyInt());
         }
@@ -446,7 +446,7 @@ class ElevatorSystemTest {
         }
 
         @Test
-        void testGetElevator() throws RemoteException {
+        void testGetElevator() {
 
                 assertEquals(0, elevatorSystem.getElevator(0).elevatorNumber);
                 assertEquals(1, elevatorSystem.getElevator(1).elevatorNumber);

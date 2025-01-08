@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ElevatorAlgorithm.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">elevator-simulator-team-c</a> &gt; <a href="index.source.html" class="el_package">at.wielander.elevator.algorithm</a> &gt; <span class="el_source">ElevatorAlgorithm.java</span></div><h1>ElevatorAlgorithm.java</h1><pre class="source lang-java linenums">package at.wielander.elevator.algorithm;
+
+import at.wielander.elevator.exception.MQTTClientException;
+import at.wielander.elevator.adapter.ElevatorMQTTAdapter;
+import at.wielander.elevator.model.ElevatorSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sqelevator.IElevator;
+import com.hivemq.client.mqtt.MqttClient;
+import com.hivemq.client.mqtt.MqttGlobalPublishFilter;
+import com.hivemq.client.mqtt.datatypes.MqttQos;
+import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
+
+import java.net.MalformedURLException;
+import java.nio.charset.StandardCharsets;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.util.*;
+
+<span class="fc" id="L21">public class ElevatorAlgorithm {</span>
+
+    public static final String ELEVATOR_TOPIC = &quot;elevator/&quot;;
+    public static final String FLOOR_TOPIC = &quot;floor/&quot;;
+    public static final String BUTTON_UP_TOPIC = &quot;/buttonUp&quot;;
+    public static final String BUTTON_DOWN_TOPIC = &quot;/buttonDown&quot;;
+<span class="fc" id="L27">    private static final Logger log = LoggerFactory.getLogger(ElevatorAlgorithm.class);</span>
+    public static final int TOTAL_ELEVATORS = 1;
+    private static final int TOTAL_FLOORS = 10;
+    public static final int LOWEST_FLOOR = 0;
+    public static final int HIGHEST_FLOOR = 10;
+    public static final int CAPACITY = 4000;
+    public static final int FLOOR_HEIGHT = 10;
+    public static final String COMMITTED_DIRECTION_TOPIC = &quot;/committedDirection&quot;;
+    public static final String DOOR_STATE_TOPIC = &quot;/doorState&quot;;
+    public static final String SPEED_TOPIC = &quot;/speed&quot;;
+    public static final String CURRENT_FLOOR_TOPIC = &quot;/currentFloor&quot;;
+    public static final String TARGET_FLOOR_TOPIC = &quot;/targetFloor&quot;;
+    public static final String BUTTON_TOPIC = &quot;/button/&quot;;
+
+    private Mqtt5AsyncClient mqttClient;
+    private ElevatorMQTTAdapter eMQTTAdapter;
+    private ElevatorSystem eSystem;
+
+<span class="fc" id="L45">    private Map&lt;String, String&gt; retainedMessages = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L46">    private Map&lt;String, String&gt; liveMessages = new HashMap&lt;&gt;();</span>
+
+
+    public static void main(String[] args) throws InterruptedException {
+<span class="nc" id="L50">        ElevatorAlgorithm algorithm = new ElevatorAlgorithm();</span>
+<span class="nc" id="L51">        String brokerHost = &quot;tcp://localhost:1883&quot;; // Lokaler Mosquitto Broker</span>
+<span class="nc" id="L52">        log.info(&quot;Connecting to adapter Broker at: {}&quot;, brokerHost);</span>
+
+        try {
+            // RMI setup
+<span class="nc" id="L56">            Properties properties = new Properties();</span>
+<span class="nc" id="L57">            String plcUrl = properties.getProperty(&quot;plc.url&quot;, &quot;rmi://localhost/ElevatorSim&quot;);</span>
+<span class="nc" id="L58">            IElevator controller = (IElevator) Naming.lookup(plcUrl);</span>
+
+            // Elevator System Configuration
+<span class="nc" id="L61">            algorithm.eSystem = new ElevatorSystem(</span>
+                    TOTAL_ELEVATORS,
+                    LOWEST_FLOOR,
+                    HIGHEST_FLOOR,
+                    CAPACITY,
+                    FLOOR_HEIGHT,
+                    controller // RMI-Controller
+            );
+
+            // Create the adapter Adapter
+<span class="nc" id="L71">            algorithm.eMQTTAdapter = new ElevatorMQTTAdapter(</span>
+                    algorithm.eSystem,// Elevator System
+                    brokerHost,       // adapter Broker Host
+                    &quot;mqttAdapter&quot;,    // Client ID
+                    50,              // Polling Interval (ms)
+                    controller        // RMI-Controller
+            );
+
+            // Connect adapter Adapter to the Broker
+<span class="nc" id="L80">            algorithm.eMQTTAdapter.connect();</span>
+
+            // Connect to adapter Broker
+<span class="nc" id="L83">            algorithm.mqttClient = MqttClient.builder()</span>
+<span class="nc" id="L84">                    .useMqttVersion5()</span>
+<span class="nc" id="L85">                    .serverHost(&quot;localhost&quot;)</span>
+<span class="nc" id="L86">                    .serverPort(1883)</span>
+<span class="nc" id="L87">                    .identifier(&quot;ElevatorAlgorithmClient&quot;)</span>
+<span class="nc" id="L88">                    .buildAsync();</span>
+
+
+
+            // Liste der Topics, die wir abonnieren wollen (nur die building/info Topics)
+<span class="nc" id="L93">            String topicFilter = &quot;building/info/#&quot;; // Filtert nur Topics unter building/info</span>
+
+            // Abonnieren des Topic Filters
+<span class="nc" id="L96">            algorithm.mqttClient.subscribeWith()</span>
+<span class="nc" id="L97">                    .topicFilter(topicFilter) // Wildcard für alle Subtopics unter building/info</span>
+<span class="nc" id="L98">                    .qos(MqttQos.AT_LEAST_ONCE)</span>
+<span class="nc" id="L99">                    .send();</span>
+
+            // Verarbeiten der empfangenen Nachrichten
+<span class="nc" id="L102">            algorithm.mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -&gt; {</span>
+<span class="nc" id="L103">                String topic = publish.getTopic().toString();</span>
+                // Überprüfen, ob das Topic unter &quot;building/info&quot; fällt
+<span class="nc bnc" id="L105" title="All 2 branches missed.">                if (topic.startsWith(&quot;building/info&quot;)) {</span>
+                    // Payload wird als String gespeichert
+<span class="nc" id="L107">                    String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);</span>
+<span class="nc" id="L108">                    algorithm.retainedMessages.put(topic, payload); // Speichern der Payload</span>
+<span class="nc" id="L109">                    log.info(&quot;Retained message received: {} -&gt; {}&quot;, topic, payload);</span>
+                }
+<span class="nc" id="L111">            });</span>
+
+            // Subscribe to live messages for elevators and floors
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            for (int elevatorId = LOWEST_FLOOR; elevatorId &lt; TOTAL_ELEVATORS; elevatorId++) {</span>
+                // Abonniere alle Themen, die mit &quot;elevator/&quot; und der entsprechenden ID beginnen
+<span class="nc" id="L116">                algorithm.mqttClient.subscribeWith().topicFilter(ELEVATOR_TOPIC + elevatorId + &quot;/#&quot;).qos(MqttQos.AT_LEAST_ONCE).send();</span>
+            }
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            for (int floorId = LOWEST_FLOOR; floorId &lt; TOTAL_FLOORS; floorId++) {</span>
+                // Abonniere alle Themen, die mit &quot;floor/&quot; und der entsprechenden ID beginnen
+<span class="nc" id="L120">                algorithm.mqttClient.subscribeWith().topicFilter(FLOOR_TOPIC + floorId + &quot;/#&quot;).qos(MqttQos.AT_LEAST_ONCE).send();</span>
+            }
+
+            // Verarbeiten der empfangenen Nachrichten
+<span class="nc" id="L124">            algorithm.mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -&gt; {</span>
+<span class="nc" id="L125">                String topic = publish.getTopic().toString();</span>
+<span class="nc" id="L126">                String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);</span>
+
+                // Überprüfen, ob das Topic mit &quot;elevator/&quot; oder &quot;floor/&quot; beginnt
+<span class="nc bnc" id="L129" title="All 4 branches missed.">                if (topic.startsWith(ELEVATOR_TOPIC) || topic.startsWith(FLOOR_TOPIC)) {</span>
+                    // Die Nachricht wird in der Map liveMessages gespeichert
+<span class="nc" id="L131">                    algorithm.liveMessages.put(topic, payload);</span>
+<span class="nc" id="L132">                    log.info(&quot;Live message received: {} -&gt; {}&quot;, topic, payload);</span>
+                }
+<span class="nc" id="L134">            });</span>
+
+<span class="nc" id="L136">            algorithm.mqttClient.connect().whenComplete((ack, throwable) -&gt; {</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">                if (throwable == null) {</span>
+<span class="nc" id="L138">                    log.info(&quot;Connected to adapter broker&quot;);</span>
+                } else {
+<span class="nc" id="L140">                    log.error(&quot;Failed to connect to adapter broker: {}&quot;, throwable.getMessage());</span>
+                }
+<span class="nc" id="L142">            });</span>
+
+<span class="nc" id="L144">            algorithm.runAlgorithm(algorithm);</span>
+
+<span class="nc" id="L146">        } catch (MQTTClientException e) {</span>
+<span class="nc" id="L147">            algorithm.eMQTTAdapter.disconnect();</span>
+<span class="nc" id="L148">        } catch (RemoteException e) {</span>
+<span class="nc" id="L149">            log.error(&quot; Remote Exception thrown {}&quot;,e.getMessage());</span>
+<span class="nc" id="L150">        } catch (MalformedURLException e) {</span>
+<span class="nc" id="L151">            log.error(&quot; Malformed URL exception {}&quot;,e.getMessage());</span>
+<span class="nc" id="L152">        } catch (NotBoundException e) {</span>
+<span class="nc" id="L153">            log.error(&quot; NotBoundException thrown {}&quot;,e.getMessage());</span>
+<span class="nc" id="L154">        }</span>
+<span class="nc" id="L155">    }</span>
+
+    public void runAlgorithm(ElevatorAlgorithm algorithm) throws InterruptedException {
+<span class="nc" id="L158">        Thread.sleep(3000);</span>
+<span class="nc" id="L159">        algorithm.eMQTTAdapter.run();</span>
+<span class="nc" id="L160">        Thread.sleep(500);</span>
+
+<span class="nc" id="L162">        final int numberOfFloors = Integer.parseInt(retainedMessages.get(&quot;building/info/numberOfFloors&quot;));</span>
+<span class="nc" id="L163">        final int sleepTime = 1;</span>
+
+        // Subscribe to external floor button presses (up/down) for each floor, once
+<span class="nc" id="L166">        subscribeToFloorButtonPresses(algorithm, numberOfFloors);</span>
+
+        // Subscribe to inside elevator button presses, once
+<span class="nc" id="L169">        subscribeToInsideElevatorButtonPresses(algorithm);</span>
+
+        // Handle button presses asynchronously
+<span class="nc" id="L172">        handleButtonPresses(algorithm, sleepTime);</span>
+<span class="nc" id="L173">    }</span>
+
+    // Optimized method to subscribe to floor button presses
+    private void subscribeToFloorButtonPresses(ElevatorAlgorithm algorithm, int numberOfFloors) {
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        for (int floorId = LOWEST_FLOOR; floorId &lt; numberOfFloors; floorId++) {</span>
+            try {
+<span class="nc" id="L179">                String upButtonTopic = FLOOR_TOPIC + floorId + BUTTON_UP_TOPIC;</span>
+<span class="nc" id="L180">                String downButtonTopic = FLOOR_TOPIC + floorId + BUTTON_DOWN_TOPIC;</span>
+                // Subscribe once for each button type on all floors
+<span class="nc" id="L182">                algorithm.mqttClient.subscribeWith().topicFilter(upButtonTopic).qos(MqttQos.AT_LEAST_ONCE).send();</span>
+<span class="nc" id="L183">                algorithm.mqttClient.subscribeWith().topicFilter(downButtonTopic).qos(MqttQos.AT_LEAST_ONCE).send();</span>
+<span class="nc" id="L184">            } catch (MQTTClientException e) {</span>
+<span class="nc" id="L185">                log.error(&quot;Failed to subscribe to button press topics for floor {}: {}&quot;, floorId, e.getMessage());</span>
+<span class="nc" id="L186">            }</span>
+        }
+<span class="nc" id="L188">    }</span>
+
+    // Optimized method to subscribe to internal elevator button presses
+    private void subscribeToInsideElevatorButtonPresses(ElevatorAlgorithm algorithm) {
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        for (int elevatorId = LOWEST_FLOOR; elevatorId &lt; TOTAL_ELEVATORS; elevatorId++) {</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">            for (int floorId = LOWEST_FLOOR; floorId &lt; TOTAL_FLOORS; floorId++) {</span>
+                try {
+<span class="nc" id="L195">                    String elevatorButtonTopic = ELEVATOR_TOPIC + elevatorId + BUTTON_TOPIC + floorId;</span>
+<span class="nc" id="L196">                    algorithm.mqttClient.subscribeWith().topicFilter(elevatorButtonTopic).qos(MqttQos.AT_LEAST_ONCE).send();</span>
+<span class="nc" id="L197">                } catch (MQTTClientException e) {</span>
+<span class="nc" id="L198">                    log.error(&quot;Failed to subscribe to elevator button topic for elevator {} and floor {}: {}&quot;, elevatorId, floorId, e.getMessage());</span>
+<span class="nc" id="L199">                }</span>
+            }
+        }
+<span class="nc" id="L202">    }</span>
+
+    // Optimized method to handle all button presses
+    private void handleButtonPresses(ElevatorAlgorithm algorithm, int sleepTime) {
+<span class="nc" id="L206">        algorithm.mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -&gt; {</span>
+            try {
+<span class="nc" id="L208">                String topic = publish.getTopic().toString();</span>
+
+                // Handle external floor button press
+<span class="nc bnc" id="L211" title="All 2 branches missed.">                if (topic.startsWith(FLOOR_TOPIC)) {</span>
+<span class="nc" id="L212">                    int floorRequested = Integer.parseInt(topic.split(&quot;/&quot;)[1]);</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">                    if (topic.contains(BUTTON_UP_TOPIC)) {</span>
+                        // Move elevator up if buttonUp is pressed
+<span class="nc" id="L215">                        moveElevator(floorRequested, algorithm, 1, sleepTime);</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">                    } else if (topic.contains(BUTTON_DOWN_TOPIC)) {</span>
+                        // Move elevator down if buttonDown is pressed
+<span class="nc" id="L218">                        moveElevator(floorRequested, algorithm, TOTAL_ELEVATORS, sleepTime);</span>
+                    }
+                }
+
+                // Handle inside elevator button press
+<span class="nc bnc" id="L223" title="All 4 branches missed.">                if (topic.startsWith(ELEVATOR_TOPIC) &amp;&amp; topic.contains(BUTTON_TOPIC)) {</span>
+<span class="nc" id="L224">                    String[] parts = topic.split(&quot;/&quot;);</span>
+<span class="nc" id="L225">                    int requestedFloor = Integer.parseInt(parts[3]);</span>
+                    // Set target floor based on inside button press
+<span class="nc" id="L227">                    setElevatorTargetFloor(Integer.parseInt(parts[1]), requestedFloor, algorithm);</span>
+                }
+<span class="nc" id="L229">            } catch (MQTTClientException e) {</span>
+<span class="nc" id="L230">                log.error(&quot;Error processing message: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L231">            }</span>
+<span class="nc" id="L232">        });</span>
+<span class="nc" id="L233">    }</span>
+
+    // Optimized moveElevator method (generic for both up/down)
+    private void moveElevator(int floorRequested, ElevatorAlgorithm algorithm, int direction, int sleepTime) {
+        try {
+<span class="nc" id="L238">            String directionTopic = ELEVATOR_TOPIC + ElevatorAlgorithm.TOTAL_ELEVATORS + COMMITTED_DIRECTION_TOPIC;</span>
+<span class="nc" id="L239">            String targetTopic = ELEVATOR_TOPIC + ElevatorAlgorithm.TOTAL_ELEVATORS + TARGET_FLOOR_TOPIC;</span>
+
+            // Set direction (1 = UP, 2 = DOWN)
+<span class="nc" id="L242">            algorithm.mqttClient.publishWith()</span>
+<span class="nc" id="L243">                    .topic(directionTopic)</span>
+<span class="nc" id="L244">                    .payload(Integer.toString(direction).getBytes(StandardCharsets.UTF_8))</span>
+<span class="nc" id="L245">                    .send();</span>
+
+            // Set target floor
+<span class="nc" id="L248">            algorithm.mqttClient.publishWith()</span>
+<span class="nc" id="L249">                    .topic(targetTopic)</span>
+<span class="nc" id="L250">                    .payload(Integer.toString(floorRequested).getBytes(StandardCharsets.UTF_8))</span>
+<span class="nc" id="L251">                    .send();</span>
+
+            // Wait for elevator to reach the target floor
+<span class="nc" id="L254">            waitForElevatorToReachTarget(floorRequested, algorithm, sleepTime);</span>
+<span class="nc" id="L255">        } catch (Exception e) {</span>
+<span class="nc" id="L256">            log.error(&quot;Error while moving elevator: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L257">        }</span>
+<span class="nc" id="L258">    }</span>
+
+    // Optimized method to wait for elevator to reach the target floor
+    private void waitForElevatorToReachTarget(int floorRequested, ElevatorAlgorithm algorithm, int sleepTime) throws InterruptedException {
+<span class="nc bnc" id="L262" title="All 2 branches missed.">        while (Integer.parseInt(algorithm.liveMessages.getOrDefault(ELEVATOR_TOPIC + ElevatorAlgorithm.TOTAL_ELEVATORS + CURRENT_FLOOR_TOPIC, &quot;-1&quot;)) != floorRequested</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">                || Integer.parseInt(algorithm.liveMessages.getOrDefault(ELEVATOR_TOPIC + ElevatorAlgorithm.TOTAL_ELEVATORS + SPEED_TOPIC, &quot;1&quot;)) &gt; LOWEST_FLOOR) {</span>
+<span class="nc" id="L264">            Thread.sleep(sleepTime);</span>
+        }
+
+        // Wait for doors to open
+<span class="nc bnc" id="L268" title="All 2 branches missed.">        while (!&quot;1&quot;.equals(algorithm.liveMessages.getOrDefault(ELEVATOR_TOPIC + ElevatorAlgorithm.TOTAL_ELEVATORS + DOOR_STATE_TOPIC, &quot;&quot;))) {</span>
+<span class="nc" id="L269">            Thread.sleep(sleepTime);</span>
+        }
+
+        // Set committed direction to UNCOMMITTED after reaching the target
+<span class="nc" id="L273">        algorithm.mqttClient.publishWith()</span>
+<span class="nc" id="L274">                .topic(ELEVATOR_TOPIC + ElevatorAlgorithm.TOTAL_ELEVATORS + COMMITTED_DIRECTION_TOPIC)</span>
+<span class="nc" id="L275">                .payload(&quot;0&quot;.getBytes(StandardCharsets.UTF_8)) // 0 for UNCOMMITTED</span>
+<span class="nc" id="L276">                .send();</span>
+<span class="nc" id="L277">    }</span>
+
+    // Method to set the target floor
+    private void setElevatorTargetFloor(int elevatorId, int floorRequested, ElevatorAlgorithm algorithm) {
+        try {
+<span class="nc" id="L282">            String targetTopic = ELEVATOR_TOPIC + elevatorId + TARGET_FLOOR_TOPIC;</span>
+<span class="nc" id="L283">            algorithm.mqttClient.publishWith()</span>
+<span class="nc" id="L284">                    .topic(targetTopic)</span>
+<span class="nc" id="L285">                    .payload(Integer.toString(floorRequested).getBytes(StandardCharsets.UTF_8))</span>
+<span class="nc" id="L286">                    .send();</span>
+<span class="nc" id="L287">        } catch (MQTTClientException e) {</span>
+<span class="nc" id="L288">            log.error(&quot;Failed to set target floor for elevator {}: {}&quot;, elevatorId, e.getMessage());</span>
+<span class="nc" id="L289">        }</span>
+<span class="nc" id="L290">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
