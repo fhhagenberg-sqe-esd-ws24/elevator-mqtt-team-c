@@ -26,6 +26,12 @@ public class ElevatorAlgorithm {
     private static final Logger log = LoggerFactory.getLogger(ElevatorAlgorithm.class);
     public static final String ELEVATOR_TOPIC = "elevator/";
     public static final String FLOOR_TOPIC = "floor/";
+    public static final String BUTTON_UP_TOPIC = "/buttonUp";
+    public static final String BUTTON_DOWN_TOPIC = "/buttonDown";
+    public static final String BUTTON_TOPIC = "/button/";
+    public static final String DOOR_STATE_TOPIC = "/doorState";
+    public static final String COMMITTED_DIRECTION_TOPIC = "/committedDirection";
+    public static final String TARGET_FLOOR_TOPIC = "/targetFloor";
     private Mqtt5AsyncClient mqttClient; // MQTT Client instance variable
     private ElevatorMQTTAdapter eMQTTAdapter; // Adapter instance variable
     private ElevatorSystem eSystem;
@@ -37,7 +43,7 @@ public class ElevatorAlgorithm {
     private final Map<String, String> liveMessages = new HashMap<>();
 
 
-    public static void main() throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException {
         ElevatorAlgorithm algorithm = new ElevatorAlgorithm();
         String brokerHost = "tcp://localhost:1883"; // Lokaler Mosquitto Broker
         log.info("Connecting to MQTT Broker at: {}", brokerHost);
@@ -100,7 +106,7 @@ public class ElevatorAlgorithm {
                     // Payload wird als String gespeichert
                     String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
                     algorithm.retainedMessages.put(topic, payload); // Speichern der Payload
-                    System.out.println("Retained message received: " + topic + " -> " + payload);
+                    log.info("Retained message received: {} -> {}", topic, payload);
                 }
             });
 
@@ -120,7 +126,7 @@ public class ElevatorAlgorithm {
                 String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
 
                 // Überprüfen, ob das Topic mit "elevator/" oder "floor/" beginnt
-                if (topic.startsWith("elevator/") || topic.startsWith("floor/")) {
+                if (topic.startsWith(ELEVATOR_TOPIC) || topic.startsWith(FLOOR_TOPIC)) {
                     // Die Nachricht wird in der Map liveMessages gespeichert
                     algorithm.liveMessages.put(topic, payload);
                     System.out.println("Live message received: " + topic + " -> " + payload);
@@ -168,8 +174,8 @@ public class ElevatorAlgorithm {
     private void subscribeToFloorButtonPresses(ElevatorAlgorithm algorithm, int numberOfFloors) {
         for (int floorId = 0; floorId < numberOfFloors; floorId++) {
             try {
-                String upButtonTopic = "floor/" + floorId + "/buttonUp";
-                String downButtonTopic = "floor/" + floorId + "/buttonDown";
+                String upButtonTopic = FLOOR_TOPIC + floorId + BUTTON_UP_TOPIC;
+                String downButtonTopic = FLOOR_TOPIC + floorId + BUTTON_DOWN_TOPIC;
                 // Subscribe once for each button type on all floors
                 algorithm.mqttClient.subscribeWith().topicFilter(upButtonTopic).qos(MqttQos.AT_LEAST_ONCE).send();
                 algorithm.mqttClient.subscribeWith().topicFilter(downButtonTopic).qos(MqttQos.AT_LEAST_ONCE).send();
@@ -185,7 +191,7 @@ public class ElevatorAlgorithm {
             int totalFloor = -1;
             for (int floorId = 0; floorId < totalFloor; floorId++) {
                 try {
-                    String elevatorButtonTopic = "elevator/" + elevatorId + "/button/" + floorId;
+                    String elevatorButtonTopic = ELEVATOR_TOPIC + elevatorId + BUTTON_TOPIC + floorId;
                     algorithm.mqttClient.subscribeWith().topicFilter(elevatorButtonTopic).qos(MqttQos.AT_LEAST_ONCE).send();
                 } catch (MQTTClientException e) {
                     log.error("Failed to subscribe to elevator button topic for elevator {} and floor {}: {}", elevatorId, floorId, e.getMessage());
@@ -201,7 +207,7 @@ public class ElevatorAlgorithm {
                 String topic = publish.getTopic().toString();
 
                 // Handle external floor button press
-                if (topic.startsWith("floor/")) {
+                if (topic.startsWith(FLOOR_TOPIC)) {
                     int floorRequested = Integer.parseInt(topic.split("/")[1]);
                     if (topic.contains("/buttonUp")) {
                         // Move elevator up if buttonUp is pressed
@@ -213,7 +219,7 @@ public class ElevatorAlgorithm {
                 }
 
                 // Handle inside elevator button press
-                if (topic.startsWith("elevator/") && topic.contains("/button/")) {
+                if (topic.startsWith(ELEVATOR_TOPIC) && topic.contains(BUTTON_TOPIC)) {
                     String[] parts = topic.split("/");
                     int requestedFloor = Integer.parseInt(parts[3]);
                     // Set target floor based on inside button press
@@ -228,8 +234,8 @@ public class ElevatorAlgorithm {
     // Optimized moveElevator method (generic for both up/down)
     private void moveElevator(int floorRequested, ElevatorAlgorithm algorithm, int direction) {
         try {
-            String directionTopic = "elevator/" + 0 + "/committedDirection";
-            String targetTopic = "elevator/" + 0 + "/targetFloor";
+            String directionTopic = ELEVATOR_TOPIC + 0 + COMMITTED_DIRECTION_TOPIC;
+            String targetTopic = ELEVATOR_TOPIC + 0 + TARGET_FLOOR_TOPIC;
 
             // Set direction (1 = UP, 2 = DOWN)
             algorithm.mqttClient.publishWith()
@@ -252,19 +258,19 @@ public class ElevatorAlgorithm {
 
     // Optimized method to wait for elevator to reach the target floor
     private void waitForElevatorToReachTarget(int floorRequested, ElevatorAlgorithm algorithm) throws InterruptedException {
-        while (Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + 0 + "/currentFloor", "-1")) != floorRequested
-                || Integer.parseInt(algorithm.liveMessages.getOrDefault("elevator/" + 0 + "/speed", "1")) > 0) {
+        while (Integer.parseInt(algorithm.liveMessages.getOrDefault(ELEVATOR_TOPIC + 0 + "/currentFloor", "-1")) != floorRequested
+                || Integer.parseInt(algorithm.liveMessages.getOrDefault(ELEVATOR_TOPIC + 0 + "/speed", "1")) > 0) {
             Thread.sleep(1);
         }
 
         // Wait for doors to open
-        while (!"1".equals(algorithm.liveMessages.getOrDefault("elevator/" + 0 + "/doorState", ""))) {
+        while (!"1".equals(algorithm.liveMessages.getOrDefault(ELEVATOR_TOPIC + 0 + DOOR_STATE_TOPIC, ""))) {
             Thread.sleep(1);
         }
 
         // Set committed direction to UNCOMMITTED after reaching the target
         algorithm.mqttClient.publishWith()
-                .topic("elevator/" + 0 + "/committedDirection")
+                .topic(ELEVATOR_TOPIC + 0 + "/committedDirection")
                 .payload("0".getBytes(StandardCharsets.UTF_8)) // 0 for UNCOMMITTED
                 .send();
     }
@@ -272,7 +278,7 @@ public class ElevatorAlgorithm {
     // Method to set the target floor
     private void setElevatorTargetFloor(int elevatorId, int floorRequested, ElevatorAlgorithm algorithm) {
         try {
-            String targetTopic = "elevator/" + elevatorId + "/targetFloor";
+            String targetTopic = ELEVATOR_TOPIC + elevatorId + "/targetFloor";
             algorithm.mqttClient.publishWith()
                     .topic(targetTopic)
                     .payload(Integer.toString(floorRequested).getBytes(StandardCharsets.UTF_8))
