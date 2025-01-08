@@ -274,9 +274,8 @@ public class Elevator {
 
     /**
      * Updates elevator based on current states
-     * @throws RemoteException throw
      */
-    public void update() throws RemoteException {
+    public void update() {
         try {
             this.currentFloor = elevatorAPI.getElevatorFloor(elevatorNumber);
             this.targetedFloor = elevatorAPI.getTarget(elevatorNumber);

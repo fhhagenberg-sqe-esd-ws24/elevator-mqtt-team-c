@@ -33,26 +33,25 @@ netzwerkverbindungsabbrüche können simuliert werden, indem die elevatorsimulat
 # Installation 
 ## Simulator
 
-Der Elevator Simulator befindet sich im Ordner "Simulator" innerhalb des Ordners 
-"Source". Im Ordner "bin" befinden sich die Shell-Skripte zum Ausführen. 
+Der Elevator Simulator befindet sich im Ordner ElevatorSimulator innerhalb des Projekt-Root-Ordners. Im Ordner "bin" befinden sich die Shell-Skripte zum Ausführen. 
 Das vorgegebene OnlyOne-Szenario wurde als Basis für unseren Simulator verwendet.
 
 Windows: 
 ```shell
-./src/main/java/at/wielander/elevator/simulator/bin/elevator.bat
+ElevatorSimulator/bin/elevator.bat
 ```
 
 oder mit Linux
 ```shell
-./src/main/java/at/wielander/elevator/simulator/bin/elevator.sh
+ElevatorSimulator/bin/elevator.sh
 ```
 
 
 ## Java JAR
-Das Java JAR Datei befindet sich in dem Target Ordner und kann mit dem folgenden Befehl gestartet werden
+Das Java JAR Datei befindet sich in dem selben Ordner und kann mit dem folgenden Befehl gestartet werden
 
 ```shell
-java -jar target/mqtt-elevator-team-c-1.0-jar-with-dependencies.jar
+java -jar ElevatorSimulator/mqtt-elevator-team-c-1.0-jar-with-dependencies.jar
 ```
 
 
