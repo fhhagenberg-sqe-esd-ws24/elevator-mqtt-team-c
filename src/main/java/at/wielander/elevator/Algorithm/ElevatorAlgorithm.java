@@ -24,6 +24,8 @@ public class ElevatorAlgorithm {
 
 
     private static final Logger log = LoggerFactory.getLogger(ElevatorAlgorithm.class);
+    public static final String ELEVATOR_TOPIC = "elevator/";
+    public static final String FLOOR_TOPIC = "floor/";
     private Mqtt5AsyncClient mqttClient; // MQTT Client instance variable
     private ElevatorMQTTAdapter eMQTTAdapter; // Adapter instance variable
     private ElevatorSystem eSystem;
@@ -38,7 +40,7 @@ public class ElevatorAlgorithm {
     public static void main() throws InterruptedException {
         ElevatorAlgorithm algorithm = new ElevatorAlgorithm();
         String brokerHost = "tcp://localhost:1883"; // Lokaler Mosquitto Broker
-        System.out.println("Connecting to MQTT Broker at: " + brokerHost);
+        log.info("Connecting to MQTT Broker at: {}", brokerHost);
 
         try {
             // RMI setup
@@ -105,11 +107,11 @@ public class ElevatorAlgorithm {
             // Subscribe to live messages for elevators and floors
             for (int elevatorId = 0; elevatorId < 2; elevatorId++) {
                 // Abonniere alle Themen, die mit "elevator/" und der entsprechenden ID beginnen
-                algorithm.mqttClient.subscribeWith().topicFilter("elevator/" + elevatorId + "/#").qos(MqttQos.AT_LEAST_ONCE).send();
+                algorithm.mqttClient.subscribeWith().topicFilter(ELEVATOR_TOPIC + elevatorId + "/#").qos(MqttQos.AT_LEAST_ONCE).send();
             }
             for (int floorId = 0; floorId < 4; floorId++) {
                 // Abonniere alle Themen, die mit "floor/" und der entsprechenden ID beginnen
-                algorithm.mqttClient.subscribeWith().topicFilter("floor/" + floorId + "/#").qos(MqttQos.AT_LEAST_ONCE).send();
+                algorithm.mqttClient.subscribeWith().topicFilter(FLOOR_TOPIC + floorId + "/#").qos(MqttQos.AT_LEAST_ONCE).send();
             }
 
             // Verarbeiten der empfangenen Nachrichten

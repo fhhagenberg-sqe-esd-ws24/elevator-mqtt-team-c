@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class MQTTClientExceptionTest {
 
     @Test
-    public void testMQTTClientException() {
+    void testMQTTClientException() {
         Throwable throwable = new IllegalArgumentException("Invalid argument");
         MQTTClientException exception = new MQTTClientException("MQTT Client Exception Thrown", throwable);
 
