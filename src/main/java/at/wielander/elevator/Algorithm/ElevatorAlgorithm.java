@@ -18,6 +18,8 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.*;
 
+import static java.lang.System.err;
+
 public class ElevatorAlgorithm {
 
 
@@ -27,7 +29,7 @@ public class ElevatorAlgorithm {
     private ElevatorSystem eSystem;
     private static Properties properties;
 
-    private int totalElevator = -1;
+    private int totalElevator=1;
 
     private final Map<String, String> retainedMessages = new HashMap<>();
     private final Map<String, String> liveMessages = new HashMap<>();
@@ -125,9 +127,9 @@ public class ElevatorAlgorithm {
 
             algorithm.mqttClient.connect().whenComplete((_, throwable) -> {
                 if (throwable == null) {
-                    System.out.println("Connected to MQTT broker");
+                    log.info("Connected to MQTT broker");
                 } else {
-                    System.err.println("Failed to connect to MQTT broker: " + throwable.getMessage());
+                    log.error("Connection failed: {}", throwable.getMessage());
                 }
             });
 
@@ -137,9 +139,9 @@ public class ElevatorAlgorithm {
             log.error("Failed to connect to MQTT broker: {}", e.getMessage());
             algorithm.eMQTTAdapter.disconnect();
         } catch (RemoteException | NotBoundException e) {
-            System.err.println("Failed to connect to MQTT broker: " + e.getMessage());
+            log.error("Failed to connect to MQTT broker.Remote / Not bound exception thrown: {}", e.getMessage());
         } catch (MalformedURLException e) {
-            System.err.println("Malformed URL: " + e.getMessage());
+            log.error("Malformed URL: {}", e.getMessage());
         }
     }
 
@@ -169,8 +171,8 @@ public class ElevatorAlgorithm {
                 // Subscribe once for each button type on all floors
                 algorithm.mqttClient.subscribeWith().topicFilter(upButtonTopic).qos(MqttQos.AT_LEAST_ONCE).send();
                 algorithm.mqttClient.subscribeWith().topicFilter(downButtonTopic).qos(MqttQos.AT_LEAST_ONCE).send();
-            } catch (Exception e) {
-                System.err.println("Failed to subscribe to button press topics for floor " + floorId + ": " + e.getMessage());
+            } catch (MQTTClientException e) {
+                log.error("Failed to subscribe to button press topics for floor {}: {}", floorId, e.getMessage());
             }
         }
     }
@@ -183,8 +185,8 @@ public class ElevatorAlgorithm {
                 try {
                     String elevatorButtonTopic = "elevator/" + elevatorId + "/button/" + floorId;
                     algorithm.mqttClient.subscribeWith().topicFilter(elevatorButtonTopic).qos(MqttQos.AT_LEAST_ONCE).send();
-                } catch (Exception e) {
-                    System.err.println("Failed to subscribe to elevator button topic for elevator " + elevatorId + " and floor " + floorId + ": " + e.getMessage());
+                } catch (MQTTClientException e) {
+                    log.error("Failed to subscribe to elevator button topic for elevator {} and floor {}: {}", elevatorId, floorId, e.getMessage());
                 }
             }
         }
@@ -215,8 +217,8 @@ public class ElevatorAlgorithm {
                     // Set target floor based on inside button press
                     setElevatorTargetFloor(Integer.parseInt(parts[1]), requestedFloor, algorithm);
                 }
-            } catch (Exception e) {
-                System.err.println("Error processing message: " + e.getMessage());
+            } catch (MQTTClientException e) {
+                log.error("Error processing message: {}", e.getMessage());
             }
         });
     }
@@ -242,7 +244,7 @@ public class ElevatorAlgorithm {
             // Wait for elevator to reach the target floor
             waitForElevatorToReachTarget(floorRequested, algorithm);
         } catch (Exception e) {
-            System.err.println("Error while moving elevator: " + e.getMessage());
+            err.println("Error while moving elevator: " + e.getMessage());
         }
     }
 
@@ -273,8 +275,8 @@ public class ElevatorAlgorithm {
                     .topic(targetTopic)
                     .payload(Integer.toString(floorRequested).getBytes(StandardCharsets.UTF_8))
                     .send();
-        } catch (Exception e) {
-            System.err.println("Failed to set target floor for elevator " + elevatorId + ": " + e.getMessage());
+        } catch (MQTTClientException e) {
+            log.error("Failed to set target floor for elevator {}: {}", elevatorId, e.getMessage());
         }
     }
 }
