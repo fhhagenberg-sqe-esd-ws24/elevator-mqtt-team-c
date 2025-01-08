@@ -44,9 +44,9 @@ public class ElevatorAlgorithm {
     private static final int SLEEP_DURATION_S = 5;
 
     protected final Map<String, String> retainedMessages = new ConcurrentHashMap<>();
-    private final Map<String, String> liveMessages = new ConcurrentHashMap<>();
+    protected final Map<String, String> liveMessages = new ConcurrentHashMap<>();
     protected final PriorityQueue<Integer> upQueue = new PriorityQueue<>();
-    private final PriorityQueue<Integer> downQueue = new PriorityQueue<>(Collections.reverseOrder());
+    protected final PriorityQueue<Integer> downQueue = new PriorityQueue<>(Collections.reverseOrder());
 
     /**
      * Main function
@@ -57,6 +57,7 @@ public class ElevatorAlgorithm {
         System.out.println("Connecting to MQTT Broker at: " + BROKER_URL);
 
         try {
+
             // RMI setup
             IElevator controller = connectToRMI();
 
@@ -234,7 +235,7 @@ public class ElevatorAlgorithm {
     /**
      * Handles the subcription of floor and elevator topics
      */
-    private void subscribeToElevatorAndFloorMessages() {
+    void subscribeToElevatorAndFloorMessages() {
         try {
             // Subscribe to all elevator topics
             for (int elevatorId = 0; elevatorId < TOTAL_ELEVATORS; elevatorId++) {
@@ -326,7 +327,7 @@ public class ElevatorAlgorithm {
      * @param algorithm algorithm instance
      * @param elevatorNumber elevator number
      */
-    private void handleButtonPresses(ElevatorAlgorithm algorithm, int elevatorNumber) {
+    void handleButtonPresses(ElevatorAlgorithm algorithm, int elevatorNumber) {
         algorithm.mqttClient.publishes(MqttGlobalPublishFilter.ALL, publish -> {
             try {
                 String topic = publish.getTopic().toString();
@@ -355,13 +356,15 @@ public class ElevatorAlgorithm {
                     int currentFloor = Integer.parseInt(algorithm.liveMessages.get("elevator/" + elevatorNumber + "/currentFloor"));
 
                     // adds the requested floor to the up queue if current floor is greater, else downwards queue
-                    if (requestedFloor > currentFloor) {
-                        synchronized (upQueue) {
-                            upQueue.add(requestedFloor);
-                        }
-                    } else if (requestedFloor < currentFloor) {
-                        synchronized (downQueue) {
-                            downQueue.add(requestedFloor);
+                    if (requestedFloor >= LOWEST_FLOOR && requestedFloor <= HIGHEST_FLOOR) {
+                        if (requestedFloor > currentFloor) {
+                            synchronized (upQueue) {
+                                upQueue.add(requestedFloor);
+                            }
+                        } else if (requestedFloor < currentFloor) {
+                            synchronized (downQueue) {
+                                downQueue.add(requestedFloor);
+                            }
                         }
                     }
                 }

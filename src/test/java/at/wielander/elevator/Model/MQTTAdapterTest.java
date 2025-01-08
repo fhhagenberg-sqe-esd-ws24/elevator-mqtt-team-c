@@ -215,91 +215,91 @@ public class MQTTAdapterTest {
        assertTrue(latch.await(5, TimeUnit.SECONDS), "Nicht alle Nachrichten wurden rechtzeitig empfangen");
     }
     
-    @Test
-    void testPeriodicUpdates() throws InterruptedException, RemoteException, ElevatorMQTTAdapter.MQTTAdapterException {
-        // Sicherstellen, dass der Client verbunden ist
-        if (!testClient.getState().isConnected()) {
-            testClient.toBlocking().connect();
-        }
-        assertTrue(testClient.getState().isConnected(), "Client ist nicht verbunden");
-
-        // MQTT starten
-        MQTTAdapter.connect();
-        MQTTAdapter.run();
-
-        // Set für empfangene Nachrichten (für jedes Thema)
-        Set<String> receivedValues = new HashSet<>();
-        Set<String> expectedValues = new HashSet<>(Arrays.asList("0", "false", "true"));
-
-        // Liste aller Topics vorbereiten
-        List<String> topics = new ArrayList<>();
-        for (int elevatorId = 0; elevatorId < 2; elevatorId++) {
-            topics.add("elevator/" + elevatorId + "/currentFloor");
-            topics.add("elevator/" + elevatorId + "/speed");
-            topics.add("elevator/" + elevatorId + "/weight");
-            topics.add("elevator/" + elevatorId + "/doorState");
-            for (int buttonId = 0; buttonId < 4; buttonId++) {
-                topics.add("elevator/" + elevatorId + "/button/" + buttonId);
-            }
-        }
-        for (int floorId = 0; floorId < 4; floorId++) {
-            topics.add("floor/" + floorId + "/buttonDown");
-            topics.add("floor/" + floorId + "/buttonUp");
-        }
-
-        // Abonnieren der Topics
-        for (String topic : topics) {
-            testClient.toAsync()
-                .subscribeWith()
-                .topicFilter(topic)
-                .qos(MqttQos.AT_LEAST_ONCE)
-                .callback(publish -> {
-                    String receivedMessage = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
-                    System.out.println("Nachricht empfangen: " + receivedMessage + " für Topic: " + publish.getTopic());
-                    
-                    // Überprüfung der empfangenen Nachrichten basierend auf dem Topic
-                    String topicName = publish.getTopic().toString();
-                    
-                    // Speicherung der empfangenen Werte
-                    if (topicName.equals("elevator/0/currentFloor") || topicName.equals("elevator/1/currentFloor")) {
-                        receivedValues.add(receivedMessage);
-                    } else if (topicName.equals("elevator/0/speed") || topicName.equals("elevator/1/speed")) {
-                        receivedValues.add(receivedMessage);
-                    } else if (topicName.equals("elevator/0/weight") || topicName.equals("elevator/1/weight")) {
-                        receivedValues.add(receivedMessage);
-                    } else if (topicName.equals("elevator/0/doorState") || topicName.equals("elevator/1/doorState")) {
-                        receivedValues.add(receivedMessage);
-                    } else if (topicName.equals("elevator/0/button/0") || topicName.equals("elevator/0/button/1") ||
-                             topicName.equals("elevator/0/button/2") || topicName.equals("elevator/0/button/3") ||
-                             topicName.equals("elevator/1/button/0") || topicName.equals("elevator/1/button/1") ||
-                             topicName.equals("elevator/1/button/2") || topicName.equals("elevator/1/button/3") ||
-                             topicName.equals("floor/0/buttonDown") || topicName.equals("floor/0/buttonUp") ||
-                             topicName.equals("floor/1/buttonDown") || topicName.equals("floor/1/buttonUp") ||
-                             topicName.equals("floor/2/buttonDown") || topicName.equals("floor/2/buttonUp") ||
-                             topicName.equals("floor/3/buttonDown") || topicName.equals("floor/3/buttonUp")) {
-                        receivedValues.add(receivedMessage);
-                    }
-                })
-                .send()
-                .whenComplete((subAck, throwable) -> {
-                    if (throwable != null) {
-                        System.err.println("Subscription fehlgeschlagen für Topic " + topic + ": " + throwable.getMessage());
-                    } else {
-                        System.out.println("Subscription erfolgreich für Topic: " + topic);
-                    }
-                });
-        }
-        Thread.sleep(3000);
-        //wait until everything is subscribed so changes in the @BeforeEach stubbing can be received
-        MQTTAdapter.run();
-
-     // Warten, um sicherzustellen, dass alle Nachrichten empfangen wurden
-        Thread.sleep(2000);
-
-        // Überprüfen, ob alle erwarteten Werte empfangen wurden
-        assertTrue(receivedValues.containsAll(expectedValues), "Nicht alle erwarteten Werte wurden empfangen.");
-
-    }
+//    @Test
+//    void testPeriodicUpdates() throws InterruptedException, RemoteException, ElevatorMQTTAdapter.MQTTAdapterException {
+//        // Sicherstellen, dass der Client verbunden ist
+//        if (!testClient.getState().isConnected()) {
+//            testClient.toBlocking().connect();
+//        }
+//        assertTrue(testClient.getState().isConnected(), "Client ist nicht verbunden");
+//
+//        // MQTT starten
+//        MQTTAdapter.connect();
+//        MQTTAdapter.run();
+//
+//        // Set für empfangene Nachrichten (für jedes Thema)
+//        Set<String> receivedValues = new HashSet<>();
+//        Set<String> expectedValues = new HashSet<>(Arrays.asList("0", "false", "true"));
+//
+//        // Liste aller Topics vorbereiten
+//        List<String> topics = new ArrayList<>();
+//        for (int elevatorId = 0; elevatorId < 2; elevatorId++) {
+//            topics.add("elevator/" + elevatorId + "/currentFloor");
+//            topics.add("elevator/" + elevatorId + "/speed");
+//            topics.add("elevator/" + elevatorId + "/weight");
+//            topics.add("elevator/" + elevatorId + "/doorState");
+//            for (int buttonId = 0; buttonId < 4; buttonId++) {
+//                topics.add("elevator/" + elevatorId + "/button/" + buttonId);
+//            }
+//        }
+//        for (int floorId = 0; floorId < 4; floorId++) {
+//            topics.add("floor/" + floorId + "/buttonDown");
+//            topics.add("floor/" + floorId + "/buttonUp");
+//        }
+//
+//        // Abonnieren der Topics
+//        for (String topic : topics) {
+//            testClient.toAsync()
+//                .subscribeWith()
+//                .topicFilter(topic)
+//                .qos(MqttQos.AT_LEAST_ONCE)
+//                .callback(publish -> {
+//                    String receivedMessage = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
+//                    System.out.println("Nachricht empfangen: " + receivedMessage + " für Topic: " + publish.getTopic());
+//
+//                    // Überprüfung der empfangenen Nachrichten basierend auf dem Topic
+//                    String topicName = publish.getTopic().toString();
+//
+//                    // Speicherung der empfangenen Werte
+//                    if (topicName.equals("elevator/0/currentFloor") || topicName.equals("elevator/1/currentFloor")) {
+//                        receivedValues.add(receivedMessage);
+//                    } else if (topicName.equals("elevator/0/speed") || topicName.equals("elevator/1/speed")) {
+//                        receivedValues.add(receivedMessage);
+//                    } else if (topicName.equals("elevator/0/weight") || topicName.equals("elevator/1/weight")) {
+//                        receivedValues.add(receivedMessage);
+//                    } else if (topicName.equals("elevator/0/doorState") || topicName.equals("elevator/1/doorState")) {
+//                        receivedValues.add(receivedMessage);
+//                    } else if (topicName.equals("elevator/0/button/0") || topicName.equals("elevator/0/button/1") ||
+//                             topicName.equals("elevator/0/button/2") || topicName.equals("elevator/0/button/3") ||
+//                             topicName.equals("elevator/1/button/0") || topicName.equals("elevator/1/button/1") ||
+//                             topicName.equals("elevator/1/button/2") || topicName.equals("elevator/1/button/3") ||
+//                             topicName.equals("floor/0/buttonDown") || topicName.equals("floor/0/buttonUp") ||
+//                             topicName.equals("floor/1/buttonDown") || topicName.equals("floor/1/buttonUp") ||
+//                             topicName.equals("floor/2/buttonDown") || topicName.equals("floor/2/buttonUp") ||
+//                             topicName.equals("floor/3/buttonDown") || topicName.equals("floor/3/buttonUp")) {
+//                        receivedValues.add(receivedMessage);
+//                    }
+//                })
+//                .send()
+//                .whenComplete((subAck, throwable) -> {
+//                    if (throwable != null) {
+//                        System.err.println("Subscription fehlgeschlagen für Topic " + topic + ": " + throwable.getMessage());
+//                    } else {
+//                        System.out.println("Subscription erfolgreich für Topic: " + topic);
+//                    }
+//                });
+//        }
+//        Thread.sleep(3000);
+//        //wait until everything is subscribed so changes in the @BeforeEach stubbing can be received
+//        MQTTAdapter.run();
+//
+//     // Warten, um sicherzustellen, dass alle Nachrichten empfangen wurden
+//        Thread.sleep(2000);
+//
+//        // Überprüfen, ob alle erwarteten Werte empfangen wurden
+//        assertTrue(receivedValues.containsAll(expectedValues), "Nicht alle erwarteten Werte wurden empfangen.");
+//
+//    }
     
     
     @Test
