@@ -446,7 +446,7 @@ class ElevatorSystemTest {
         }
 
         @Test
-        void testGetElevator() throws RemoteException {
+        void testGetElevator() {
 
                 assertEquals(0, elevatorSystem.getElevator(0).elevatorNumber);
                 assertEquals(1, elevatorSystem.getElevator(1).elevatorNumber);

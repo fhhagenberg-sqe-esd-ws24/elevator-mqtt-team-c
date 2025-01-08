@@ -38,16 +38,16 @@ class ElevatorAlgorithmTest {
 
     private ElevatorMQTTAdapter mqttAdapter;
 
-    private String Host;
+    private String host;
 
     @BeforeEach
     public void setup() throws Exception {
 
         hivemqCe.start();
 
-        Host = "tcp://" + hivemqCe.getHost() + ":" + hivemqCe.getMappedPort(1883);
+        host = "tcp://" + hivemqCe.getHost() + ":" + hivemqCe.getMappedPort(1883);
 
-        System.out.println("Host addresse: " + Host);
+        System.out.println("Host addresse: " + host);
         testClient = Mqtt5Client.builder()
                 .identifier("testClient")
                 .serverPort(hivemqCe.getMappedPort(1883)) // Verwenden Sie den dynamisch gemappten Port
@@ -70,7 +70,7 @@ class ElevatorAlgorithmTest {
         // Create the adapter adapter
         mqttAdapter = new ElevatorMQTTAdapter(
                 elevatorSystem,
-                Host,
+                host,
                 "mqttAdapter", 250, mockElevatorAPI);
 
         algorithm = new ElevatorAlgorithm();

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 
 /**
  * Internal Data Model for the individual elevators.
- *
+
  * This class represents the physical elevator and its attributes. The behaviors
  * are inherited
  * from the provided interface {@link IElevator} as follows:
@@ -72,7 +72,7 @@ public class Elevator {
     protected int position;
 
     /** Variable for the buttons with the floors mapped to a logical state */
-    public ArrayList<Boolean> buttons;
+    public static ArrayList<Boolean> buttons;
 
     /** Variable for the current weight of the passengers in the elevator in lbs */
     protected int weight;
@@ -93,7 +93,7 @@ public class Elevator {
     protected IElevator elevatorAPI;
 
     /** Variable for the elevator number */
-    public int elevatorNumber;
+    private final int elevatorNumber;
 
     /**
      * Constructor for internal Data Model based on IElevator interface
@@ -240,7 +240,6 @@ public class Elevator {
      *                FALSE)
      */
     public void setServiceableFloors(int floor, boolean service) {
-        // todo throw exception if invalid value is passed floors.size() <= floor
         this.serviceableFloors.set(floor, service);
     }
 
@@ -261,16 +260,6 @@ public class Elevator {
     public void setTargetedFloor(int targetedFloor) {
         this.targetedFloor = targetedFloor;
     }
-    
-    /**
-	 * Checks if the RMI interface has been assigned
-	 *
-	 * @return Elevator Api
-     */
-	public Boolean elevatorAPIConnected()
-	{
-		return elevatorAPI == null ? false: true; 
-	}
 
     /**
      * Updates elevator based on current states
@@ -286,7 +275,7 @@ public class Elevator {
             this.doorStatus = elevatorAPI.getElevatorDoorStatus(elevatorNumber);
             this.commitedDirection = elevatorAPI.getCommittedDirection(elevatorNumber);
             for (int floor = 0; floor < buttons.size(); floor++) {
-                buttons.set(floor, (Boolean)elevatorAPI.getElevatorButton(elevatorNumber, floor));
+                buttons.set(floor, elevatorAPI.getElevatorButton(elevatorNumber, floor));
             }
 
         } catch (RemoteException e) {

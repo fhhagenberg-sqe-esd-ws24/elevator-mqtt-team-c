@@ -344,30 +344,30 @@ public class ElevatorMQTTAdapter {
         String topic = publish.getTopic().toString();
         String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
 
-        System.out.println("Received message on topic: " + topic + " with payload: " + payload);
+        log.info("Received message on topic: {} with payload: {}", topic, payload);
 
         try {
             String[] parts = topic.split("/");
             if (topic.contains("committedDirection")) {
                 int elevatorNumber = Integer.parseInt(parts[1]);
                 int committedDirection = Integer.parseInt(payload);
-                System.out.println(ELEVATOR + elevatorNumber + " committed direction: " + committedDirection);
+                log.info(ELEVATOR + "{} committed direction: {}", elevatorNumber, committedDirection);
                 elevatorAPI.setCommittedDirection(elevatorNumber, committedDirection);
             } else if (topic.contains("targetFloor")) {
                 int elevatorNumber = Integer.parseInt(parts[1]);
                 int targetFloor = Integer.parseInt(payload);
-                System.out.println(ELEVATOR + elevatorNumber + " target floor: " + targetFloor);
+                log.info(ELEVATOR + "{} target floor: {}", elevatorNumber, targetFloor);
                 elevatorAPI.setTarget(elevatorNumber, targetFloor);
             } else if (topic.contains("floorService")) {
                 int elevatorNumber = Integer.parseInt(parts[1]);
                 int floorNumber = Integer.parseInt(parts[3]);
                 boolean floorService = Boolean.parseBoolean(payload);
-                System.out.println(ELEVATOR + elevatorNumber + " floor " + floorNumber + " service: " + floorService);
+                log.info(ELEVATOR + "{} floor {} service: {}", elevatorNumber, floorNumber, floorService);
                 elevatorAPI.setServicesFloors(elevatorNumber, floorNumber, floorService);
             }
         } 
         catch (Exception e) {
-            System.err.println("Failed to process message on topic: " + topic + " - Error: " + e.getMessage());
+            log.error("Failed to process message on topic: {} - Error: {}", topic, e.getMessage());
         }
     } 
 
@@ -375,13 +375,13 @@ public class ElevatorMQTTAdapter {
      * Connects to broker, subscribes to all control topics,
      * publishes all retained topics and runs the update loop.
      * 
-     * @throws MQTTAdapterException
+     * @throws MQTTAdapterException When adapter disconnects
      */
     public void run() {
     	try {
         // Überprüfen, ob der adapter-Client verbunden ist
         if (client.getState() != MqttClientState.CONNECTED) {
-            System.err.println("adapter client is not connected.");
+            log.error("adapter client is not connected.");
             return; // Beende die Methode, wenn der adapter-Client nicht verbunden ist
         }
         
@@ -392,7 +392,7 @@ public class ElevatorMQTTAdapter {
         
         // start the scheduler
         startPublishingElevatorStates();
-        System.out.println("adapter Adapter running");
+        log.info("adapter Adapter running");
     	 } catch (Exception e) {
              throw new MQTTAdapterException("Error during adapter adapter operation.", e);
          }
